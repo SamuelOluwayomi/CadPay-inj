@@ -559,7 +559,7 @@ export default function MerchantDashboard() {
                                             <h3 className="text-xl font-bold text-white">Live Ledger</h3>
                                             <div className="flex items-center gap-2">
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                                                     <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live Feed</span>
                                                 </span>
                                                 <button

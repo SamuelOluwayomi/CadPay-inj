@@ -18,16 +18,17 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           el: vantaRef.current,
           mouseControls: true,
           touchControls: true,
-          gyroControls: false,
+          gyroControls: true,
           minHeight: 200.00,
           minWidth: 200.00,
           scale: 1.00,
           scaleMobile: 1.00,
-          color: 0xff6600,       // Orange connections
-          backgroundColor: 0x000000, // Black background
-          pointsColor: 0xff8800, // Orange points
+          color: 0xff6600,       // Orange lines
+          backgroundColor: 0x000000,
+          points: 14.00,
           maxDistance: 22.00,
           spacing: 16.00,
+          showDots: true,
           THREE: THREE
         })
       );
@@ -43,56 +44,62 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   };
 
   return (
-    <section className="relative z-20 min-h-[90vh] w-full overflow-hidden text-white pt-9 md:pt-36 pb-0 perspective-[2000px]">
+    <section className="relative z-20 min-h-[90vh] w-full overflow-hidden text-white pt-8 md:pt-4 pb-0">
 
       {/* VANTA BACKGROUND */}
       <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full" />
 
-      {/* GRADIENT OVERLAY FOR TEXT READABILITY */}
-      <div className="absolute inset-0 z-10 bg-linear-to-t from-black via-transparent to-black/40 pointer-events-none" />
+      {/* GRADIENT OVERLAY FOR TEXT READABILITY - Stronger for visibility, but top transparent for Navbar */}
+      <div className="absolute inset-0 z-10 bg-linear-to-b from-transparent via-transparent to-black/90 pointer-events-none" />
+      <div className="absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
 
       {/* CONTENT CONTAINER - CENTERED */}
-      <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32">
+      <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32 drop-shadow-2xl">
 
-        <motion.div
-          variants={fadeInUp}
-          initial="hidden"
-          animate={startAnimation ? "visible" : "hidden"}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 border border-orange-500/30 w-fit backdrop-blur-md mb-8"
-        >
-        </motion.div>
 
         <motion.h1
           variants={fadeInUp}
           initial="hidden"
           animate={startAnimation ? "visible" : "hidden"}
           transition={{ delay: 0.3 }}
-          className="text-5xl md:text-8xl font-black tracking-tighter leading-[1.1] text-white max-w-4xl"
+          className="text-5xl md:text-8xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
         >
-          Built on <span className="text-orange-500">Kaspa.</span>
+          Built on Kaspa.
         </motion.h1>
 
-        <motion.p
-          variants={fadeInUp}
-          initial="hidden"
-          animate={startAnimation ? "visible" : "hidden"}
-          transition={{ delay: 0.2 }}
-          className="mt-8 text-lg md:text-2xl text-zinc-300 max-w-2xl leading-relaxed font-light"
-        >
-          The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work. <br className="hidden md:block" />
-          CadPay leverages Kaspa's revolutionary <span className="text-white font-medium">BlockDAG</span> to deliver subscription payments at unprecedented speed.
-        </motion.p>
+        <div className="relative mt-8 max-w-2xl mx-auto">
+          <motion.p
+            variants={fadeInUp}
+            initial="hidden"
+            animate={startAnimation ? "visible" : "hidden"}
+            transition={{ delay: 0.2 }}
+            className="text-lg md:text-2xl text-zinc-300 leading-relaxed font-medium"
+          >
+            The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work. <br className="hidden md:block" />
+            CadPay leverages Kaspa's revolutionary
+            <span className="relative inline-block mx-2 text-white font-bold z-10">
+              BlockDAG
+              {/* ARC HIGHLIGHT */}
+              <svg className="absolute -bottom-2 -left-2 w-[120%] h-[140%] -z-10" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path d="M0,30 Q50,40 100,30" fill="none" stroke="#ff6600" strokeWidth="8" strokeLinecap="round" className="opacity-80" />
+              </svg>
+            </span>
+            to deliver subscription payments at unprecedented speed.
+          </motion.p>
+        </div>
 
         <motion.div
           variants={fadeInUp}
           initial="hidden"
           animate={startAnimation ? "visible" : "hidden"}
           transition={{ delay: 0.4 }}
-          className="flex items-center justify-center gap-6 mt-12 mb-20"
+          className="mt-10 flex flex-col md:flex-row gap-4 items-center justify-center"
         >
-          <a href="/signin" className="group px-8 py-4 bg-orange-500 text-black rounded-full font-bold text-lg hover:bg-orange-400 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] transform hover:-translate-y-1">
-            <FingerprintIcon size={24} weight="bold" /> Start Demo
-          </a>
+          <button className="group relative flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-full text-lg font-bold border border-white/10 hover:border-orange-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(255,102,0,0.2)]">
+            <FingerprintIcon size={24} className="text-orange-500 group-hover:scale-110 transition-transform" />
+            <span>Start Demo</span>
+            <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-orange-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
         </motion.div>
 
       </div>

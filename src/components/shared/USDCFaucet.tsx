@@ -108,10 +108,9 @@ export default function USDCFaucet({ onSuccess, userAddress }: USDCFaucetProps) 
                 </button>
             </div>
 
-            {/* Demo indicator */}
             <div className="mt-4 pt-4 border-t border-white/5">
                 <div className="flex items-center gap-2 text-xs text-orange-400">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
                     <span>Demo mode for testing</span>
                 </div>
             </div>

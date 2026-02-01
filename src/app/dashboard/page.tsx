@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction } from '@/lib/solana-stubs'; // Using stubs for now
 import { SERVICES, CATEGORIES, Service, SubscriptionPlan } from '@/data/subscriptions';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
 import ServiceCard from '@/components/subscriptions/ServiceCard';
@@ -36,7 +36,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, createAssociatedTokenAccou
 import { CADPAY_MINT } from '@/utils/cadpayToken';
 import { deriveSavingsPotPDA } from '@/utils/savingsAccounts';
 import idl from '../../../anchor/target/idl/cadpay_profiles.json';
-import { createMemoInstruction } from '@solana/spl-memo';
+
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'invoices' | 'dev-keys' | 'savings';
 
@@ -260,9 +260,10 @@ export default function Dashboard() {
                 // Add memo for external transfers if provided (with size limit)
                 if (memo && memo.trim().length > 0 && memo.length <= 50) {
                     try {
-                        const { createMemoInstruction } = await import('@solana/spl-memo');
-                        const memoIx = createMemoInstruction(memo.trim(), [new PublicKey(address)]);
-                        tx.add(memoIx);
+                        // const { createMemoInstruction } = await import('@solana/spl-memo'); // Removed for Kaspa migration
+                        // const memoIx = createMemoInstruction(memo.trim(), [new PublicKey(address)]);
+                        // tx.add(memoIx);
+                        console.log("Memo stubbed for migration:", memo);
                     } catch (memoError: any) {
                         console.warn('Failed to add memo instruction:', memoError);
                     }
@@ -471,7 +472,7 @@ export default function Dashboard() {
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Devnet</span>
                                 <div className="flex items-center gap-1 text-orange-500">
-                                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
                                     Active
                                 </div>
                             </div>

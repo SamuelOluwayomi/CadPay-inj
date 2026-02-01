@@ -13,8 +13,8 @@ export default function NavBar() {
         <>
             <nav className="absolute top-0 w-full z-50 transition-all duration-300">
 
-                {/* Glass Background */}
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-xl border-b border-white/5" />
+                {/* Glass Background - More transparent for Vanta visibility */}
+                <div className="absolute inset-0 bg-black/30 backdrop-blur-md border-b border-white/10" />
 
                 <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
