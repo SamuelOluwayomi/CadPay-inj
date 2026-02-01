@@ -3,7 +3,7 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { SiSolana } from "react-icons/si";
+
 
 import LogoField from './LogoField';
 

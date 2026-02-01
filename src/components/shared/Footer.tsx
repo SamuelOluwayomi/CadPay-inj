@@ -1,6 +1,6 @@
 'use client';
 
-import { SiDiscord, SiGithub, SiX, SiLinkedin, SiYoutube, SiSolana } from 'react-icons/si';
+import { SiDiscord, SiGithub, SiX, SiLinkedin, SiYoutube } from 'react-icons/si';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import LogoField from './LogoField';
@@ -173,7 +173,7 @@ export default function Footer() {
                 >
                     <p>© 2026 CadPay. All rights reserved.</p>
                     <div className="flex gap-6">
-                        <span>Made with 🧡 on Solana</span>
+                        <span>Made with 🧡 on Kaspa</span>
                     </div>
                 </motion.div>
 

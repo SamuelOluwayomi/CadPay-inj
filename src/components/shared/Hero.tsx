@@ -49,7 +49,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
       <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full" />
 
       {/* GRADIENT OVERLAY FOR TEXT READABILITY */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-transparent to-black/40 pointer-events-none" />
+      <div className="absolute inset-0 z-10 bg-linear-to-t from-black via-transparent to-black/40 pointer-events-none" />
 
       {/* CONTENT CONTAINER - CENTERED */}
       <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32">
@@ -60,8 +60,6 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           animate={startAnimation ? "visible" : "hidden"}
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 border border-orange-500/30 w-fit backdrop-blur-md mb-8"
         >
-          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse box-shadow-orange" />
-          <span className="text-sm font-medium text-orange-100 tracking-wide">10 Blocks Per Second</span>
         </motion.div>
 
         <motion.h1

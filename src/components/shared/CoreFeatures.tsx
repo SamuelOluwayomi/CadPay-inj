@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { SiSolana } from "react-icons/si";
+
 import { XIcon, ArrowUpRightIcon } from '@phosphor-icons/react';
 
 type Feature = {

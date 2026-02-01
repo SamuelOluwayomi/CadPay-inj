@@ -169,7 +169,7 @@ export default function MerchantAuthPage() {
 
                 {isSignup && (
                     <p className="text-center text-xs text-zinc-500 mt-6">
-                        By joining, a new Solana wallet will be automatically created <br /> for your business to receive USDC payments.
+                        By joining, a new Kaspa wallet will be automatically created <br /> for your business to receive payments.
                     </p>
                 )}
             </div>

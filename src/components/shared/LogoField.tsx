@@ -4,9 +4,9 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import React from 'react';
 import Image from 'next/image';
-import { SiSolana } from 'react-icons/si';
 
-const LOGO_TYPES = ['lazorkit', 'solana', 'cadpay'] as const;
+
+const LOGO_TYPES = ['lazorkit', 'kaspa', 'cadpay'] as const;
 
 interface LogoItem {
     id: number;
@@ -172,8 +172,8 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
                     <Image src="/lazorkit-logo.png" alt="" fill sizes="(max-width: 768px) 50px, 80px" className="object-contain grayscale opacity-60" />
                 </div>
             )}
-            {item.type === 'solana' && (
-                <SiSolana size={item.size} className="text-white opacity-30" />
+            {item.type === 'kaspa' && (
+                <Image src="/kaspa-logo.png" alt="Kaspa" width={item.size} height={item.size} className="opacity-30 object-contain" />
             )}
             {item.type === 'cadpay' && (
                 <div

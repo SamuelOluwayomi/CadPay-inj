@@ -593,7 +593,7 @@ export default function MerchantDashboard() {
                                             <tbody className="text-sm divide-y divide-white/5">
                                                 {loading ? (
                                                     <tr>
-                                                        <td colSpan={6} className="py-8 text-center text-zinc-500">Scanning Solana Blockchain...</td>
+                                                        <td colSpan={6} className="py-8 text-center text-zinc-500">Scanning Blockchain...</td>
                                                     </tr>
                                                 ) : transactions.length === 0 ? (
                                                     <tr>
