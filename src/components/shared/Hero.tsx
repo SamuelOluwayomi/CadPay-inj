@@ -79,9 +79,19 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             CadPay leverages Kaspa's revolutionary
             <span className="relative inline-block mx-2 text-white font-bold z-10">
               BlockDAG
-              {/* ARC HIGHLIGHT */}
+              {/* ARC HIGHLIGHT - Animated */}
               <svg className="absolute -bottom-2 -left-2 w-[120%] h-[140%] -z-10" viewBox="0 0 100 40" preserveAspectRatio="none">
-                <path d="M0,30 Q50,40 100,30" fill="none" stroke="#ff6600" strokeWidth="8" strokeLinecap="round" className="opacity-80" />
+                <motion.path
+                  d="M0,30 Q50,40 100,30"
+                  fill="none"
+                  stroke="#ff6600"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  className="opacity-80"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 0.8 }}
+                  transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
+                />
               </svg>
             </span>
             to deliver subscription payments at unprecedented speed.
