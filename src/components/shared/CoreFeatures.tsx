@@ -344,12 +344,12 @@ export default function CoreFeatures() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}>
                         <h3 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-4 flex items-center justify-center gap-3">
-                            <div className="relative w-10 h-10 md:w-16 md:h-16">
+                            <div className="relative w-16 h-16 md:w-24 md:h-24">
                                 <Image
                                     src="/kaspa-logo.png"
                                     alt="Kaspa"
                                     fill
-                                    sizes="(max-width: 768px) 40px, 64px"
+                                    sizes="(max-width: 768px) 64px, 96px"
                                     className="object-contain"
                                 />
                             </div>
@@ -377,7 +377,7 @@ export default function CoreFeatures() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.5, delay: 0.5 }}>
-                            Its revolutionary <span className="text-teal-400 font-semibold">BlockDAG architecture</span> allows <span className="text-teal-400 font-semibold">10 blocks per second</span> on mainnet with near-instant finality. Kaspa has processed <span className="text-teal-400 font-semibold">158 million+ transactions</span> in stress tests, proving its ability to scale while maintaining the security of proof-of-work. With minimal fees, the UTXO model, and a growing DeFi ecosystem through KRC-20 tokens, Kaspa represents the future of decentralized payments.
+                            Its revolutionary <span className="text-orange-400 font-semibold">BlockDAG architecture</span> allows <span className="text-orange-400 font-semibold">10 blocks per second</span> on mainnet with near-instant finality. Kaspa has processed <span className="text-orange-400 font-semibold">158 million+ transactions</span> in stress tests, proving its ability to scale while maintaining the security of proof-of-work. With minimal fees, the UTXO model, and a growing DeFi ecosystem through KRC-20 tokens, Kaspa represents the future of decentralized payments.
                         </motion.p>
                     </motion.div>
                 </div>

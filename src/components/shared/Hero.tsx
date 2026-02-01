@@ -93,7 +93,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 w-fit backdrop-blur-md mx-auto lg:mx-0">
-            <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
             <span className="text-xs font-medium text-zinc-300">10 Blocks Per Second</span>
           </motion.div>
 
@@ -104,7 +104,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             transition={{ delay: 0.3 }}
             className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] text-white">
             Built on <br />
-            <span className="text-teal-400">Kaspa.</span>
+            <span className="text-orange-500">Kaspa.</span>
           </motion.h1>
 
           <motion.p
@@ -123,7 +123,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.3 }}
             className="flex items-center justify-center lg:justify-start gap-4 pt-2">
-            <a href="/signin" className="px-8 py-3.5 bg-teal-400 text-black rounded-full font-semibold text-sm hover:bg-teal-300 transition-all flex items-center gap-2">
+            <a href="/signin" className="px-8 py-3.5 bg-orange-400 text-black rounded-full font-semibold text-sm hover:bg-orange-300 transition-all flex items-center gap-2">
               <FingerprintIcon size={16} /> Start Demo
             </a>
           </motion.div>
