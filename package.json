@@ -12,7 +12,6 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
     "@jup-ag/api": "^6.0.48",
-    "@jup-ag/common": "^6.1.0",
     "@phosphor-icons/react": "^2.1.10",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
