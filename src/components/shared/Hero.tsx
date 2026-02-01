@@ -92,8 +92,9 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             variants={fadeInUp}
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 w-fit backdrop-blur-md mx-auto lg:mx-0"
-          >
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 w-fit backdrop-blur-md mx-auto lg:mx-0">
+            <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+            <span className="text-xs font-medium text-zinc-300">10 Blocks Per Second</span>
           </motion.div>
 
           <motion.h1
@@ -101,10 +102,9 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.3 }}
-            className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] text-white"
-          >
-            Your face is your <br />
-            <span className="text-orange-500">Password.</span>
+            className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] text-white">
+            Built on <br />
+            <span className="text-teal-400">Kaspa.</span>
           </motion.h1>
 
           <motion.p
@@ -112,10 +112,9 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.2 }}
-            className="text-base md:text-lg text-zinc-400 max-w-lg leading-relaxed mx-auto lg:mx-0"
-          >
-            CadPay is the modern operating system for your money.
-            Connect your identity to our automated settlement engine and manage recurring subscriptions without cards.
+            className="text-base md:text-lg text-zinc-400 max-w-lg leading-relaxed mx-auto lg:mx-0">
+            The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work.
+            CadPay leverages Kaspa's revolutionary BlockDAG to deliver subscription payments at unprecedented speed.
           </motion.p>
 
           <motion.div
@@ -123,9 +122,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.3 }}
-            className="flex items-center justify-center lg:justify-start gap-4 pt-2"
-          >
-            <a href="/signin" className="px-8 py-3.5 bg-orange-400 text-black rounded-full font-semibold text-sm hover:bg-orange-300 transition-all flex items-center gap-2">
+            className="flex items-center justify-center lg:justify-start gap-4 pt-2">
+            <a href="/signin" className="px-8 py-3.5 bg-teal-400 text-black rounded-full font-semibold text-sm hover:bg-teal-300 transition-all flex items-center gap-2">
               <FingerprintIcon size={16} /> Start Demo
             </a>
           </motion.div>

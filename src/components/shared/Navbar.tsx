@@ -25,7 +25,7 @@ export default function NavBar() {
                             <div className="w-6 h-6 bg-orange-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
                             CADPAY
                             <div className="h-4 w-px bg-white/20 mx-1" />
-                            <SiSolana className="text-[#9945FF] opacity-80" size={16} />
+                            <img src="/kaspa-logo.png" alt="Kaspa" className="h-4 opacity-80" />
                         </Link>
 
                         {/* DESKTOP LINKS (Hidden on Mobile) */}

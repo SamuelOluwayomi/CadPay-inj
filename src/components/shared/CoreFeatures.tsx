@@ -17,39 +17,39 @@ type Feature = {
 
 const cadpayFeatures: Feature[] = [
     {
-        id: 'biometric',
-        headline: 'Your Face or Fingerprint is Your Private Key.',
-        description: 'Powered by Lazorkit, we map your device\'s biometric authenticator directly to a Solana keypair.',
-        fullDescription: 'Powered by Lazorkit, we map your device\'s biometric authenticator directly to a Solana keypair. This eliminates the need for seed phrases, creating a non-custodial wallet that is as secure as a ledger but as easy to access as your phone.',
-        image: '/features/identity.png'
-    },
-    {
-        id: 'gasless',
-        headline: 'Zero Transaction Fees for Users.',
-        description: 'Lazorkit Paymaster sponsors all transaction fees, removing the friction of holding SOL for gas.',
-        fullDescription: 'Lazorkit\'s built-in Paymaster service sponsors all network fees automatically. Unlike traditional wallets where users must hold native tokens for gas, Lazorkit eliminates this barrier entirely. All subscription charges, payments, and on-chain operations are executed gaslessly—you never need to think about transaction costs.',
-        image: '/features/security.png'
-    },
-    {
-        id: 'autosettlement',
-        headline: 'True Recurring Crypto Payments.',
-        description: 'Smart contracts typically require manual approval for every transaction.',
-        fullDescription: 'Smart contracts typically require manual approval for every transaction. We utilize Lazorkit Session Keys to pre-approve specific subscription parameters, enabling Netflix-style automated billing on-chain without compromising user sovereignty.',
+        id: 'blockdag',
+        headline: 'Revolutionary BlockDAG Architecture.',
+        description: 'Unlike traditional blockchains, Kaspa uses a BlockDAG where blocks reference multiple parents, enabling parallel block creation.',
+        fullDescription: 'Instead of a single chain where blocks reference one parent, Kaspa\'s BlockDAG allows blocks to reference multiple parents. This revolutionary approach enables parallel mining where multiple miners can produce blocks simultaneously, achieving higher throughput without sacrificing security. All valid blocks contribute to consensus—no wasted work.',
         image: '/features/autopilot.png'
     },
     {
-        id: 'infrastructure',
-        headline: 'Global Payments at 400ms Finality.',
-        description: 'Built on Solana\'s parallelized architecture, CadPay handles thousands of transactions per second.',
-        fullDescription: 'Built on Solana\'s parallelized architecture, CadPay handles thousands of transactions per second with near-zero latency. We provide a payment rail fast enough for real-time commerce and cheap enough for micro-transactions.',
+        id: 'throughput',
+        headline: '10 Blocks Per Second on Mainnet.',
+        description: 'Currently processing 10 blocks per second with proven scalability of 158M+ transactions in stress tests.',
+        fullDescription: 'Kaspa mainnet currently runs at 10 BPS (blocks per second) with near-instant finality. The network has been battle-tested at scale, successfully processing 158 million transactions during stress tests in October 2025. This high throughput is achieved while maintaining the security guarantees of proof-of-work consensus.',
         image: '/features/security.png'
     },
     {
-        id: 'sdk',
-        headline: 'A Composable Financial OS.',
-        description: 'We are more than a wallet; we are an open protocol.',
-        fullDescription: 'We are more than a wallet; we are an open protocol. Developers can build directly on our settlement layer to create custom subscription models, automated treasury flows, and loyalty rewards that inherit the security of the Solana network.',
+        id: 'utxo',
+        headline: 'Bitcoin-Inspired UTXO Model.',
+        description: 'Kaspa uses the proven UTXO transaction model, providing clear ownership tracking and efficient validation.',
+        fullDescription: 'Kaspa uses Bitcoin\'s UTXO (Unspent Transaction Output) model where transactions consume previous outputs and create new ones. This straightforward programming model offers well-understood security properties, clear state tracking, and efficient validation—making it familiar to Bitcoin developers while enabling new innovations.',
         image: '/features/economy.png'
+    },
+    {
+        id: 'tokens',
+        headline: 'KRC-20 Token Standard.',
+        description: 'An emerging token standard enabling smart contract functionality on Kaspa\'s fast, scalable network.',
+        fullDescription: 'KRC-20 is Kaspa\'s token standard, similar to Ethereum\'s ERC-20 concept. Built using data insertion mechanisms and enabled by the Kasplex protocol, KRC-20 brings programmable tokens to Kaspa\'s high-throughput network. With open-source indexers and APIs, developers can build DeFi applications on proven infrastructure.',
+        image: '/features/identity.png'
+    },
+    {
+        id: 'pow',
+        headline: 'True Decentralization Through PoW.',
+        description: 'Faithful to Satoshi\'s vision: proof-of-work mining, no premine, deflationary monetary policy, and no central governance.',
+        fullDescription: 'Kaspa is based on the GhostDAG/PHANTOM protocol, a scalable generalization of Nakamoto Consensus. Its design preserves Bitcoin\'s core principles: proof-of-work mining ensures security, UTXO model maintains isolated state, deflationary monetary policy preserves value, zero premine ensures fairness, and no central governance keeps power distributed.',
+        image: '/features/security.png'
     }
 ];
 
@@ -237,23 +237,23 @@ export default function CoreFeatures() {
 
     return (
         <div className="w-full max-w-7xl mx-auto px-6 py-12 -mt-32 relative z-50">
+            {/* Title Section with Kaspa Branding */}
             <motion.div
                 className="mb-20 text-center"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.3 }}
-                variants={containerVariants}
-            >
+                variants={containerVariants}>
                 <motion.div variants={itemVariants} className="flex items-center justify-center gap-2 mb-4">
                     <span className="bg-zinc-800/80 backdrop-blur-md rounded-full px-4 py-1.5 text-xs font-bold text-white border border-white/10 flex items-center gap-2">
-                        <SiSolana className="text-[#9945FF]" /> Built on Solana
+                        ⚡ BlockDAG Technology
                     </span>
                 </motion.div>
                 <motion.h2 variants={itemVariants} className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4">
-                    The CadPay Ecosystem
+                    Why Kaspa?
                 </motion.h2>
                 <motion.p variants={itemVariants} className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto">
-                    The 5 Core Pillars
+                    The 5 Pillars of the Fastest PoW Blockchain
                 </motion.p>
             </motion.div>
 
@@ -328,34 +328,32 @@ export default function CoreFeatures() {
                 )}
             </div>
 
-            {/* Lazorkit Section */}
+            {/* Kaspa Ecosystem Section */}
             <motion.div
                 className="relative z-50 mt-12 mb-20"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                style={{ transform: 'translateZ(0)' }}
-            >
+                style={{ transform: 'translateZ(0)' }}>
                 <div className="max-w-4xl mx-auto">
                     <motion.div
                         className="text-center mb-12"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                    >
+                        transition={{ duration: 0.6 }}>
                         <h3 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-4 flex items-center justify-center gap-3">
                             <div className="relative w-10 h-10 md:w-16 md:h-16">
                                 <Image
-                                    src="/lazorkit-logo.png"
-                                    alt="Lazorkit"
+                                    src="/kaspa-logo.png"
+                                    alt="Kaspa"
                                     fill
                                     sizes="(max-width: 768px) 40px, 64px"
                                     className="object-contain"
                                 />
                             </div>
-                            Powered by Lazorkit
+                            Built on Kaspa
                         </h3>
                     </motion.div>
                     <motion.div
@@ -364,25 +362,22 @@ export default function CoreFeatures() {
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.3 }}
-                        style={{ transform: 'translateZ(0)' }}
-                    >
+                        style={{ transform: 'translateZ(0)' }}>
                         <motion.p
                             className="text-zinc-300 text-lg md:text-xl leading-relaxed text-center"
                             initial={{ opacity: 0, y: 10 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                        >
-                            Lazorkit is the advanced Account Abstraction (AA) SDK for the Solana blockchain. It serves as the hidden engine inside CadPay, replacing complex crypto standards with familiar Web2 experiences.
+                            transition={{ duration: 0.5, delay: 0.4 }}>
+                            Kaspa is the fastest and most scalable instant confirmation transaction layer ever built on a proof-of-work engine. Based on the GhostDAG/PHANTOM protocol, it's a scalable generalization of Bitcoin's Nakamoto Consensus.
                         </motion.p>
                         <motion.p
                             className="text-zinc-400 text-base md:text-lg leading-relaxed text-center mt-6"
                             initial={{ opacity: 0, y: 10 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.5 }}
-                        >
-                            It powers our <span className="text-orange-400 font-semibold">Paymaster service for gasless transactions</span> (users never need SOL for fees), our Passkey integration (allowing users to log in with biometrics instead of passwords), and manages our Session Keys (allowing decentralized apps to perform automated tasks like recurring payments securely). Lazorkit bridges the gap between the raw power of Solana and the smooth user experience of modern fintech.
+                            transition={{ duration: 0.5, delay: 0.5 }}>
+                            Its revolutionary <span className="text-teal-400 font-semibold">BlockDAG architecture</span> allows <span className="text-teal-400 font-semibold">10 blocks per second</span> on mainnet with near-instant finality. Kaspa has processed <span className="text-teal-400 font-semibold">158 million+ transactions</span> in stress tests, proving its ability to scale while maintaining the security of proof-of-work. With minimal fees, the UTXO model, and a growing DeFi ecosystem through KRC-20 tokens, Kaspa represents the future of decentralized payments.
                         </motion.p>
                     </motion.div>
                 </div>
