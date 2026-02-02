@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 
 import { ArrowUpRightIcon } from '@phosphor-icons/react';
@@ -72,8 +72,6 @@ export default function CoreFeatures() {
         return () => window.removeEventListener('resize', checkDesktop);
     }, []);
 
-
-
     if (!mounted) {
         return (
             <div className="w-full max-w-7xl mx-auto px-6 py-12 -mt-32 relative z-50 min-h-[600px]">
@@ -119,16 +117,6 @@ export default function CoreFeatures() {
         }
     };
 
-    const cardVariants = {
-        hidden: { opacity: 0, x: 100, scale: 0.9 },
-        visible: {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            transition: { duration: 0.8 }
-        }
-    };
-
     return (
         <>
             <div className="w-full bg-[#fcfbf7] py-20 relative">
@@ -143,7 +131,6 @@ export default function CoreFeatures() {
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.1 }}
                         variants={containerVariants}>
-
 
                         <motion.h2 variants={itemVariants} className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter mb-4">
                             Why <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-orange-500">Kaspa?</ScribbleUnderline>
@@ -236,10 +223,22 @@ export default function CoreFeatures() {
     );
 }
 
+function ScribbleUnderline({
+    children,
+    className,
+    scribbleColor = "text-orange-500",
+    variant = "curve"
+}: {
+    children: React.ReactNode;
+    className?: string;
+    scribbleColor?: string;
+    variant?: "curve" | "straight";
+}) {
+    const pathVariants = {
+        curve: "M2.00025 6.99997C2.00025 6.99997 101.5 0.49997 197.5 5.49997",
+        straight: "M2 7C40 6 160 5 198 6" // Slightly imperfect straight line
+    };
 
-
-
-function ScribbleUnderline({ children, className, scribbleColor = "text-orange-500" }: { children: React.ReactNode; className?: string; scribbleColor?: string }) {
     return (
         <span className={cn("relative inline-block", className)}>
             <span className="relative z-10">{children}</span>
@@ -255,7 +254,7 @@ function ScribbleUnderline({ children, className, scribbleColor = "text-orange-5
                 transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
             >
                 <motion.path
-                    d="M2.00025 6.99997C2.00025 6.99997 101.5 0.49997 197.5 5.49997"
+                    d={pathVariants[variant]}
                     stroke="currentColor"
                     strokeWidth="4"
                     strokeLinecap="round"
@@ -264,6 +263,7 @@ function ScribbleUnderline({ children, className, scribbleColor = "text-orange-5
         </span>
     );
 }
+
 // Alternating Vertical Dash Line Pattern
 function DashPattern() {
     return (
@@ -296,10 +296,21 @@ function Card({
     index: number;
 }) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
     const isTextRight = index % 2 === 0;
+
+    const { scrollYProgress } = useScroll({
+        target: cardRef,
+        offset: ["start start", "end start"]
+    });
+
+    const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
+    const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
     return (
         <motion.div
+            ref={cardRef}
+            style={{ y, opacity }}
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
@@ -319,7 +330,9 @@ function Card({
                 </span>
 
                 <h3 className="text-2xl md:text-4xl font-bold text-zinc-900 mb-4 leading-tight tracking-tight max-w-xl">
-                    {feature.headline}
+                    <ScribbleUnderline variant="straight" scribbleColor="text-orange-200" className="text-zinc-900">
+                        {feature.headline}
+                    </ScribbleUnderline>
                 </h3>
 
                 <p className="text-zinc-600 text-sm md:text-base leading-relaxed max-w-lg">
@@ -337,5 +350,3 @@ function Card({
         </motion.div>
     );
 }
-
-
