@@ -12,7 +12,7 @@ export default function About() {
     return (
         <section
             ref={containerRef}
-            className="relative min-h-[60vh] bg-[#1c1209] flex flex-col items-center pt-30 -mt-1 overflow-hidden z-30"
+            className="relative min-h-[60vh] bg-[#1c1209] flex flex-col items-center pt-24 -mt-24 overflow-hidden z-20"
         >
             {/* Background Logos */}
             <LogoField count={25} className="absolute inset-0 z-0" />

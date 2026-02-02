@@ -44,19 +44,17 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   };
 
   return (
-    <section className="relative z-20 min-h-[90vh] w-full overflow-hidden text-white pt-8 md:pt-4 pb-0">
+    <section className="relative z-50 min-h-[75vh] w-full text-white pt-8 md:pt-4 pb-0 bg-black shadow-2xl">
 
       {/* VANTA BACKGROUND */}
-      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full" />
+      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden" />
 
-      {/* GRADIENT OVERLAY FOR TEXT READABILITY - Stronger for visibility, but top transparent for Navbar */}
+      {/* GRADIENT OVERLAY */}
       <div className="absolute inset-0 z-10 bg-linear-to-b from-transparent via-transparent to-black/90 pointer-events-none" />
       <div className="absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
 
-      {/* CONTENT CONTAINER - CENTERED */}
+      {/* CONTENT CONTAINER */}
       <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32 drop-shadow-2xl">
-
-
         <motion.h1
           variants={fadeInUp}
           initial="hidden"
@@ -79,7 +77,6 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             CadPay leverages Kaspa's revolutionary
             <span className="relative inline-block mx-2 text-white font-bold z-10">
               BlockDAG
-              {/* ARC HIGHLIGHT - Animated */}
               <svg className="absolute -bottom-2 -left-2 w-[120%] h-[140%] -z-10" viewBox="0 0 100 40" preserveAspectRatio="none">
                 <motion.path
                   d="M0,30 Q50,40 100,30"
@@ -111,8 +108,22 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-orange-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         </motion.div>
-
       </div>
-    </section>
+
+      {/* CURVED BOTTOM EDGE (Minimal Deep Arch - Outside) */}
+      <div className="absolute -bottom-10 md:-bottom-16 left-0 w-full h-10 md:h-16 z-20 pointer-events-none drop-shadow-2xl">
+        <svg
+          viewBox="0 0 1440 320"
+          className="w-full h-full"
+          preserveAspectRatio="none"
+        >
+          <path
+            fill="#000000"
+            fillOpacity="1"
+            d="M0,0 L1440,0 L1440,320 Q720,0 0,320 Z"
+          ></path>
+        </svg>
+      </div>
+    </section >
   );
 }

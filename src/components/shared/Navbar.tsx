@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CaretRightIcon, FingerprintIcon, ListIcon, XIcon } from '@phosphor-icons/react';
-import { SiSolana } from "react-icons/si";
+import { FingerprintIcon, ListIcon, XIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,7 +10,7 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className="absolute top-0 w-full z-50 transition-all duration-300">
+            <nav className="absolute top-0 w-full z-60 transition-all duration-300">
 
                 {/* Glass Background - More transparent for Vanta visibility */}
                 <div className="absolute inset-0 bg-black/30 backdrop-blur-md border-b border-white/10" />

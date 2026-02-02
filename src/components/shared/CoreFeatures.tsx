@@ -119,7 +119,7 @@ export default function CoreFeatures() {
 
     return (
         <>
-            <div className="w-full bg-[#fcfbf7] py-20 relative">
+            <div className="w-full bg-[#fcfbf7] pt-20 pb-20 relative z-10 -mt-1">
                 {/* Vertical Dash Pattern Background for Entire Section */}
                 <DashPattern />
 
