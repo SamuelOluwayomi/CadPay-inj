@@ -26,35 +26,35 @@ const cadpayFeatures: Feature[] = [
         headline: 'Revolutionary BlockDAG Architecture.',
         description: 'Unlike traditional blockchains, Kaspa uses a BlockDAG where blocks reference multiple parents, enabling parallel block creation.',
         fullDescription: 'Instead of a single chain where blocks reference one parent, Kaspa\'s BlockDAG allows blocks to reference multiple parents. This revolutionary approach enables parallel mining where multiple miners can produce blocks simultaneously, achieving higher throughput without sacrificing security. All valid blocks contribute to consensus—no wasted work.',
-        image: '/features/autopilot.png'
+        image: '/features/blockdag-diagram.png'
     },
     {
         id: 'throughput',
         headline: '10 Blocks Per Second on Mainnet.',
         description: 'Currently processing 10 blocks per second with proven scalability of 158M+ transactions in stress tests.',
         fullDescription: 'Kaspa mainnet currently runs at 10 BPS (blocks per second) with near-instant finality. The network has been battle-tested at scale, successfully processing 158 million transactions during stress tests in October 2025. This high throughput is achieved while maintaining the security guarantees of proof-of-work consensus.',
-        image: '/features/security.png'
+        image: '/features/throughput.png'
     },
     {
         id: 'utxo',
         headline: 'Bitcoin-Inspired UTXO Model.',
         description: 'Kaspa uses the proven UTXO transaction model, providing clear ownership tracking and efficient validation.',
         fullDescription: 'Kaspa uses Bitcoin\'s UTXO (Unspent Transaction Output) model where transactions consume previous outputs and create new ones. This straightforward programming model offers well-understood security properties, clear state tracking, and efficient validation—making it familiar to Bitcoin developers while enabling new innovations.',
-        image: '/features/economy.png'
+        image: '/features/utxo.png'
     },
     {
         id: 'tokens',
         headline: 'KRC-20 Token Standard.',
         description: 'An emerging token standard enabling smart contract functionality on Kaspa\'s fast, scalable network.',
         fullDescription: 'KRC-20 is Kaspa\'s token standard, similar to Ethereum\'s ERC-20 concept. Built using data insertion mechanisms and enabled by the Kasplex protocol, KRC-20 brings programmable tokens to Kaspa\'s high-throughput network. With open-source indexers and APIs, developers can build DeFi applications on proven infrastructure.',
-        image: '/features/identity.png'
+        image: '/features/tokens.png'
     },
     {
         id: 'pow',
         headline: 'True Decentralization Through PoW.',
         description: 'Faithful to Satoshi\'s vision: proof-of-work mining, no premine, deflationary monetary policy, and no central governance.',
         fullDescription: 'Kaspa is based on the GhostDAG/PHANTOM protocol, a scalable generalization of Nakamoto Consensus. Its design preserves Bitcoin\'s core principles: proof-of-work mining ensures security, UTXO model maintains isolated state, deflationary monetary policy preserves value, zero premine ensures fairness, and no central governance keeps power distributed.',
-        image: '/features/security.png'
+        image: '/features/pow.png'
     }
 ];
 
@@ -315,37 +315,65 @@ function Card({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6, delay: index * 0.1 }}
-            className={`relative min-h-[280px] rounded-4xl overflow-hidden bg-white/80 backdrop-blur-sm border border-orange-100 group shadow-lg hover:shadow-xl transition-all duration-500 flex flex-col justify-center ${isTextRight ? 'w-full md:w-3/5 ml-auto' : 'w-full md:w-3/5 mr-auto'}`}
+            className={`relative w-full flex flex-col md:flex-row items-center gap-8 ${isTextRight ? '' : 'md:flex-row-reverse'}`}
         >
+            {/* Image Side - Show for all cards with images (Including Mobile) */}
+            {feature.image && (
+                <div className="flex flex-1 justify-center items-center p-4 md:p-8">
+                    <motion.div
+                        className="relative w-full max-w-lg aspect-4/3"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        viewport={{ once: true }}
+                        transition={{
+                            duration: 0.6,
+                            delay: index * 0.1,
+                            ease: "easeOut"
+                        }}
+                    >
+                        <Image
+                            src={feature.image}
+                            alt={feature.headline}
+                            fill
+                            className="object-contain drop-shadow-2xl"
+                        />
+                    </motion.div>
+                </div>
+            )}
 
-            {/* Inner Content Container */}
-            <div className={`relative z-10 w-full h-full p-6 md:p-10 flex flex-col justify-center ${isTextRight ? 'items-end text-right' : 'items-start text-left'}`}>
+            {/* Content Side - The "Card" */}
+            <div className={`relative min-h-[280px] rounded-4xl overflow-hidden bg-white/80 backdrop-blur-sm border border-orange-100 group shadow-lg hover:shadow-xl transition-all duration-500 flex flex-col justify-center ${feature.image ? 'w-full md:w-3/5' : 'w-full md:w-3/5 mx-auto'}`}>
 
-                {/* Badge */}
-                <span className="inline-block px-3 py-1 bg-zinc-900/5 border border-zinc-900/10 rounded-full text-xs font-bold text-orange-600 mb-6 tracking-widest uppercase">
-                    {feature.id === 'blockdag' ? 'Architecture' :
-                        feature.id === 'throughput' ? 'Performance' :
-                            feature.id === 'utxo' ? 'Security' :
-                                feature.id === 'tokens' ? 'Ecosystem' : 'Philosophy'}
-                </span>
+                {/* Inner Content Container */}
+                <div className={`relative z-10 w-full h-full p-6 md:p-10 flex flex-col justify-center ${isTextRight ? 'items-end text-right' : 'items-start text-left'}`}>
 
-                <h3 className="text-2xl md:text-4xl font-bold text-zinc-900 mb-4 leading-tight tracking-tight max-w-xl">
-                    <ScribbleUnderline variant="straight" scribbleColor="text-orange-200" className="text-zinc-900">
-                        {feature.headline}
-                    </ScribbleUnderline>
-                </h3>
+                    {/* Badge */}
+                    <span className="inline-block px-3 py-1 bg-zinc-900/5 border border-zinc-900/10 rounded-full text-xs font-bold text-orange-600 mb-6 tracking-widest uppercase">
+                        {feature.id === 'blockdag' ? 'Architecture' :
+                            feature.id === 'throughput' ? 'Performance' :
+                                feature.id === 'utxo' ? 'Security' :
+                                    feature.id === 'tokens' ? 'Ecosystem' : 'Philosophy'}
+                    </span>
 
-                <p className="text-zinc-600 text-sm md:text-base leading-relaxed max-w-lg">
-                    {isExpanded ? feature.fullDescription : feature.description}
-                </p>
+                    <h3 className="text-2xl md:text-4xl font-bold text-zinc-900 mb-4 leading-tight tracking-tight max-w-xl">
+                        <ScribbleUnderline variant="straight" scribbleColor="text-orange-200" className="text-zinc-900">
+                            {feature.headline}
+                        </ScribbleUnderline>
+                    </h3>
 
-                <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className={`mt-6 flex items-center gap-2 text-zinc-900 font-semibold hover:text-orange-600 transition-colors text-sm ${isTextRight ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                    <span>{isExpanded ? 'Show less' : 'Learn more'}</span>
-                    <ArrowUpRightIcon weight="bold" className="w-4 h-4" />
-                </button>
+                    <p className="text-zinc-600 text-sm md:text-base leading-relaxed max-w-lg">
+                        {isExpanded ? feature.fullDescription : feature.description}
+                    </p>
+
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`mt-6 flex items-center gap-2 text-zinc-900 font-semibold hover:text-orange-600 transition-colors text-sm ${isTextRight ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                        <span>{isExpanded ? 'Show less' : 'Learn more'}</span>
+                        <ArrowUpRightIcon weight="bold" className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </motion.div>
     );
