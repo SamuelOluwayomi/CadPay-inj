@@ -5,6 +5,12 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 import { ArrowUpRightIcon } from '@phosphor-icons/react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
 
 type Feature = {
     id: string;
@@ -138,8 +144,9 @@ export default function CoreFeatures() {
                         viewport={{ once: true, amount: 0.1 }}
                         variants={containerVariants}>
 
+
                         <motion.h2 variants={itemVariants} className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter mb-4">
-                            Why Kaspa?
+                            Why <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-orange-500">Kaspa?</ScribbleUnderline>
                         </motion.h2>
                         <motion.p variants={itemVariants} className="text-zinc-700 text-base md:text-lg max-w-2xl mx-auto">
                             The 5 Pillars of the Fastest PoW Blockchain
@@ -195,7 +202,7 @@ export default function CoreFeatures() {
                                     className="object-contain"
                                 />
                             </div>
-                            Built on Kaspa
+                            <span className="relative z-10">Built on <ScribbleUnderline className="text-white italic" scribbleColor="text-orange-400">Kaspa</ScribbleUnderline></span>
                         </h3>
                     </motion.div>
                     <motion.div
@@ -229,6 +236,34 @@ export default function CoreFeatures() {
     );
 }
 
+
+
+
+function ScribbleUnderline({ children, className, scribbleColor = "text-orange-500" }: { children: React.ReactNode; className?: string; scribbleColor?: string }) {
+    return (
+        <span className={cn("relative inline-block", className)}>
+            <span className="relative z-10">{children}</span>
+            <motion.svg
+                viewBox="0 0 200 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={cn("absolute -bottom-2 left-0 w-full h-3 z-0", scribbleColor)}
+                preserveAspectRatio="none"
+                initial={{ pathLength: 0, opacity: 0 }}
+                whileInView={{ pathLength: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
+            >
+                <motion.path
+                    d="M2.00025 6.99997C2.00025 6.99997 101.5 0.49997 197.5 5.49997"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                />
+            </motion.svg>
+        </span>
+    );
+}
 // Alternating Vertical Dash Line Pattern
 function DashPattern() {
     return (
@@ -302,4 +337,5 @@ function Card({
         </motion.div>
     );
 }
+
 
