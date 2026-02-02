@@ -33,7 +33,7 @@ export default function CreateAccount() {
                         <FeatureRow
                             icon={<ShieldCheckIcon size={20} />}
                             title="Secure Transactions"
-                            desc="Built on Solana for fast and secure payments."
+                            desc="Built on Kaspa for fast and secure payments."
                         />
                         <FeatureRow
                             icon={<LightningIcon size={20} />}

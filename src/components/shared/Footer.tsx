@@ -114,11 +114,11 @@ export default function Footer() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                        <FooterColumn title="Product">
-                            <FooterLink href="#">Features</FooterLink>
-                            <FooterLink href="#">Integrations</FooterLink>
-                            <FooterLink href="#">Documentation</FooterLink>
-                            <FooterLink href="#">Pricing</FooterLink>
+                        <FooterColumn title="The Tech">
+                            <FooterLink href="https://docs.lazorkit.com/">Lazorkit Engine</FooterLink>
+                            <FooterLink href="https://github.com/lazor-kit/lazor-kit">The Bridge</FooterLink>
+                            <FooterLink href="https://kaspa.org/docs/">Kaspa Docs</FooterLink>
+                            <FooterLink href="https://spectre-network.github.io/spectre-docs/">GhostDAG Specs</FooterLink>
                         </FooterColumn>
                     </motion.div>
 
@@ -128,11 +128,11 @@ export default function Footer() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.3 }}
                     >
-                        <FooterColumn title="Resources">
-                            <FooterLink href="#">Community</FooterLink>
-                            <FooterLink href="#">Help Center</FooterLink>
-                            <FooterLink href="#">Status</FooterLink>
-                            <FooterLink href="#">Media Kit</FooterLink>
+                        <FooterColumn title="Links">
+                            <FooterLink href="/merchant-auth">Merchant Portal</FooterLink>
+                            <FooterLink href="/signin">Dashboard</FooterLink>
+                            <FooterLink href="https://discord.gg/kaspa">Kaspa Discord</FooterLink>
+                            <FooterLink href="https://twitter.com/KaspaCurrency">Kaspa X</FooterLink>
                         </FooterColumn>
                     </motion.div>
 

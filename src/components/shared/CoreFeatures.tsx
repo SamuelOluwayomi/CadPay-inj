@@ -59,33 +59,9 @@ const cadpayFeatures: Feature[] = [
 ];
 
 export default function CoreFeatures() {
-    const [mounted, setMounted] = useState(false);
-    const [isDesktop, setIsDesktop] = useState(false);
 
-    useEffect(() => {
-        setMounted(true);
-        const checkDesktop = () => {
-            setIsDesktop(window.innerWidth >= 768);
-        };
-        checkDesktop();
-        window.addEventListener('resize', checkDesktop);
-        return () => window.removeEventListener('resize', checkDesktop);
-    }, []);
 
-    if (!mounted) {
-        return (
-            <div className="w-full max-w-7xl mx-auto px-6 py-12 -mt-32 relative z-50 min-h-[600px]">
-                <div className="mb-20 text-center">
-                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4">
-                        The CadPay Ecosystem
-                    </h2>
-                    <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto">
-                        The 4 Core Pillars
-                    </p>
-                </div>
-            </div>
-        );
-    }
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -119,7 +95,7 @@ export default function CoreFeatures() {
 
     return (
         <>
-            <div className="w-full bg-[#fcfbf7] pt-20 pb-20 relative z-10 -mt-1">
+            <div className="w-full bg-[#fcfbf7] pt-40 pb-32 relative z-10 -mt-1">
                 {/* Vertical Dash Pattern Background for Entire Section */}
                 <DashPattern />
 
@@ -143,85 +119,113 @@ export default function CoreFeatures() {
                     {/* Cards Section */}
                     <div className="relative w-full mb-12">
                         {/* Vertical Stack Layout */}
-                        {mounted && (
-                            <motion.div
-                                className="flex flex-col gap-12 relative z-10 w-full"
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true, amount: 0.1 }}
-                                variants={cardContainerVariants}
-                            >
-                                {cadpayFeatures.map((feature, index) => (
-                                    <Card
-                                        key={feature.id}
-                                        feature={feature}
-                                        index={index}
-                                    />
-                                ))}
-                            </motion.div>
-                        )}
+                        <motion.div
+                            className="flex flex-col gap-12 relative z-10 w-full"
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true, amount: 0.1 }}
+                            variants={cardContainerVariants}
+                        >
+                            {cadpayFeatures.map((feature, index) => (
+                                <Card
+                                    key={feature.id}
+                                    feature={feature}
+                                    index={index}
+                                />
+                            ))}
+                        </motion.div>
                     </div>
+                    <KaspaSummaryCard />
+                </div>
+
+                {/* BOTTOM CURVED TRANSITION (Points DOWN at center - Dark Overlay with Shadow) */}
+                <div className="absolute left-0 bottom-0 w-full h-20 md:h-32 z-20 pointer-events-none translate-y-px">
+                    <svg
+                        viewBox="0 0 1440 320"
+                        className="w-full h-full drop-shadow-[0_-15px_15px_rgba(0,0,0,0.1)]"
+                        preserveAspectRatio="none"
+                    >
+                        <path
+                            fill="#1c1209"
+                            d="M0,0 Q720,320 1440,0 L1440,320 L0,320 Z"
+                        ></path>
+                    </svg>
                 </div>
             </div>
-
-            {/* Kaspa Ecosystem Section */}
-            <motion.div
-                className="relative z-50 mt-12 mb-20"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                style={{ transform: 'translateZ(0)' }}>
-                <div className="max-w-4xl mx-auto">
-                    <motion.div
-                        className="text-center mb-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}>
-                        <h3 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-4 flex items-center justify-center gap-3">
-                            <div className="relative w-16 h-16 md:w-24 md:h-24">
-                                <Image
-                                    src="/kaspa-logo.png"
-                                    alt="Kaspa"
-                                    fill
-                                    sizes="(max-width: 768px) 64px, 96px"
-                                    className="object-contain"
-                                />
-                            </div>
-                            <span className="relative z-10">Built on <ScribbleUnderline className="text-white italic" scribbleColor="text-orange-400">Kaspa</ScribbleUnderline></span>
-                        </h3>
-                    </motion.div>
-                    <motion.div
-                        className="bg-zinc-900/50 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-sm"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        style={{ transform: 'translateZ(0)' }}>
-                        <motion.p
-                            className="text-zinc-300 text-lg md:text-xl leading-relaxed text-center"
-                            initial={{ opacity: 0, y: 10 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.4 }}>
-                            Kaspa is the fastest and most scalable instant confirmation transaction layer ever built on a proof-of-work engine. Based on the GhostDAG/PHANTOM protocol, it's a scalable generalization of Bitcoin's Nakamoto Consensus.
-                        </motion.p>
-                        <motion.p
-                            className="text-zinc-400 text-base md:text-lg leading-relaxed text-center mt-6"
-                            initial={{ opacity: 0, y: 10 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.5 }}>
-                            Its revolutionary <span className="text-orange-400 font-semibold">BlockDAG architecture</span> allows <span className="text-orange-400 font-semibold">10 blocks per second</span> on mainnet with near-instant finality. Kaspa has processed <span className="text-orange-400 font-semibold">158 million+ transactions</span> in stress tests, proving its ability to scale while maintaining the security of proof-of-work. With minimal fees, the UTXO model, and a growing DeFi ecosystem through KRC-20 tokens, Kaspa represents the future of decentralized payments.
-                        </motion.p>
-                    </motion.div>
-                </div>
-            </motion.div>
 
         </>
     );
 }
+
+function KaspaSummaryCard() {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: cardRef,
+        offset: ["start start", "end start"]
+    });
+
+    const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
+    const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+    return (
+        <motion.div
+            ref={cardRef}
+            style={{ y, opacity }}
+            className="relative z-50 mt-12 mb-12"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+        >
+            <div className="max-w-4xl mx-auto">
+                <motion.div
+                    className="text-center mb-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}>
+                    <h3 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-4 flex items-center justify-center gap-3">
+                        <div className="relative w-16 h-16 md:w-20 md:h-20">
+                            <Image
+                                src="/kaspa-icon.png"
+                                alt="Kaspa"
+                                fill
+                                sizes="(max-width: 768px) 64px, 96px"
+                                className="object-contain"
+                            />
+                        </div>
+                        <span className="relative z-10">Built on <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-orange-500">Kaspa</ScribbleUnderline></span>
+                    </h3>
+                </motion.div>
+                <motion.div
+                    className="bg-white/40 border border-white/50 rounded-3xl p-6 md:p-10 backdrop-blur-md shadow-xl"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    style={{ transform: 'translateZ(0)' }}>
+                    <motion.p
+                        className="text-zinc-800 text-lg md:text-xl leading-relaxed text-center font-medium"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.4 }}>
+                        Kaspa is one of the fastest and most scalable instant confirmation transaction layer ever built on a proof-of-work engine. Based on the GhostDAG/PHANTOM protocol, it's a scalable generalization of Bitcoin's Nakamoto Consensus.
+                    </motion.p>
+                    <motion.p
+                        className="text-zinc-600 text-base md:text-lg leading-relaxed text-center mt-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.5 }}>
+                        Its revolutionary <span className="text-orange-600 font-bold">BlockDAG architecture</span> allows <span className="text-orange-600 font-bold">10 blocks per second</span> on mainnet with near-instant finality. Kaspa has processed <span className="text-orange-600 font-bold">158 million+ transactions</span> in stress tests, proving its ability to scale while maintaining the security of proof-of-work. With minimal fees, the UTXO model, and a growing DeFi ecosystem through KRC-20 tokens, Kaspa represents the future of decentralized payments.
+                    </motion.p>
+                </motion.div>
+            </div>
+        </motion.div>
+    );
+}
+
 
 function ScribbleUnderline({
     children,
@@ -343,7 +347,7 @@ function Card({
             )}
 
             {/* Content Side - The "Card" */}
-            <div className={`relative min-h-[280px] rounded-4xl overflow-hidden bg-white/80 backdrop-blur-sm border border-orange-100 group shadow-lg hover:shadow-xl transition-all duration-500 flex flex-col justify-center ${feature.image ? 'w-full md:w-3/5' : 'w-full md:w-3/5 mx-auto'}`}>
+            <div className={`relative min-h-[280px] rounded-4xl overflow-hidden bg-white/60 backdrop-blur-md border border-orange-100 group shadow-lg hover:shadow-xl transition-all duration-500 flex flex-col justify-center ${feature.image ? 'w-full md:w-3/5' : 'w-full md:w-3/5 mx-auto'}`}>
 
                 {/* Inner Content Container */}
                 <div className={`relative z-10 w-full h-full p-6 md:p-10 flex flex-col justify-center ${isTextRight ? 'items-end text-right' : 'items-start text-left'}`}>
