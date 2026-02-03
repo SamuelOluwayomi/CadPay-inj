@@ -5,7 +5,7 @@ import {
     SystemProgram,
     Keypair,
     TransactionInstruction
-} from '@solana/web3.js';
+} from '@/lib/solana-stubs';
 
 // Constants
 export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
@@ -65,15 +65,9 @@ async function findAssociatedTokenAddress(
     walletAddress: PublicKey,
     tokenMintAddress: PublicKey
 ): Promise<PublicKey> {
-    // Use SPL Token library for consistency with balance fetching (supports off-curve addresses)
-    const { getAssociatedTokenAddress } = await import('@solana/spl-token');
-    return await getAssociatedTokenAddress(
-        tokenMintAddress,
-        walletAddress,
-        true, // allowOwnerOffCurve - CRITICAL for smart wallets/PDAs
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
+    // Redirect to stubs
+    const { getAssociatedTokenAddress } = await import('@/lib/solana-stubs');
+    return await getAssociatedTokenAddress();
 }
 
 function createAssociatedTokenAccountInstruction(
@@ -223,27 +217,27 @@ export const DEMO_MERCHANT_WALLET = new PublicKey("CqUmZNET15kK6qjNPrtPZdE3VUMem
 // Helper to ensure Merchant has an ATA (Paid by Mint Auth)
 export async function ensureMerchantHasATA(merchantAddress: string) {
     // #region agent log
-    
+
     // #endregion
     const merchantPubkey = new PublicKey(merchantAddress);
     const merchantATA = await findAssociatedTokenAddress(merchantPubkey, CADPAY_MINT);
     // #region agent log
-    
+
     // #endregion
-    
+
     // Use retry mechanism for RPC calls
     const { createConnectionWithRetry } = await import('./rpc');
     const conn = await createConnectionWithRetry();
-    
+
     let accountInfo;
     try {
         accountInfo = await conn.getAccountInfo(merchantATA);
         // #region agent log
-        
+
         // #endregion
     } catch (rpcError: any) {
         // #region agent log
-        
+
         // #endregion
         // Re-throw with more context
         throw new Error(`Failed to check merchant ATA: ${rpcError?.message || 'RPC connection failed'}. Please check your network connection and RPC endpoint.`);
@@ -251,7 +245,7 @@ export async function ensureMerchantHasATA(merchantAddress: string) {
 
     if (!accountInfo) {
         // #region agent log
-        
+
         // #endregion
         try {
             const transaction = new Transaction().add(
@@ -271,19 +265,19 @@ export async function ensureMerchantHasATA(merchantAddress: string) {
             const signature = await conn.sendRawTransaction(transaction.serialize());
             const latestBlockhash = await conn.getLatestBlockhash();
             await conn.confirmTransaction({ signature, ...latestBlockhash });
-            
+
             // Verify the ATA was created
             const verifyInfo = await conn.getAccountInfo(merchantATA);
             if (!verifyInfo) {
                 throw new Error('Merchant ATA creation transaction completed but account not found. Transaction may have failed.');
             }
-            
+
             // #region agent log
-            
+
             // #endregion
         } catch (createError: any) {
             // #region agent log
-            
+
             // #endregion
             throw new Error(`Failed to create merchant ATA: ${createError?.message || 'Unknown error'}. Please try again.`);
         }
@@ -295,7 +289,7 @@ import {
     createTransferInstruction,
     getAssociatedTokenAddress,
     AccountLayout
-} from '@solana/spl-token';
+} from '@/lib/solana-stubs';
 
 export async function constructTransferTransaction(
     userAddress: string,
@@ -378,25 +372,25 @@ export async function constructTransferTransaction(
 
     // 1c. Verify Merchant ATA Exists
     // #region agent log
-    
+
     // #endregion
-    
+
     let merchantAccountInfo;
     try {
         merchantAccountInfo = await conn.getAccountInfo(merchantATA);
         // #region agent log
-        
+
         // #endregion
     } catch (rpcError: any) {
         // #region agent log
-        
+
         // #endregion
         throw new Error(`ERROR_RPC_FAILURE: ${rpcError?.message || 'RPC call failed'}. Please check your network connection.`);
     }
     if (!merchantAccountInfo) {
         console.error(`CRITICAL: Merchant ATA ${merchantATA.toBase58()} does not exist on-chain!`);
         // #region agent log
-        
+
         // #endregion
         // Try to create it automatically before throwing error
         try {
@@ -411,8 +405,8 @@ export async function constructTransferTransaction(
         }
     }
 
-    // 2. Create Memo Instruction (SPL Memo Protocol Integration)
-    const { createMemoInstruction } = await import('@solana/spl-memo');
+    // 2. Create Memo Instruction (Stubs used during Kaspa Migration)
+    const { createMemoInstruction } = await import('@/lib/solana-stubs');
 
     // Simple format: "Netflix - Premium" (merchant displays this directly)
     // Capped at 50 chars to avoid TransactionTooLarge error on mobile

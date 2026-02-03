@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { Connection, PublicKey, getAssociatedTokenAddress } from '@/lib/solana-stubs';
+import { Program, AnchorProvider } from '@/lib/solana-stubs';
 import { CADPAY_MINT, TOKEN_PROGRAM_ID } from '../utils/cadpayToken';
 
 // Use retry mechanism for connection creation
@@ -13,7 +13,7 @@ async function getConnection(): Promise<Connection> {
     if (!connectionInstance) {
         // #region agent log
         const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
-        
+
         // #endregion
         connectionInstance = await createConnectionWithRetry();
     }
@@ -36,7 +36,7 @@ export function useUSDCBalance(walletAddress: string | null) {
 
         setLoading(true);
         // #region agent log
-        
+
         // #endregion
         try {
             const walletPubkey = new PublicKey(walletAddress);
@@ -51,7 +51,7 @@ export function useUSDCBalance(walletAddress: string | null) {
             );
             setTokenAccount(ata);
             // #region agent log
-            
+
             // #endregion
 
             try {
@@ -59,21 +59,21 @@ export function useUSDCBalance(walletAddress: string | null) {
                 const balanceResponse = await conn.getTokenAccountBalance(ata);
                 const usdcBalance = balanceResponse.value.uiAmount || 0;
                 // #region agent log
-                
+
                 // #endregion
                 // Removed console.log for cleaner console output
                 setBalance(usdcBalance);
             } catch (e: any) {
                 // Account doesn't exist or error fetching
                 // #region agent log
-                
+
                 // #endregion
                 setBalance(0);
             }
         } catch (error: any) {
             console.error('Error fetching USDC balance:', error);
             // #region agent log
-            
+
             // #endregion
             setBalance(0);
         } finally {
@@ -109,7 +109,7 @@ export function useUSDCBalance(walletAddress: string | null) {
                     ata,
                     (accountInfo) => {
                         // #region agent log
-                        
+
                         // #endregion
                         // Immediately fetch updated balance when account changes
                         fetchBalance();

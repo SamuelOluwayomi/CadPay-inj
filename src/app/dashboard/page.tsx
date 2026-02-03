@@ -31,8 +31,9 @@ import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useToast } from '@/context/ToastContext';
-import { AnchorProvider, Program, BN } from '@coral-xyz/anchor';
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, ASSOCIATED_TOKEN_PROGRAM_ID, createTransferInstruction } from '@solana/spl-token';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from '@/lib/solana-stubs';
+import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@/lib/solana-stubs';
+import { AnchorProvider, Program, BN } from '@/lib/solana-stubs';
 import { CADPAY_MINT } from '@/utils/cadpayToken';
 import { deriveSavingsPotPDA } from '@/utils/savingsAccounts';
 import idl from '../../../anchor/target/idl/cadpay_profiles.json';
@@ -903,8 +904,8 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                                         onClick={async () => {
                                             if (!address) return;
                                             try {
-                                                const { AnchorProvider, Program, BN } = await import('@coral-xyz/anchor');
-                                                const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+                                                const { AnchorProvider, Program, BN } = await import('@/lib/solana-stubs');
+                                                const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } = await import('@/lib/solana-stubs');
                                                 const { CADPAY_MINT } = await import('@/utils/cadpayToken');
                                                 const { deriveSavingsPotPDA } = await import('@/utils/savingsAccounts');
                                                 const idl = await import('@/../anchor/target/idl/cadpay_profiles.json');

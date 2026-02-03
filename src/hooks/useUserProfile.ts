@@ -1,9 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import * as anchor from '@coral-xyz/anchor';
-import { Program, Idl } from '@coral-xyz/anchor';
-
-// Use anchor.web3 instead of root web3 to avoid 'instanceof' / version mismatch errors
-const { Connection, PublicKey, SystemProgram, Transaction } = anchor.web3;
+import { Connection, PublicKey, SystemProgram, Transaction, Program, AnchorProvider, anchor, Idl } from '@/lib/solana-stubs';
 
 const PROGRAM_ID_STR = "6VvJbGzNHbtZLWxmLTYPpRz2F3oMDxdL1YRgV3b51Ccz";
 const DEVNET_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
@@ -88,7 +84,7 @@ export function useUserProfile() {
     // Initial persistence sync
     useEffect(() => {
         if (smartWalletPubkey) {
-            const saved = localStorage.getItem(`cadpay_profile_exists_${smartWalletPubkey.toString()}`);
+            const saved = localStorage.getItem(`cadpay_profile_exists_${smartWalletPubkey.toString()} `);
             if (saved === 'true') {
                 // We strongly suspect a profile exists, stay in loading state until fetch confirms it
                 setLoading(true);
@@ -186,10 +182,10 @@ export function useUserProfile() {
                     authority: account.authority as anchor.web3.PublicKey
                 };
                 setProfile(decodedProfile);
-                localStorage.setItem(`cadpay_profile_exists_${smartWalletPubkey.toString()}`, 'true');
+                localStorage.setItem(`cadpay_profile_exists_${smartWalletPubkey.toString()} `, 'true');
             } else {
                 setProfile(null);
-                localStorage.removeItem(`cadpay_profile_exists_${smartWalletPubkey.toString()}`);
+                localStorage.removeItem(`cadpay_profile_exists_${smartWalletPubkey.toString()} `);
             }
         } catch (err: any) {
             if (err.message.includes("discriminator") || err.message.includes("Account does not exist")) {
@@ -263,7 +259,7 @@ export function useUserProfile() {
             });
 
             // Set local flag immediately for optimistic UX
-            localStorage.setItem(`cadpay_profile_exists_${smartWalletPubkey.toString()}`, 'true');
+            localStorage.setItem(`cadpay_profile_exists_${smartWalletPubkey.toString()} `, 'true');
 
             // Try to confirm the signature quickly
             try {

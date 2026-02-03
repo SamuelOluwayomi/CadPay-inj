@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Connection, Transaction } from '@solana/web3.js';
+import { Connection, Transaction } from '@/lib/solana-stubs';
 
 // Type definitions to match original hook
 type SavingsPot = {

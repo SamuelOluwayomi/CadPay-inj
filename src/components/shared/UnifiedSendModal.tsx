@@ -6,7 +6,7 @@ import {
     XIcon, PaperPlaneTiltIcon, WalletIcon, PiggyBankIcon,
     CaretRightIcon, WarningIcon, CheckCircleIcon
 } from '@phosphor-icons/react';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@/lib/solana-stubs';
 
 interface UnifiedSendModalProps {
     isOpen: boolean;

@@ -10,7 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Added Router
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from '@/lib/solana-stubs';
 import { CADPAY_MINT } from '@/utils/cadpayToken';
 import { useMerchant } from '@/context/MerchantContext'; // Added Context
 

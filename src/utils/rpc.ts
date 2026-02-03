@@ -1,4 +1,4 @@
-import { Connection } from '@solana/web3.js';
+import { Connection } from '@/lib/solana-stubs';
 
 function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -11,7 +11,7 @@ function sleep(ms: number) {
 export async function createConnectionWithRetry(url?: string, attempts = 3, initialDelay = 500) {
     const rpc = url || process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
     // #region agent log
-    
+
     // #endregion
     let lastErr: any = null;
     for (let i = 0; i < attempts; i++) {
@@ -20,13 +20,13 @@ export async function createConnectionWithRetry(url?: string, attempts = 3, init
             // Quick health check
             await conn.getVersion();
             // #region agent log
-            
+
             // #endregion
             return conn;
         } catch (e: any) {
             lastErr = e;
             // #region agent log
-            
+
             // #endregion
             const delay = initialDelay * Math.pow(2, i);
             await sleep(delay);

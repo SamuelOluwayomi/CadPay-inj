@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CoinsIcon, CheckCircleIcon, SpinnerIcon, WarningIcon } from '@phosphor-icons/react';
-import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram } from '@/lib/solana-stubs';
 
 interface USDCFaucetProps {
     onSuccess: () => void;

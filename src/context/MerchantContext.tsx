@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Keypair, PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@/lib/solana-stubs';
 import bs58 from 'bs58';
 
 import { SERVICES } from '@/data/subscriptions';

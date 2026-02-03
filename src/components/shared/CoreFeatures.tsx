@@ -321,30 +321,28 @@ function Card({
             transition={{ duration: 0.6, delay: index * 0.1 }}
             className={`relative w-full flex flex-col md:flex-row items-center gap-8 ${isTextRight ? '' : 'md:flex-row-reverse'}`}
         >
-            {/* Image Side - Show for all cards with images (Including Mobile) */}
-            {feature.image && (
-                <div className="flex flex-1 justify-center items-center p-4 md:p-8">
-                    <motion.div
-                        className="relative w-full max-w-lg aspect-4/3"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        whileHover={{ scale: 1.05 }}
-                        viewport={{ once: true }}
-                        transition={{
-                            duration: 0.6,
-                            delay: index * 0.1,
-                            ease: "easeOut"
-                        }}
-                    >
-                        <Image
-                            src={feature.image}
-                            alt={feature.headline}
-                            fill
-                            className="object-contain drop-shadow-2xl"
-                        />
-                    </motion.div>
-                </div>
-            )}
+            <div className="flex flex-1 justify-center items-center p-4 md:p-8">
+                <motion.div
+                    className="relative w-full max-w-lg aspect-4/3 min-h-[200px]"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    viewport={{ once: true }}
+                    transition={{
+                        duration: 0.6,
+                        delay: index * 0.1,
+                        ease: "easeOut"
+                    }}
+                >
+                    <Image
+                        src={feature.image}
+                        alt={feature.headline}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-contain drop-shadow-2xl"
+                    />
+                </motion.div>
+            </div>
 
             {/* Content Side - The "Card" */}
             <div className={`relative min-h-[280px] rounded-4xl overflow-hidden bg-white/60 backdrop-blur-md border border-orange-100 group shadow-lg hover:shadow-xl transition-all duration-500 flex flex-col justify-center ${feature.image ? 'w-full md:w-3/5' : 'w-full md:w-3/5 mx-auto'}`}>

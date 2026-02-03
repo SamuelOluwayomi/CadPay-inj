@@ -173,7 +173,7 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
                 </div>
             )}
             {item.type === 'kaspa' && (
-                <Image src="/kaspa-logo.png" alt="Kaspa" width={item.size} height={item.size} className="opacity-30 object-contain" />
+                <Image src="/kaspa-icon.png" alt="Kaspa" width={item.size} height={item.size} className="opacity-30 object-contain" />
             )}
             {item.type === 'cadpay' && (
                 <div

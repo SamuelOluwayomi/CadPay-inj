@@ -1,5 +1,5 @@
-import { TransactionInstruction } from '@solana/web3.js';
-import { createMemoInstruction } from '@solana/spl-memo';
+import { TransactionInstruction, PublicKey } from '@/lib/solana-stubs';
+import { createMemoInstruction } from '@/lib/solana-stubs';
 
 /**
  * Create a memo instruction to demonstrate protocol integration
@@ -11,7 +11,7 @@ import { createMemoInstruction } from '@solana/spl-memo';
  */
 export function createSubscriptionMemoInstruction(
     message: string,
-    signerPubkey: import('@solana/web3.js').PublicKey
+    signerPubkey: PublicKey
 ): TransactionInstruction {
     return createMemoInstruction(message, [signerPubkey]);
 }
