@@ -38,6 +38,7 @@ export class Connection {
     async getParsedTransaction(signature: string, commitment?: string): Promise<any> { return null; }
     async getTransaction(signature: string, options?: any): Promise<any> { return null; }
     async requestAirdrop(publicKey: PublicKey, lamports: number): Promise<string> { return ''; }
+    async getAddressLookupTable(address: PublicKey): Promise<any> { return { value: null }; }
 }
 
 export class Transaction {

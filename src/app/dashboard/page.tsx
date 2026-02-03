@@ -31,7 +31,7 @@ import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useToast } from '@/context/ToastContext';
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from '@/lib/solana-stubs';
-import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@/lib/solana-stubs';
+import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createMemoInstruction } from '@/lib/solana-stubs';
 import { AnchorProvider, Program, BN } from '@/lib/solana-stubs';
 import { CADPAY_MINT } from '@/utils/cadpayToken';
 import { deriveSavingsPotPDA } from '@/utils/savingsAccounts';
@@ -270,9 +270,6 @@ export default function Dashboard() {
                 }
             }
 
-            // OPTIMIZATION: Use Lazorkit's instruction-based API to reduce transaction size
-            // Extract instructions from transaction and pass directly (avoids extra serialization overhead)
-            // This is critical for smart wallets which add wrapper instructions
             const allInstructions = tx.instructions;
 
             // Fetch Address Lookup Table for transaction compression (reduces account size from 32 bytes to 1 byte)
