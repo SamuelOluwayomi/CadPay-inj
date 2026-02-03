@@ -63,7 +63,7 @@ export default function MerchantAuthPage() {
                 <div className="text-center mb-8">
                     <div className="relative w-16 h-16 mx-auto mb-4 bg-zinc-900 rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl shadow-orange-500/20">
                         <Image
-                            src="/lazorkit-logo.png"
+                            src="/icon.ico"
                             alt="CadPay"
                             fill
                             sizes="64px"

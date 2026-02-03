@@ -169,7 +169,7 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
         >
             {item.type === 'lazorkit' && (
                 <div style={{ width: item.size, height: item.size }} className="relative">
-                    <Image src="/lazorkit-logo.png" alt="" fill sizes="(max-width: 768px) 50px, 80px" className="object-contain grayscale opacity-60" />
+                    <Image src="/icon.ico" alt="" fill sizes="(max-width: 768px) 50px, 80px" className="object-contain grayscale opacity-60" />
                 </div>
             )}
             {item.type === 'kaspa' && (
