@@ -14,7 +14,6 @@ import {
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
-import { Connection, PublicKey, Transaction } from '@/lib/solana-stubs'; // Using stubs for now
 import { SERVICES, CATEGORIES, Service, SubscriptionPlan } from '@/data/subscriptions';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
 import ServiceCard from '@/components/subscriptions/ServiceCard';
