@@ -12,7 +12,7 @@ import {
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
     PaperPlaneTiltIcon
 } from '@phosphor-icons/react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
 import { SERVICES, CATEGORIES, Service, SubscriptionPlan } from '@/data/subscriptions';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
@@ -30,7 +30,7 @@ import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useToast } from '@/context/ToastContext';
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from '@/lib/solana-stubs';
+import { Connection, PublicKey, Transaction } from '@/lib/solana-stubs';
 import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createMemoInstruction } from '@/lib/solana-stubs';
 import { AnchorProvider, Program, BN } from '@/lib/solana-stubs';
 import { CADPAY_MINT } from '@/utils/cadpayToken';

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Connection, PublicKey, SystemProgram, Transaction, Program, AnchorProvider, anchor, Idl } from '@/lib/solana-stubs';
+import { Connection, PublicKey, SystemProgram, Transaction, Program, AnchorProvider, anchor, Idl, LAMPORTS_PER_SOL } from '@/lib/solana-stubs';
 
 const PROGRAM_ID_STR = "6VvJbGzNHbtZLWxmLTYPpRz2F3oMDxdL1YRgV3b51Ccz";
 const DEVNET_RPC = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
@@ -131,10 +131,10 @@ export function useUserProfile() {
         return Array.from(arr);
     };
 
-    const checkAndAirdrop = async (address: anchor.web3.PublicKey) => {
+    const checkAndAirdrop = async (address: PublicKey) => {
         try {
             const balance = await connection.getBalance(address);
-            if (balance < 0.05 * anchor.web3.LAMPORTS_PER_SOL) {
+            if (balance < 0.05 * LAMPORTS_PER_SOL) {
                 console.log("Requesting seed SOL from private treasury for:", address.toString());
 
                 const response = await fetch('/api/faucet', {
@@ -179,7 +179,7 @@ export function useUserProfile() {
                     emoji: decodeString(account.emoji as number[]),
                     gender: decodeString(account.gender as number[]),
                     pin: decodeString(account.pin as number[]),
-                    authority: account.authority as anchor.web3.PublicKey
+                    authority: account.authority as PublicKey
                 };
                 setProfile(decodedProfile);
                 localStorage.setItem(`cadpay_profile_exists_${smartWalletPubkey.toString()} `, 'true');
