@@ -10,7 +10,7 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className="absolute top-0 w-full z-60 transition-all duration-300">
+            <nav className={`${isOpen ? 'fixed' : 'absolute'} top-0 w-full z-60 transition-all duration-300`}>
 
                 {/* Glass Background - More transparent for Vanta visibility */}
                 <div className="absolute inset-0 bg-black/30 backdrop-blur-md border-b border-white/10" />
@@ -67,7 +67,7 @@ export default function NavBar() {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="fixed inset-0 z-40 bg-black pt-24 px-6 md:hidden"
+                        className="fixed inset-0 z-55 bg-black pt-24 px-6 md:hidden"
                     >
                         <div className="flex flex-col gap-6 text-lg font-medium">
                             <MobileLink href="https://github.com/lazor-kit/lazor-kit" onClick={() => setIsOpen(false)}>The Bridge</MobileLink>
