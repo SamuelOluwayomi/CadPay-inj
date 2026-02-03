@@ -12,6 +12,7 @@ interface ParticlesBackgroundProps {
     linkOpacity?: number;
     particleSize?: number;
     speed?: number;
+    className?: string;
 }
 
 export default function ParticlesBackground({
@@ -21,6 +22,7 @@ export default function ParticlesBackground({
     linkOpacity = 0.5,
     particleSize = 3,
     speed = 1.5,
+    className = '',
 }: ParticlesBackgroundProps) {
     const [init, setInit] = useState(false);
 
@@ -37,7 +39,7 @@ export default function ParticlesBackground({
     return (
         <Particles
             id={id}
-            className="absolute inset-0 z-0 pointer-events-none"
+            className={className || "absolute inset-0 z-0 pointer-events-none"}
             options={{
                 background: {
                     color: { value: "transparent" },
