@@ -68,7 +68,7 @@ export interface UserProfile {
     emoji: string;
     gender: string;
     pin: string;
-    authority: anchor.web3.PublicKey;
+    authority: PublicKey;
 }
 
 export function useUserProfile() {
