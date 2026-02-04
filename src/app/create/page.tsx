@@ -1,64 +1,77 @@
 'use client';
 
-import { useState } from 'react';
-import { WalletIcon, ShieldCheckIcon, LightningIcon, ArrowLeftIcon, FingerprintIcon, LockKeyIcon } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { WalletIcon, ShieldCheckIcon, LightningIcon, ArrowLeftIcon, FingerprintIcon, LockKeyIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { generateKaspaWallet } from '@/utils/kaspaWallet';
 import { downloadRecoveryKit } from '@/utils/recoveryKit';
+import ConnectKasWare from '@/components/ConnectKasWare';
 
 export default function CreateAccount() {
+    // Mode state: 'selection' (initial) or 'create' (form)
+    const [mode, setMode] = useState<'selection' | 'create'>('selection');
+
+    // Form states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [useBiometrics, setUseBiometrics] = useState(true);
     const [status, setStatus] = useState<'idle' | 'checking' | 'generating' | 'creating' | 'success' | 'error'>('idle');
     const [walletAddress, setWalletAddress] = useState<string>('');
     const [walletMnemonic, setWalletMnemonic] = useState<string>('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isBiometricsSupported, setIsBiometricsSupported] = useState(false);
 
     const {
         createWallet,
         createWalletWithPassword,
         checkWalletExists,
         checkSupport,
-        isLoading,
-        error
+        isLoading
     } = useBiometricWallet();
 
-    const handleCreateWallet = async () => {
+    // Check biometric support on mount
+    useEffect(() => {
+        checkSupport().then((result) => {
+            setIsBiometricsSupported(result.supported);
+        });
+    }, []);
+
+    const handleCreateWallet = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMessage('');
+
         if (!email) {
-            alert('Please enter an email address');
+            setErrorMessage('Please enter your email');
             return;
         }
 
-        if (!useBiometrics && password.length < 6) {
-            alert('Please enter a password of at least 6 characters');
+        if (!useBiometrics && !password) {
+            setErrorMessage('Please enter a password');
             return;
         }
 
         setStatus('checking');
 
         // Check if biometrics are required and supported
-        if (useBiometrics) {
-            const support = await checkSupport();
-            if (!support.supported) {
-                setStatus('error');
-                alert(support.reason || 'Biometric authentication is not supported on this device');
-                return;
-            }
+        if (useBiometrics && !isBiometricsSupported) {
+            setStatus('error');
+            setErrorMessage('Biometric authentication is not supported on this device');
+            return;
         }
 
         // Check if wallet already exists
         const exists = await checkWalletExists(email);
         if (exists) {
             setStatus('error');
-            alert('A wallet already exists for this email. Please use a different email or unlock your existing wallet.');
+            setErrorMessage('A wallet with this email already exists');
             return;
         }
 
         setStatus('generating');
 
         try {
-            // Generate Kaspa wallet
+            // Generate Kaspa wallet (Testnet-10)
             const kaspaWallet = await generateKaspaWallet('testnet-10');
             setWalletAddress(kaspaWallet.address);
             setWalletMnemonic(kaspaWallet.mnemonic);
@@ -76,152 +89,107 @@ export default function CreateAccount() {
                 setStatus('success');
             } else {
                 setStatus('error');
+                setErrorMessage(result.error || 'Failed to create wallet');
             }
-        } catch (err: any) {
-            console.error('Wallet creation error:', err);
+        } catch (error: any) {
+            console.error('Wallet creation failed:', error);
             setStatus('error');
+            setErrorMessage(error.message || 'Failed to generate wallet');
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#1c1209] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-            {/* AMBER GLOW BACKGROUND */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,var(--tw-gradient-stops))] from-orange-900/20 via-[#1c1209] to-[#1c1209]" />
-            <div className="absolute bottom-0 w-[200%] h-[50vh] bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.03)_1px),linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-size-[4rem_4rem] transform-[perspective(500px)_rotateX(60deg)] pointer-events-none origin-bottom opacity-20" />
-
-            {/* NAV BACK */}
-            <div className="absolute top-8 left-8 z-20">
-                <Link href="/" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all group">
-                    <ArrowLeftIcon size={20} className="group-hover:-translate-x-0.5 transition-transform" />
-                </Link>
-            </div>
-
-            {/* MAIN CONTENT GRID */}
-            <div className="w-full max-w-6xl relative z-10 grid md:grid-cols-2 gap-12 items-center">
-                {/* LEFT SIDE */}
-                <div>
-                    <h1 className="text-5xl font-black text-white mb-4 tracking-tight leading-tight">
-                        Web3 Subscriptions.<br />
-                        <span className="text-orange-500">Simplified.</span>
-                    </h1>
-                    <p className="text-zinc-400 mb-8 leading-relaxed">
-                        A Kaspa-based subscription payment platform that makes recurring crypto payments simple and secure.
-                    </p>
-
-                    <div className="space-y-4">
-                        <FeatureRow
-                            icon={<ShieldCheckIcon size={20} />}
-                            title="Secure Transactions"
-                            desc="Built on Kaspa for fast and secure payments."
-                        />
-                        <FeatureRow
-                            icon={<LightningIcon size={20} />}
-                            title="Automated Billing"
-                            desc="Set it and forget it subscription management."
-                        />
-                        <FeatureRow
-                            icon={<WalletIcon size={20} />}
-                            title="Flexible Security"
-                            desc="Choose biometric or password protection."
-                        />
-                    </div>
+    // 1. SELECTION SCREEN
+    if (mode === 'selection') {
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                {/* Background Effects */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-500/10 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[100px]" />
                 </div>
 
-                {/* RIGHT SIDE */}
-                <div className="bg-[#120c07] border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl relative">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-orange-500/20 shadow-[0_0_30px_rgba(249,115,22,0.1)]">
-                            <WalletIcon className="text-orange-500" size={32} />
+                <div className="relative z-10 max-w-md w-full space-y-8 animate-in fade-in zoom-in duration-500">
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 bg-linear-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-teal-500/20">
+                            <WalletIcon size={32} className="text-white" weight="fill" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Create Wallet</h2>
-                        <p className="text-sm text-zinc-400 mt-2 max-w-xs mx-auto">
-                            Secure your Kaspa wallet with {useBiometrics ? 'biometric authentication' : 'a password'}
+                        <h1 className="text-4xl font-bold bg-linear-to-br from-teal-400 to-emerald-600 bg-clip-text text-transparent">
+                            CadPay
+                        </h1>
+                        <p className="text-zinc-400 text-sm">Secure Biometric & Web3 Payments</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* OPTION A: Connect Existing Wallet */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pl-1">Existing User</p>
+                            <ConnectKasWare />
+                        </div>
+
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-zinc-800"></span>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-black px-2 text-zinc-500">Or New Account</span>
+                            </div>
+                        </div>
+
+                        {/* OPTION B: Create New Biometric Wallet */}
+                        <button
+                            onClick={() => setMode('create')}
+                            className="w-full p-4 rounded-xl border border-dashed border-zinc-700 hover:border-teal-500/50 hover:bg-teal-900/10 transition-all flex items-center justify-center gap-2 group h-[72px]"
+                        >
+                            <span className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-teal-500 group-hover:text-white transition-colors">
+                                <FingerprintIcon size={20} weight="bold" />
+                            </span>
+                            <span className="text-zinc-300 group-hover:text-white font-medium">Create New Biometric Account</span>
+                        </button>
+
+                        <div className="text-center pt-4">
+                            <Link href="/signin" className="text-sm text-zinc-500 hover:text-white transition-colors">
+                                Already have a biometric account? <span className="text-teal-500">Sign In</span>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 2. CREATE FORM SCREEN (Biometric/Password)
+    return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Back Button */}
+            <button
+                onClick={() => setMode('selection')}
+                className="absolute top-8 left-8 text-zinc-500 hover:text-white flex items-center gap-2 transition-colors z-20"
+            >
+                <ArrowLeftIcon /> Back
+            </button>
+
+            {/* Background Gradients */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="w-full max-w-md relative z-10">
+                <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-orange-500/20">
+                            <WalletIcon size={32} className="text-orange-500" />
+                        </div>
+                        <h1 className="text-2xl font-bold bg-linear-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+                            Create Wallet
+                        </h1>
+                        <p className="text-sm text-zinc-400 mt-2">
+                            {status === 'success' ? 'Wallet created successfully!' : 'Secure, fast, and biometric-ready.'}
                         </p>
                     </div>
 
-                    {status === 'idle' || status === 'checking' || status === 'generating' || status === 'creating' ? (
-                        <>
-                            <div className="space-y-4 mb-6">
-                                {/* Email Input */}
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Email Address
-                                    </label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="your@email.com"
-                                        className="w-full px-4 py-3 bg-zinc-900/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
-                                        disabled={isLoading}
-                                    />
-                                </div>
-
-                                {/* Biometric Toggle */}
-                                <div className="flex items-center justify-between bg-zinc-900/50 p-3 rounded-lg border border-white/10">
-                                    <span className="text-sm font-medium text-zinc-300">Use Biometric Security?</span>
-                                    <button
-                                        onClick={() => setUseBiometrics(!useBiometrics)}
-                                        disabled={isLoading}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${useBiometrics ? 'bg-orange-500' : 'bg-zinc-600'}`}
-                                    >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${useBiometrics ? 'left-7' : 'left-1'}`} />
-                                    </button>
-                                </div>
-
-                                {/* Password Input (conditional) */}
-                                {!useBiometrics && (
-                                    <div className="animate-in fade-in slide-in-from-top-2">
-                                        <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
-                                            Backup Password
-                                        </label>
-                                        <input
-                                            id="password"
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Enter a strong password (min 6 characters)"
-                                            className="w-full px-4 py-3 bg-zinc-900/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all"
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Info Box */}
-                            <div className="text-xs text-zinc-400 bg-zinc-800/50 p-3 rounded border border-zinc-700 mb-6">
-                                ℹ️ A recovery file containing your <strong>Secret Seed Phrase</strong> will be automatically downloaded. Keep it safe!
-                            </div>
-
-                            <button
-                                onClick={handleCreateWallet}
-                                disabled={isLoading || !email || (!useBiometrics && password.length < 6)}
-                                className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        {status === 'checking' && 'Checking...'}
-                                        {status === 'generating' && 'Generating Kaspa Wallet...'}
-                                        {status === 'creating' && (useBiometrics ? 'Setting up biometrics...' : 'Encrypting wallet...')}
-                                    </>
-                                ) : (
-                                    <>
-                                        {useBiometrics ? <FingerprintIcon size={20} /> : <LockKeyIcon size={20} />}
-                                        Create Wallet
-                                    </>
-                                )}
-                            </button>
-
-                            {error && (
-                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                                    <p className="text-sm text-red-400 text-center">{error}</p>
-                                </div>
-                            )}
-                        </>
-                    ) : status === 'success' ? (
-                        <div className="text-center">
+                    {status === 'success' ? (
+                        <div className="text-center animate-in fade-in zoom-in duration-300">
                             <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
                                 <ShieldCheckIcon size={32} className="text-green-500" />
                             </div>
@@ -254,32 +222,89 @@ export default function CreateAccount() {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
-                                <span className="text-2xl">⚠️</span>
+                        <form onSubmit={handleCreateWallet} className="space-y-6">
+                            {/* Email Field */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-zinc-400 ml-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all"
+                                    required
+                                />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Error</h3>
-                            <p className="text-sm text-zinc-400 mb-6">{error}</p>
-                            <button
-                                onClick={() => {
-                                    setStatus('idle');
-                                    setEmail('');
-                                    setPassword('');
-                                }}
-                                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all"
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    )}
 
-                    <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                        <p className="text-xs text-zinc-500">
-                            <Link href="/" className="text-orange-500 hover:text-orange-400 font-medium transition-colors">
-                                ← Back to Home
-                            </Link>
-                        </p>
-                    </div>
+                            {/* Authentication Method Selection */}
+                            <div className="p-1 bg-zinc-800/50 rounded-xl flex">
+                                <button
+                                    type="button"
+                                    onClick={() => setUseBiometrics(true)}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${useBiometrics
+                                        ? 'bg-zinc-700 text-white shadow-lg'
+                                        : 'text-zinc-400 hover:text-white'
+                                        }`}
+                                >
+                                    <FingerprintIcon size={16} /> Biometrics
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUseBiometrics(false)}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${!useBiometrics
+                                        ? 'bg-zinc-700 text-white shadow-lg'
+                                        : 'text-zinc-400 hover:text-white'
+                                        }`}
+                                >
+                                    <LockKeyIcon size={16} /> Password
+                                </button>
+                            </div>
+
+                            {/* Password Field (only if not using biometrics) */}
+                            {!useBiometrics && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                    <label className="text-xs font-medium text-zinc-400 ml-1">Password</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Min. 8 characters"
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all"
+                                        required={!useBiometrics}
+                                        minLength={8}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Biometric Info */}
+                            {useBiometrics && (
+                                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                    <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-blue-200/80 leading-relaxed">
+                                        We'll use your device's secure element (FaceID, TouchID) to create a passkey. No password required.
+                                    </p>
+                                </div>
+                            )}
+
+                            {errorMessage && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                                    <p className="text-xs text-red-400">{errorMessage}</p>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={status !== 'idle' && status !== 'error'}
+                                className="w-full bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {status === 'idle' || status === 'error' ? (
+                                    <>Create Wallet <LightningIcon weight="fill" /></>
+                                ) : (
+                                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
+                                )}
+                            </button>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>

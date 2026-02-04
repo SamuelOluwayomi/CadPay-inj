@@ -64,7 +64,7 @@ export async function generateKaspaWallet(
         const seed = mnemonic.toSeed();
 
         // 2. Create Master Private Key
-        const xprv = new Kaspa.XPrv(seed);
+        const xprv = new Kaspa.XPrv(seed as any);
 
         // 3. Derive the Account Path (m/44'/111111'/0'/0/0)
         const path = xprv.derivePath("m/44'/111111'/0'/0/0");
@@ -107,7 +107,7 @@ export async function restoreKaspaWallet(
         const mnemonic = new Kaspa.Mnemonic(mnemonicString);
         const seed = mnemonic.toSeed();
 
-        const xprv = new Kaspa.XPrv(seed);
+        const xprv = new Kaspa.XPrv(seed as any);
         const path = xprv.derivePath("m/44'/111111'/0'/0/0");
 
         const xpub = path.toXPub();
