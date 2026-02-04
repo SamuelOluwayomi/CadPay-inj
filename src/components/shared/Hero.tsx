@@ -22,12 +22,12 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           minHeight: 200.00,
           minWidth: 200.00,
           scale: 1.00,
-          scaleMobile: 1.00,
+          scaleMobile: 1.00, // Keep 1.0 but rely on spacing
           color: 0xff6600,       // Orange lines
           backgroundColor: 0x000000,
           points: 11.00,
-          maxDistance: 20.00,
-          spacing: 16.00,
+          maxDistance: 22.00,    // Increased slightly
+          spacing: 20.00,        // Increased spacing to reduce density
           showDots: true,
           THREE: THREE
         })
@@ -52,6 +52,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
       {/* GRADIENT OVERLAY */}
       <div className="absolute inset-0 z-10 bg-linear-to-b from-transparent via-transparent to-black/90 pointer-events-none" />
       <div className="absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
+      {/* MOBILE DARK OVERLAY: Improves readability on small screens */}
+      <div className="absolute inset-0 z-10 md:hidden bg-black/60 pointer-events-none" />
 
       {/* CONTENT CONTAINER */}
       <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32 drop-shadow-2xl">
@@ -60,7 +62,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           initial="hidden"
           animate={startAnimation ? "visible" : "hidden"}
           transition={{ delay: 0.3 }}
-          className="text-5xl md:text-8xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
+          className="text-4xl md:text-8xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
         >
           Built on Kaspa.
         </motion.h1>
@@ -71,7 +73,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.2 }}
-            className="text-lg md:text-2xl text-zinc-300 leading-relaxed font-medium"
+            className="text-base md:text-2xl text-zinc-300 leading-loose md:leading-relaxed font-medium"
           >
             The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work. <br className="hidden md:block" />
             CadPay leverages Kaspa's revolutionary
