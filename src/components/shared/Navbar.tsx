@@ -20,7 +20,7 @@ export default function NavBar() {
                     {/* LEFT SIDE: LOGO + NAV LINKS */}
                     <div className="flex items-center gap-12">
                         {/* LOGO */}
-                        <Link href="/" className="font-black italic tracking-tighter text-xl text-orange-100 z-10 flex items-center gap-2">
+                        <Link href="/" className="font-black italic tracking-tighter text-xl text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 z-10 flex items-center gap-2">
                             <div className="w-6 h-6 bg-orange-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
                             CADPAY
                             <div className="h-4 w-px bg-white/20 mx-1" />

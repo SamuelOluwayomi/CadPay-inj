@@ -5,7 +5,7 @@ import { FingerprintIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 // @ts-ignore
-import NET from 'vanta/dist/vanta.net.min';
+import WAVES from 'vanta/dist/vanta.waves.min';
 
 export default function Hero({ startAnimation = true }: { startAnimation?: boolean }) {
   const [vantaEffect, setVantaEffect] = useState<any>(null);
@@ -14,7 +14,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   useEffect(() => {
     if (!vantaEffect && vantaRef.current) {
       setVantaEffect(
-        NET({
+        WAVES({
           el: vantaRef.current,
           mouseControls: true,
           touchControls: true,
@@ -22,13 +22,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           minHeight: 200.00,
           minWidth: 200.00,
           scale: 1.00,
-          scaleMobile: 1.00, // Keep 1.0 but rely on spacing
-          color: 0xff6600,       // Orange lines
-          backgroundColor: 0x000000,
-          points: 11.00,
-          maxDistance: 22.00,    // Increased slightly
-          spacing: 20.00,        // Increased spacing to reduce density
-          showDots: true,
+          scaleMobile: 1.00,
+          color: 0x75431e,      // Custom bronze/brown color requested by user
           THREE: THREE
         })
       );
@@ -52,7 +47,9 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
       {/* GRADIENT OVERLAY */}
       <div className="absolute inset-0 z-10 bg-linear-to-b from-transparent via-transparent to-black/90 pointer-events-none" />
       <div className="absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
-      {/* MOBILE DARK OVERLAY: Improves readability on small screens */}
+
+      {/* OVERLAYS: Desktop (Light Dark) vs Mobile (Heavy Dark) for readability with Waves */}
+      <div className="absolute inset-0 z-10 hidden md:block bg-black/40 pointer-events-none" />
       <div className="absolute inset-0 z-10 md:hidden bg-black/60 pointer-events-none" />
 
       {/* CONTENT CONTAINER */}
@@ -73,7 +70,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.2 }}
-            className="text-base md:text-2xl text-zinc-300 leading-loose md:leading-relaxed font-medium"
+            className="text-base md:text-2xl text-zinc-100 leading-loose md:leading-relaxed font-medium"
           >
             The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work. <br className="hidden md:block" />
             CadPay leverages Kaspa's revolutionary
@@ -83,7 +80,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
                 <motion.path
                   d="M0,30 Q50,40 100,30"
                   fill="none"
-                  stroke="#ff6600"
+                  stroke="#ff9955"
                   strokeWidth="8"
                   strokeLinecap="round"
                   className="opacity-80"
