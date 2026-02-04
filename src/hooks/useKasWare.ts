@@ -63,9 +63,12 @@ export const useKasWare = () => {
         }
     };
 
-    // Auto-connect if already trusted
+    // Auto-connect if already trusted OR use Local Wallet
     useEffect(() => {
         const attemptReconnect = async () => {
+            let foundWallet = false;
+
+            // 1. Try KasWare Extension
             if (checkKasWare()) {
                 try {
                     const accounts = await window.kasware!.getAccounts();
@@ -73,15 +76,31 @@ export const useKasWare = () => {
                         // Check network silently
                         const network = await window.kasware!.getNetwork();
                         if (network === 'testnet-10') {
-                            // Update state directly for fast load
                             setAddress(accounts[0]);
                             setIsConnected(true);
-                            // Fetch balance in background
                             window.kasware!.getBalance().then(b => setBalance(b.total / 100000000));
+                            foundWallet = true;
                         }
                     }
                 } catch (e) {
-                    // Ignore error on silent reconnect
+                    console.warn("KasWare silent connect failed", e);
+                }
+            }
+
+            // 2. Fallback to Local/Biometric Wallet
+            if (!foundWallet) {
+                const localAddress = localStorage.getItem('active_wallet_address');
+                if (localAddress) {
+                    setAddress(localAddress);
+                    setIsConnected(true);
+
+                    // Fetch Demo Balance
+                    const localBalance = localStorage.getItem('demo_balance');
+                    if (localBalance) {
+                        setBalance(parseFloat(localBalance));
+                    } else {
+                        setBalance(0);
+                    }
                 }
             }
         };

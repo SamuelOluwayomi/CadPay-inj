@@ -7,12 +7,15 @@ import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { generateKaspaWallet } from '@/utils/kaspaWallet';
 import { downloadRecoveryKit } from '@/utils/recoveryKit';
 import ConnectKasWare from '@/components/ConnectKasWare';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function CreateAccount() {
+    const router = useRouter(); // Initialize router
     // Mode state: 'selection' (initial) or 'create' (form)
     const [mode, setMode] = useState<'selection' | 'create'>('selection');
 
-    // Form states
+    // ... (keep state vars)
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [useBiometrics, setUseBiometrics] = useState(true);
@@ -22,6 +25,7 @@ export default function CreateAccount() {
     const [errorMessage, setErrorMessage] = useState('');
     const [isBiometricsSupported, setIsBiometricsSupported] = useState(false);
 
+    // ... (keep usage of useBiometricWallet)
     const {
         createWallet,
         createWalletWithPassword,
@@ -84,9 +88,34 @@ export default function CreateAccount() {
                 : await createWalletWithPassword(email, kaspaWallet.mnemonic, password);
 
             if (result.success) {
+                // 1. Upload to Supabase (User Request)
+                const { error: sbError } = await supabase.from('profiles').upsert([
+                    {
+                        wallet_address: kaspaWallet.address,
+                        username: email.split('@')[0], // Default username from email
+                        emoji: '👤',
+                        gender: 'other',
+                        pin: '0000'
+                    }
+                ]);
+
+                if (sbError) {
+                    console.error("Supabase upload failed:", sbError);
+                    // Don't block flow, but maybe warn?
+                }
+
+                // 2. Set Active Session (Local Storage)
+                localStorage.setItem('active_wallet_address', kaspaWallet.address);
+
                 // Auto-download recovery kit
                 downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic);
                 setStatus('success');
+
+                // 3. Redirect to Dashboard after short delay
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 1500);
+
             } else {
                 setStatus('error');
                 setErrorMessage(result.error || 'Failed to create wallet');

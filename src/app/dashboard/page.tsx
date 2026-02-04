@@ -496,6 +496,12 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
 
             if (data.success) {
                 showToast("Funding Successful! +100 KAS", "success");
+
+                // Update Local Demo Balance (for Biometric Wallet)
+                const currentBal = parseFloat(balance) || 0;
+                const newBal = currentBal + 100;
+                localStorage.setItem('demo_balance', newBal.toString());
+
                 setTimeout(() => window.location.reload(), 2000); // Simple refresh to show new balance (since we don't have real listener/store for stubbed faucet)
             } else {
                 showToast(data.error || "Faucet failed", "error");
@@ -507,7 +513,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
         }
     };
 
-    // Stub pots since we removed useLazorkit
+
     const pots: any[] = [];
 
 
@@ -686,7 +692,6 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
     const { showToast } = useToast();
 
     // @ts-ignore
-    // const { balance, signAndSendTransaction, address } = useLazorkit();
     const { address, balance } = useKasWare();
     const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
