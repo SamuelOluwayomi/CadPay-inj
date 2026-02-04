@@ -22,27 +22,27 @@ import ActiveSubscriptionCard from '@/components/subscriptions/ActiveSubscriptio
 import SecuritySettings from '@/components/security/SecuritySettings';
 import FullProfileEditModal from '@/components/shared/FullProfileEditModal';
 import OnboardingModal from '@/components/shared/OnboardingModal';
-import { useUSDCBalance } from '@/hooks/useUSDCBalance';
-import { constructMintTransaction, constructTransferTransaction, DEMO_MERCHANT_WALLET, ensureMerchantHasATA } from '@/utils/cadpayToken';
 import CopyButton from '@/components/shared/CopyButton';
 import { useMerchant } from '@/context/MerchantContext';
 import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
+import { useKasWare } from '@/hooks/useKasWare';
 import { useToast } from '@/context/ToastContext';
-import { Connection, PublicKey, Transaction } from '@/lib/solana-stubs';
-import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createMemoInstruction } from '@/lib/solana-stubs';
-import { AnchorProvider, Program, BN } from '@/lib/solana-stubs';
-import { CADPAY_MINT } from '@/utils/cadpayToken';
-import { deriveSavingsPotPDA } from '@/utils/savingsAccounts';
-import idl from '../../../anchor/target/idl/cadpay_profiles.json';
-
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'invoices' | 'dev-keys' | 'savings';
 
 export default function Dashboard() {
-    const { address, wallet, loading, balance, requestAirdrop, logout, signAndSendTransaction, connection, pots, fetchPots, refreshBalance, createPot } = useLazorkit();
+
+    const { address, balance, isLoading: loading, connect, isConnected } = useKasWare();
     const { showToast } = useToast();
+    const usdcBalance = 0;
+
+
+    const pots: any[] = []; // Stub pots
+    const wallet = null;
+    const requestAirdrop = async () => console.log("Airdrop not supported on Kaspa yet");
+    const logout = () => window.location.reload(); // Simple reload to disconnect for now
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -69,263 +69,26 @@ export default function Dashboard() {
     }, [address]);
 
     const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean, memo?: string) => {
-        if (!address || !signAndSendTransaction) {
+        if (!address) {
             showToast("Wallet not connected", "error");
             return;
         }
 
-        try {
-            const tx = new Transaction();
+        // STUB: Kaspa payment logic to be implemented
+        console.log(`[Kaspa Payment Stub] Sending ${amount} KAS to ${recipient} (Memo: ${memo})`);
 
-            if (isSavings) {
-                // Determine pot name from address (we've stored metadata)
-                const pot = pots.find(p => p.address === recipient);
-                if (!pot) throw new Error("Saving pot not found");
+        showToast("Kaspa payments coming soon! (UI Demo Only)", "info");
 
-                // Validate amount
-                if (!amount || isNaN(amount) || amount <= 0) {
-                    throw new Error(`Invalid amount: ${amount}. Please enter a valid positive number.`);
-                }
-
-                // Convert to raw amount (6 decimals for USDC)
-                const rawAmount = Math.floor(amount * 1_000_000);
-                if (rawAmount <= 0 || !Number.isFinite(rawAmount)) {
-                    throw new Error(`Invalid amount calculation: ${amount} * 1_000_000 = ${rawAmount}`);
-                }
-
-                console.log(`💰 Depositing ${amount} USDC (${rawAmount} raw) to pot "${pot.name}"`);
-
-                // Check if this is a wallet-based pot
-                const isWalletBased = pot.isWalletBased === true;
-
-                // For wallet-based pots, use the address directly; for PDA-based, derive PDA
-                let potAddress: PublicKey;
-                if (isWalletBased && pot.address) {
-                    // Wallet-based: use the stored address directly
-                    potAddress = new PublicKey(pot.address);
-                } else {
-                    // PDA-based: derive the PDA
-                    const [potPda] = deriveSavingsPotPDA(new PublicKey(address), pot.name);
-                    if (!potPda) {
-                        throw new Error(`Failed to derive pot PDA for pot "${pot.name}"`);
-                    }
-                    potAddress = potPda;
-                }
-
-                const userAta = await getAssociatedTokenAddress(CADPAY_MINT, new PublicKey(address), true);
-                if (!userAta) {
-                    throw new Error(`Failed to derive user ATA`);
-                }
-
-                const potAta = await getAssociatedTokenAddress(CADPAY_MINT, potAddress, true);
-                if (!potAta) {
-                    throw new Error(`Failed to derive pot ATA`);
-                }
-
-                try {
-                    const potAtaInfo = await connection.getAccountInfo(potAta);
-                    if (!potAtaInfo) {
-                        showToast(`Initializing savings account for "${pot.name}"...`, 'info');
-                        const createAtaTx = new Transaction().add(
-                            createAssociatedTokenAccountInstruction(
-                                (wallet as any)?.publicKey || new PublicKey(address), // payer - MUST be the signer (EOA), not the Smart Wallet PDA
-                                potAta, // ata
-                                potAddress, // owner
-                                CADPAY_MINT, // mint
-                                TOKEN_PROGRAM_ID,
-                                ASSOCIATED_TOKEN_PROGRAM_ID
-                            )
-                        );
-                        // Send ATA creation in separate transaction to keep deposit tx small
-                        const ataSignature = await signAndSendTransaction(createAtaTx);
-
-                        // CRITICAL: Wait for confirmation before proceeding
-                        try {
-                            await connection.confirmTransaction(ataSignature, 'confirmed');
-                            console.log(`✅ ATA creation confirmed: ${ataSignature}`);
-                        } catch (confirmError) {
-                            console.warn('ATA confirmation timeout, waiting additional time...');
-                            await new Promise(resolve => setTimeout(resolve, 3000));
-                        }
-
-                        // Verify the ATA now exists before proceeding
-                        const verifyAtaInfo = await connection.getAccountInfo(potAta);
-                        if (!verifyAtaInfo) {
-                            throw new Error(`ATA creation transaction sent but account not found. Please try depositing again in a few seconds.`);
-                        }
-
-                        showToast(`Savings account initialized for "${pot.name}"`, 'success');
-                    }
-                } catch (ataError: any) {
-                    console.error('ATA pre-creation failed:', ataError);
-                    throw new Error(`Failed to initialize savings account: ${ataError?.message || 'Unknown error'}. Please try again.`);
-                }
-
-                // For wallet-based pots, skip PDA verification (they're just regular wallet addresses)
-                if (!isWalletBased) {
-                    // Only verify PDA-based pots exist on-chain
-                    try {
-                        const potAccountInfo = await connection.getAccountInfo(potAddress);
-                        if (!potAccountInfo) {
-                            // PDA pot doesn't exist on-chain, try to create it automatically
-                            const unlockTime = pot.unlockTime || Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
-                            try {
-                                showToast(`Creating savings pot "${pot.name}" on-chain...`, 'info');
-                                await createPot(pot.name, unlockTime);
-                                showToast(`Savings pot "${pot.name}" created! You can now deposit.`, 'success');
-                                // Wait a moment for the account to be available
-                                await new Promise(resolve => setTimeout(resolve, 2000));
-                                // Re-check the account
-                                const recheckInfo = await connection.getAccountInfo(potAddress);
-                                if (!recheckInfo) {
-                                    throw new Error(`Pot was created but account is not yet available. Please try again in a few seconds.`);
-                                }
-                            } catch (createError: any) {
-                                throw new Error(`Savings pot "${pot.name}" does not exist on-chain and failed to create: ${createError?.message || 'Unknown error'}. Please create it manually first.`);
-                            }
-                        }
-                    } catch (accountCheckError: any) {
-                        throw new Error(`Failed to verify pot account: ${accountCheckError?.message || 'Unknown error'}`);
-                    }
-                } else {
-                    // For wallet-based pots, just verify the wallet exists (it should, since we funded it)
-                    const walletInfo = await connection.getAccountInfo(potAddress);
-                    if (!walletInfo) {
-                        throw new Error(`Savings pot wallet "${pot.name}" not found. Please create the pot first.`);
-                    }
-                }
-
-                // For wallet-based pots, use simple token transfer; for PDA-based, use Anchor program
-                const userPubkey = new PublicKey(address);
-
-                if (isWalletBased) {
-                    // Wallet-based: Simple token transfer (no Anchor program needed)
-                    const transferIx = createTransferInstruction(
-                        userAta,
-                        potAta,
-                        userPubkey,
-                        rawAmount
-                    );
-                    tx.add(transferIx);
-                } else {
-                    // PDA-based: Use Anchor program for deposit
-                    const provider = new AnchorProvider(connection, (wallet as any), {});
-                    const program = new Program(idl as any, provider);
-
-                    // Ensure BN is properly imported and amount is valid
-                    let depositAmount;
-                    try {
-                        depositAmount = new BN(rawAmount);
-                        if (!depositAmount || (depositAmount as any)._bn === undefined) {
-                            depositAmount = new BN(rawAmount.toString());
-                        }
-                    } catch (bnError: any) {
-                        throw new Error(`Failed to create BN: ${bnError?.message || 'Unknown error'}`);
-                    }
-
-                    let depositIx;
-                    try {
-                        depositIx = await program.methods
-                            .depositToPot(depositAmount)
-                            .accounts({
-                                savingsPot: potAddress,
-                                user: userPubkey,
-                                userAta: userAta,
-                                potAta: potAta,
-                                tokenProgram: TOKEN_PROGRAM_ID,
-                            })
-                            .instruction();
-                    } catch (ixError: any) {
-                        throw new Error(`Failed to create deposit instruction: ${ixError?.message || 'Unknown error'}`);
-                    }
-                    tx.add(depositIx);
-                }
-
-                // Add memo with STRICT 20-character limit to minimize transaction size
-                // Each character = ~1 byte, so 20 chars + overhead = ~25 bytes total
-                if (memo && memo.trim().length > 0) {
-                    const trimmedMemo = memo.trim().slice(0, 20); // Hard limit at 20 characters
-                    try {
-                        const memoIx = createMemoInstruction(trimmedMemo, [userPubkey]);
-                        tx.add(memoIx);
-                    } catch (memoError: any) {
-                        // If memo fails, log but don't fail the transaction
-                        console.warn('Failed to add memo instruction:', memoError);
-                    }
-                }
-            } else {
-                const transferInstructions = await constructTransferTransaction(address, amount * 1_000_000, recipient);
-                tx.add(...transferInstructions);
-
-                // Add memo for external transfers if provided (with size limit)
-                if (memo && memo.trim().length > 0 && memo.length <= 50) {
-                    try {
-                        // const { createMemoInstruction } = await import('@solana/spl-memo'); // Removed for Kaspa migration
-                        // const memoIx = createMemoInstruction(memo.trim(), [new PublicKey(address)]);
-                        // tx.add(memoIx);
-                        console.log("Memo stubbed for migration:", memo);
-                    } catch (memoError: any) {
-                        console.warn('Failed to add memo instruction:', memoError);
-                    }
-                }
-            }
-
-            const allInstructions = tx.instructions;
-
-            // Fetch Address Lookup Table for transaction compression (reduces account size from 32 bytes to 1 byte)
-            let lookupTableAccount = null;
-            try {
-                // Use a reliable public lookup table or the one from env
-                const lookupTableAddress = new PublicKey(process.env.NEXT_PUBLIC_LOOKUP_TABLE_ADDRESS || '3yf26dUdvL6TYbRbvpCvdWU8JjL6AwjuXMcYiigmAB2D');
-                const lookupTableResult = await connection.getAddressLookupTable(lookupTableAddress);
-                lookupTableAccount = lookupTableResult.value;
-                if (lookupTableAccount) console.log("✅ Using ALT for compression:", lookupTableAddress.toBase58());
-            } catch (altError) {
-                // ALT not critical (will fallback to large tx), but highly recommended
-                console.warn('Failed to fetch Address Lookup Table:', altError);
-            }
-
-            // Sign and send using instruction-based API (more efficient for smart wallets)
-            // This reduces transaction size by avoiding Transaction object serialization overhead
-            const signature = await signAndSendTransaction({
-                instructions: allInstructions,
-                transactionOptions: {
-                    computeUnitLimit: isSavings ? 300_000 : 400_000, // Lower limit for savings (no memo logic overhead)
-                    addressLookupTableAccounts: lookupTableAccount ? [lookupTableAccount] : undefined,
-                }
-            });
-
-            showToast(`USDC ${isSavings ? 'saved' : 'sent'} successfully! Signature: ${signature.slice(0, 8)}...`, 'success');
-
-            // Wait for transaction confirmation before refreshing balance
-            try {
-                await connection.confirmTransaction(signature, 'confirmed');
-            } catch (confirmError) {
-                // Transaction might still be processing, continue anyway
-                console.log('Transaction confirmation:', confirmError);
-            }
-
-            // Revert Split Transaction Logic - Memo is now integrated
-
-
-            // Refresh UI immediately and then again after a short delay for real-time updates
-            await fetchPots();
-            await refreshBalance();
-            await refetchUsdc();
-
-            // Additional refresh after 2 seconds to catch any delayed updates
-            setTimeout(async () => {
-                await refetchUsdc();
-                await refreshBalance();
-            }, 2000);
-        } catch (e: any) {
-            showToast(`Transfer failed: ${e.message || 'Unknown error'}`, 'error');
-            throw e;
-        }
+        // Simulating a delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        showToast("Simulated transfer complete", "success");
     };
 
-    // Use Real On-Chain Balance
-    const { balance: usdcBalance, refetch: refetchUsdc } = useUSDCBalance(address);
+    // Use Real On-Chain Balance (STUBBED for Kaspa)
+    // Use Real On-Chain Balance (STUBBED for Kaspa)
+    // const { balance: usdcBalance, refetch: refetchUsdc } = useUSDCBalance(address);
+    // const usdcBalance = 0; // Removed duplicate
+    const refetchUsdc = async () => { };
 
     useEffect(() => {
         if (loading || profileLoading) return;
@@ -694,122 +457,62 @@ function NavItem({ icon, label, active, onClick }: any) {
 // Overview Section
 function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend }: any) {
     const [showUSD, setShowUSD] = useState(true);
-    const [solPrice, setSolPrice] = useState<number | null>(null);
+    const [kasPrice, setKasPrice] = useState<number | null>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const { subscriptions } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
 
-    // @ts-ignore
-    const { wallet, connection, pots, fetchPots, signAndSendTransaction, refreshBalance } = useLazorkit();
+    // Fetch KAS price
+    useEffect(() => {
+        const fetchPrice = async () => {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const data = await response.json();
+                setKasPrice(data.kaspa.usd);
+            } catch (error) {
+                console.error('Failed to fetch KAS price:', error);
+            }
+        };
+        fetchPrice();
+    }, []);
+
+    // Stub simple transaction history
+    useEffect(() => {
+        setTransactions([]);
+    }, []);
 
     const handleFundDemo = async () => {
+        if (!address) return;
         setIsFunding(true);
         try {
-            if (!address) return;
+            showToast("Requesting funds from Private Faucet...", "info");
+            const res = await fetch('/api/faucet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+            });
+            const data = await res.json();
 
-            // 1. Construct REAL Mint Transaction (Signed by Authority)
-            // Explicitly mint 50 USDC (50 * 1_000_000 with 6 decimals)
-            const mintAmount = 50 * 1_000_000; // 50 USDC
-            console.log(`💰 Minting ${mintAmount / 1_000_000} USDC to ${address}`);
-            const { sendTransaction } = await constructMintTransaction(address, mintAmount);
-
-            // 2. Send directly (User does not need to sign!)
-            const signature = await sendTransaction();
-            console.log(`✅ Mint transaction sent: ${signature}`);
-
-            // 3. Wait for confirmation and update UI immediately
-            try {
-                const conn = await (await import('@/utils/rpc')).createConnectionWithRetry();
-                await conn.confirmTransaction(signature, 'confirmed');
-                console.log(`✅ Mint transaction confirmed: ${signature}`);
-            } catch (confirmError) {
-                console.log('Transaction confirmation:', confirmError);
+            if (data.success) {
+                showToast("Funding Successful! +100 KAS", "success");
+                setTimeout(() => window.location.reload(), 2000); // Simple refresh to show new balance (since we don't have real listener/store for stubbed faucet)
+            } else {
+                showToast(data.error || "Faucet failed", "error");
             }
-
-            // Immediate parallel refresh - update all balances concurrently for faster UI update
-            await Promise.all([
-                refetchUsdc(),
-                refreshBalance()
-            ]);
-
-            // Quick second refresh after shorter delay to catch any processing delays
-            setTimeout(async () => {
-                await Promise.all([
-                    refetchUsdc(),
-                    refreshBalance()
-                ]);
-            }, 1500); // Reduced from 3000ms to 1500ms for faster updates
-
-            // Add REAL transaction to history
-            const newTx = {
-                signature: signature || "tx_" + Date.now(),
-                err: null,
-                blockTime: Math.floor(Date.now() / 1000),
-                memo: "CadPay USDC Access Grant"
-            };
-            setTransactions(prev => [newTx, ...prev]);
-        } catch (error) {
-            console.error("Funding failed", error);
+        } catch (e) {
+            showToast("Faucet request failed", "error");
         } finally {
             setIsFunding(false);
         }
     };
 
+    // Stub pots since we removed useLazorkit
+    const pots: any[] = [];
 
 
-    // Fetch SOL price from CoinGecko
-    useEffect(() => {
-        const fetchSolPrice = async () => {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-                if (!response.ok) return; // Silent fail
-                const data = await response.json();
-                setSolPrice(data.solana.usd);
-            } catch (error) {
-                // console.error('Failed to fetch SOL price:', error);
-            }
-        };
-        fetchSolPrice();
-        // Refresh price every 60 seconds (throttled)
-        const interval = setInterval(fetchSolPrice, 60000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Fetch transaction history
-    useEffect(() => {
-        const fetchTransactions = async () => {
-            if (!address || address === 'Loading...') return;
-            try {
-                // Use shared connection if available, else fallback with robust error handling
-                let conn;
-                try {
-                    conn = connection || new Connection(process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com', 'confirmed');
-                } catch (connError) {
-                    console.warn('Failed to create specific connection, falling back to public devnet:', connError);
-                    conn = new Connection('https://api.devnet.solana.com', 'confirmed');
-                }
-                const pubkey = new PublicKey(address);
-                const signatures = await conn.getSignaturesForAddress(pubkey, { limit: 10 });
-                setTransactions(prev => {
-                    // Merge real signatures with simulated ones, keeping simulated ones at top if recent
-                    const realTxs = signatures;
-                    const existingSigs = new Set(realTxs.map((tx: any) => tx.signature));
-                    const keptSimulated = prev.filter(tx => tx.signature.startsWith('funding_') && !existingSigs.has(tx.signature));
-                    return [...keptSimulated, ...realTxs];
-                });
-            } catch (error) {
-                // console.error('Failed to fetch transactions:', error);
-            }
-        };
-        fetchTransactions();
-        // Refresh every 10 seconds
-        const interval = setInterval(fetchTransactions, 10000);
-        return () => clearInterval(interval);
-    }, [address, connection]);
-
-    const balanceValue = usdcBalance || 0;
-    const usdValue = balanceValue.toFixed(2);
+    const balanceValue = parseFloat(balance) || 0;
+    const usdValue = kasPrice ? (balanceValue * kasPrice).toFixed(2) : '...';
 
     return (
         <div className="space-y-8">
@@ -831,20 +534,20 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                     </div>
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-orange-200 text-sm">USDC Balance</p>
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
-                                <span className="text-[10px] font-bold text-orange-400">GASLESS ENABLED</span>
+                            <p className="text-[#70C7BA] text-sm">Kaspa Balance</p>
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
+                                <span className="text-[10px] font-bold text-[#70C7BA]">PRIVATE VAULT</span>
                             </div>
                         </div>
                         <h2 className="text-5xl font-bold mb-2 text-white">
-                            <span className={usdcBalance > 0 ? "text-[#FF8C33]" : "text-white"}>
-                                ${usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <span className={balanceValue > 0 ? "text-[#70C7BA]" : "text-white"}>
+                                {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                            <span className="text-orange-300/60 text-2xl font-normal ml-2">USDC</span>
+                            <span className="text-[#70C7BA]/60 text-2xl font-normal ml-2">KAS</span>
                         </h2>
-                        <div className="flex items-center gap-2 mb-4 text-xs text-orange-200/60">
+                        <div className="flex items-center gap-2 mb-4 text-xs text-[#70C7BA]/60">
                             <div className="flex items-center gap-1.5">
-                                <span>SOL: {balance}</span>
+                                <span>≈ ${usdValue} USD</span>
                                 <span className="px-2 py-0.5 bg-zinc-900/50 border border-orange-500/20 rounded text-[10px] font-bold text-orange-400">NOT NEEDED</span>
                             </div>
                         </div>
@@ -864,7 +567,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                                     </>
                                 ) : (
                                     <>
-                                        <PlusIcon weight="bold" /> Add USDC
+                                        <PlusIcon weight="bold" /> Fund Wallet
                                     </>
                                 )}
                             </button>
@@ -898,51 +601,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                                     <button
                                         key={pot.name}
                                         onClick={async () => {
-                                            if (!address) return;
-                                            try {
-                                                const { AnchorProvider, Program, BN } = await import('@/lib/solana-stubs');
-                                                const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } = await import('@/lib/solana-stubs');
-                                                const { CADPAY_MINT } = await import('@/utils/cadpayToken');
-                                                const { deriveSavingsPotPDA } = await import('@/utils/savingsAccounts');
-                                                const idl = await import('@/../anchor/target/idl/cadpay_profiles.json');
-
-                                                const [potPda] = deriveSavingsPotPDA(new PublicKey(address), pot.name);
-                                                const userAta = await getAssociatedTokenAddress(CADPAY_MINT, new PublicKey(address), true);
-                                                const potAta = await getAssociatedTokenAddress(CADPAY_MINT, potPda, true);
-
-                                                const provider = new AnchorProvider(connection, (wallet as any), {});
-                                                const program = new Program(idl as any, provider);
-
-                                                // Quick save 1 USDC - ensure BN is created properly
-                                                const quickSaveAmount = 1 * 1_000_000; // 1 USDC in raw units
-                                                const quickSaveBN = new BN(quickSaveAmount.toString());
-
-                                                const tx = await program.methods
-                                                    .depositToPot(quickSaveBN)
-                                                    .accounts({
-                                                        savingsPot: potPda,
-                                                        user: new PublicKey(address),
-                                                        userAta: userAta,
-                                                        potAta: potAta,
-                                                        tokenProgram: TOKEN_PROGRAM_ID,
-                                                    })
-                                                    .transaction();
-
-                                                // Don't set blockhash manually - Lazorkit's signAndSendTransaction handles it
-                                                // Setting it here can cause "TransactionTooOld" errors if there's any delay
-                                                // Lazorkit will fetch a fresh blockhash when signing
-
-                                                tx.feePayer = new PublicKey(address);
-
-                                                await signAndSendTransaction(tx);
-                                                fetchPots();
-                                                refreshBalance();
-                                                refetchUsdc();
-                                                showToast(`1 USDC saved to ${pot.name}`, 'success');
-                                            } catch (e) {
-                                                console.error("Quick transfer failed", e);
-                                                showToast("Quick save failed", "error");
-                                            }
+                                            showToast(`Saving to ${pot.name} coming soon!`, 'info');
                                         }}
                                         className="w-full flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all group"
                                     >
@@ -1027,7 +686,8 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
     const { showToast } = useToast();
 
     // @ts-ignore
-    const { balance, signAndSendTransaction, address } = useLazorkit();
+    // const { balance, signAndSendTransaction, address } = useLazorkit();
+    const { address, balance } = useKasWare();
     const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
@@ -1088,56 +748,11 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
         try {
             if (!address) throw new Error("Wallet not connected");
 
-            // 1. Find the Merchant Wallet for this service
-            let targetMerchantAddress = DEMO_MERCHANT_WALLET.toString();
+            // STUB: Removed Solana subscription logic
+            showToast("Subscriptions coming soon on Kaspa!", "info");
 
-            // Check if it's a dynamic service
-            const dynamicService = dynamicServices.find(s => s.id === serviceId);
-            if (dynamicService) {
-                const merchant = merchants.find(m => m.id === dynamicService.merchantId);
-                if (merchant) {
-                    targetMerchantAddress = merchant.walletPublicKey;
-                    // Found dynamic merchant
-                }
-            }
-
-            // Processing subscription
-
-            // 2. Ensure Merchant Has ATA (System-sponsored if needed)
-            try {
-                await ensureMerchantHasATA(targetMerchantAddress);
-            } catch (ensureError: any) {
-                throw ensureError;
-            }
-
-            // 3. Construct the transfer and memo instructions
-            const instructions = await constructTransferTransaction(
-                address,
-                price * 1_000_000,
-                targetMerchantAddress,
-                selectedService?.name || 'Unknown Service',
-                plan.name
-            );
-
-            // 3.5. Fetch Address Lookup Table for transaction compression
-            const lookupTableAddress = new PublicKey(process.env.NEXT_PUBLIC_LOOKUP_TABLE_ADDRESS || '3yf26dUdvL6TYbRbvpCvdWU8JjL6AwjuXMcYiigmAB2D');
-            const connection = await (await import('@/utils/rpc')).createConnectionWithRetry();
-            const lookupTableAccount = await connection.getAddressLookupTable(lookupTableAddress)
-                .then((res) => res.value);
-
-            // 4. User signs and sends transaction using Lazorkit's instruction-based API with ALT
-            const signature = await signAndSendTransaction({
-                instructions: instructions, // Now includes both memo and transfer
-                transactionOptions: {
-                    computeUnitLimit: 400_000, // Increased from 200k to handle larger transactions
-                    addressLookupTableAccounts: lookupTableAccount ? [lookupTableAccount] : undefined,
-                }
-            });
-            // Transaction completed
-
-            // 5. Update local state
-            // Find the actual service from SERVICES or dynamic services
-            const actualService = SERVICES.find(s => s.id === serviceId) || dynamicService;
+            // Allow demo subscription to proceed locally without blockchain tx
+            const actualService = SERVICES.find(s => s.id === serviceId) || dynamicServices.find(s => s.id === serviceId);
 
             addSubscription({
                 serviceId,
@@ -1147,25 +762,15 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 email,
                 color: actualService ? actualService.color : '#FF6B35',
                 icon: (actualService ? actualService.icon : StorefrontIcon) as any,
-                transactionSignature: signature // Store transaction ID
+                transactionSignature: "demo_sig_" + Date.now()
             });
-
-            // 5. Refetch Balances
-            setTimeout(refetchUsdc, 2000);
 
             // Show success toast
             showToast(`Successfully subscribed to ${actualService?.name || serviceId}! 🎉`, 'success');
-
             setShowSubscribeModal(false);
         } catch (error: any) {
             console.error("Subscription failed:", error);
-
-            // Check for TransactionTooOld error
-            if (error?.message?.includes('0x1783') || error?.message?.includes('TransactionTooOld')) {
-                throw new Error("Transaction expired. This usually means your system clock is out of sync. Please check your date/time settings and try again.");
-            }
-
-            throw error; // Propagate to modal
+            showToast("Subscription failed", "error");
         }
     };
 

@@ -102,21 +102,31 @@ export default function CreateAccount() {
     if (mode === 'selection') {
         return (
             <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                {/* Back to Home Button */}
+                <div className="absolute top-8 left-8 z-20">
+                    <Link href="/" className="group flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
+                        <div className="w-8 h-8 rounded-full border border-zinc-800 flex items-center justify-center bg-zinc-900/50 group-hover:border-orange-500/50 transition-colors">
+                            <ArrowLeftIcon size={16} />
+                        </div>
+                        <span className="text-sm font-medium">Home</span>
+                    </Link>
+                </div>
+
                 {/* Background Effects */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-500/10 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[100px]" />
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-900/10 rounded-full blur-[100px]" />
                 </div>
 
                 <div className="relative z-10 max-w-md w-full space-y-8 animate-in fade-in zoom-in duration-500">
                     <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-linear-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-teal-500/20">
+                        <div className="w-16 h-16 bg-linear-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/20">
                             <WalletIcon size={32} className="text-white" weight="fill" />
                         </div>
-                        <h1 className="text-4xl font-bold bg-linear-to-br from-teal-400 to-emerald-600 bg-clip-text text-transparent">
+                        <h1 className="text-4xl font-bold bg-linear-to-br from-white to-zinc-500 bg-clip-text text-transparent">
                             CadPay
                         </h1>
-                        <p className="text-zinc-400 text-sm">Secure Biometric & Web3 Payments</p>
+                        <p className="text-zinc-500 text-sm">Secure Biometric & Web3 Payments</p>
                     </div>
 
                     <div className="space-y-4">
@@ -138,9 +148,9 @@ export default function CreateAccount() {
                         {/* OPTION B: Create New Biometric Wallet */}
                         <button
                             onClick={() => setMode('create')}
-                            className="w-full p-4 rounded-xl border border-dashed border-zinc-700 hover:border-teal-500/50 hover:bg-teal-900/10 transition-all flex items-center justify-center gap-2 group h-[72px]"
+                            className="w-full p-4 rounded-xl border border-dashed border-zinc-700 hover:border-orange-500/50 hover:bg-orange-900/10 transition-all flex items-center justify-center gap-2 group h-[72px]"
                         >
-                            <span className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-teal-500 group-hover:text-white transition-colors">
+                            <span className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-orange-500 group-hover:text-white transition-colors">
                                 <FingerprintIcon size={20} weight="bold" />
                             </span>
                             <span className="text-zinc-300 group-hover:text-white font-medium">Create New Biometric Account</span>
@@ -148,7 +158,7 @@ export default function CreateAccount() {
 
                         <div className="text-center pt-4">
                             <Link href="/signin" className="text-sm text-zinc-500 hover:text-white transition-colors">
-                                Already have a biometric account? <span className="text-teal-500">Sign In</span>
+                                Already have a biometric account? <span className="text-orange-500">Sign In</span>
                             </Link>
                         </div>
                     </div>
@@ -295,10 +305,10 @@ export default function CreateAccount() {
                             <button
                                 type="submit"
                                 disabled={status !== 'idle' && status !== 'error'}
-                                className="w-full bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 {status === 'idle' || status === 'error' ? (
-                                    <>Create Wallet <LightningIcon weight="fill" /></>
+                                    <>Create Wallet</>
                                 ) : (
                                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
                                 )}

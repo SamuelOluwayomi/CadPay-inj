@@ -15,6 +15,7 @@
     "@jup-ag/api": "^6.0.48",
     "@kluster/kaspa-wasm-web": "file:./vendor/kluster/kaspa-wasm-web",
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "^2.94.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "class-variance-authority": "^0.7.1",

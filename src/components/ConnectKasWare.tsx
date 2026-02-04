@@ -22,10 +22,10 @@ export default function ConnectKasWare() {
             <button
                 onClick={handleConnect}
                 disabled={isLoading || isConnected}
-                className="group relative flex items-center justify-center gap-3 p-4 w-full rounded-xl border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:border-teal-500/50 transition-all disabled:opacity-50"
+                className="group relative flex items-center justify-center gap-3 p-4 w-full rounded-xl border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:border-orange-500/50 transition-all disabled:opacity-50"
             >
                 {/* KasWare Icon Placeholder */}
-                <div className="w-8 h-8 rounded-full bg-[#70C7BA] flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-teal-900/20">
+                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-orange-900/20">
                     KW
                 </div>
 
@@ -33,7 +33,7 @@ export default function ConnectKasWare() {
                     <span className="font-bold text-white text-lg">
                         {isLoading ? "Connecting..." : isConnected ? "Connected" : "Connect KasWare"}
                     </span>
-                    <span className="text-xs text-zinc-400 group-hover:text-teal-400 transition-colors">
+                    <span className="text-xs text-zinc-400 group-hover:text-orange-400 transition-colors">
                         Browser Extension
                     </span>
                 </div>

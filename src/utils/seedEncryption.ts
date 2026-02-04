@@ -38,10 +38,10 @@ export async function encryptSeed(
     const ciphertext = await crypto.subtle.encrypt(
         {
             name: "AES-GCM",
-            iv,
+            iv: iv as unknown as BufferSource,
         },
         cryptoKey,
-        encodedSeed
+        encodedSeed as unknown as BufferSource
     );
 
     return {
@@ -75,10 +75,10 @@ export async function decryptSeed(
         const decryptedBuffer = await crypto.subtle.decrypt(
             {
                 name: "AES-GCM",
-                iv: encryptedData.iv,
+                iv: encryptedData.iv as unknown as BufferSource,
             },
             cryptoKey,
-            encryptedData.ciphertext
+            encryptedData.ciphertext as unknown as BufferSource
         );
 
         // Decode the bytes back to a string

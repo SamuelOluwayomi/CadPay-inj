@@ -1,8 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Keypair, PublicKey } from '@/lib/solana-stubs';
-import bs58 from 'bs58';
 
 import { SERVICES } from '@/data/subscriptions';
 
@@ -55,10 +53,10 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
     const merchant = React.useMemo(() => {
         if (!profile) return null;
         return {
-            id: profile.authority.toBase58(),
+            id: profile.authority,
             name: profile.username || 'Merchant',
             email: 'onchain@cadpay.xyz', // Placeholder for layout compatibility
-            walletPublicKey: profile.authority.toBase58(),
+            walletPublicKey: profile.authority,
             walletSecretKey: '', // Not needed for on-chain auth
             joinedAt: new Date(),
             password: '' // Not needed
