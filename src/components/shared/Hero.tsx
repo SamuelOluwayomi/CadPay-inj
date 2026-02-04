@@ -5,7 +5,7 @@ import { FingerprintIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 // @ts-ignore
-import WAVES from 'vanta/dist/vanta.waves.min';
+import GLOBE from 'vanta/dist/vanta.globe.min';
 
 export default function Hero({ startAnimation = true }: { startAnimation?: boolean }) {
   const [vantaEffect, setVantaEffect] = useState<any>(null);
@@ -14,16 +14,18 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   useEffect(() => {
     if (!vantaEffect && vantaRef.current) {
       setVantaEffect(
-        WAVES({
+        GLOBE({
           el: vantaRef.current,
           mouseControls: true,
           touchControls: true,
           gyroControls: true,
           minHeight: 200.00,
           minWidth: 200.00,
-          scale: 1.00,
-          scaleMobile: 1.00,
-          color: 0x75431e,      // Custom bronze/brown color requested by user
+          scale: 1.1,
+          scaleMobile: 0.6,
+          color: 0xf97316,
+          color2: 0xdece9b,
+          backgroundColor: 0x0,
           THREE: THREE
         })
       );
@@ -42,15 +44,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
     <section className="relative z-50 min-h-[75vh] w-full text-white pt-8 md:pt-4 pb-0 bg-black shadow-2xl">
 
       {/* VANTA BACKGROUND */}
-      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden" />
+      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-16 md:translate-y-0" />
 
-      {/* GRADIENT OVERLAY */}
-      <div className="absolute inset-0 z-10 bg-linear-to-b from-transparent via-transparent to-black/90 pointer-events-none" />
-      <div className="absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
-
-      {/* OVERLAYS: Desktop (Light Dark) vs Mobile (Heavy Dark) for readability with Waves */}
-      <div className="absolute inset-0 z-10 hidden md:block bg-black/40 pointer-events-none" />
-      <div className="absolute inset-0 z-10 md:hidden bg-black/60 pointer-events-none" />
 
       {/* CONTENT CONTAINER */}
       <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-20 md:mt-32 drop-shadow-2xl">
