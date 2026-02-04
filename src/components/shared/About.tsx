@@ -12,7 +12,7 @@ export default function About() {
     return (
         <section
             ref={containerRef}
-            className="relative bg-[#1c1209] flex flex-col items-center -mt-24 z-20 w-full overflow-hidden"
+            className="relative bg-[#1c1209] flex flex-col items-center -mt-13 md:-mt-24 z-20 w-full overflow-hidden"
         >
             {/* Meteors Effect */}
             <Meteors number={50} className=" z-40" />

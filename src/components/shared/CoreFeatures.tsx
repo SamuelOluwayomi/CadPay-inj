@@ -184,13 +184,13 @@ function KaspaSummaryCard() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6 }}>
-                    <h3 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-4 flex items-center justify-center gap-3">
-                        <div className="relative w-16 h-16 md:w-20 md:h-20">
+                    <h3 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-4 flex items-center justify-center gap-2 md:gap-3">
+                        <div className="relative w-12 h-12 md:w-20 md:h-20">
                             <Image
                                 src="/kaspa-icon.png"
                                 alt="Kaspa"
                                 fill
-                                sizes="(max-width: 768px) 64px, 96px"
+                                sizes="(max-width: 768px) 48px, 96px"
                                 className="object-contain"
                             />
                         </div>

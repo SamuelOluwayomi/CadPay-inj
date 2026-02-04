@@ -29,12 +29,12 @@ export default function NavBar() {
 
                         {/* DESKTOP LINKS (Hidden on Mobile) */}
                         <div className="hidden md:flex items-center gap-8">
-                            <a href="https://github.com/lazor-kit/lazor-kit" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium">
-                                The Bridge
+                            <a href="https://github.com/Kaspathon" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium uppercase tracking-widest">
+                                Kaspathon
                             </a>
                             <NavLink href="/merchant-auth">Merchant Portal</NavLink>
-                            <a href="https://docs.lazorkit.com/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium">
-                                Lazorkit Engine
+                            <a href="https://kaspa.org/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium uppercase tracking-widest">
+                                Kaspa
                             </a>
                         </div>
                     </div>
@@ -70,9 +70,9 @@ export default function NavBar() {
                         className="fixed inset-0 z-55 bg-black pt-24 px-6 md:hidden"
                     >
                         <div className="flex flex-col gap-6 text-lg font-medium">
-                            <MobileLink href="https://github.com/lazor-kit/lazor-kit" onClick={() => setIsOpen(false)}>The Bridge</MobileLink>
+                            <MobileLink href="https://github.com/Kaspathon" onClick={() => setIsOpen(false)}>Kaspathon</MobileLink>
                             <MobileLink href="/merchant-auth" onClick={() => setIsOpen(false)}>Merchant Portal</MobileLink>
-                            <MobileLink href="https://docs.lazorkit.com/" onClick={() => setIsOpen(false)}>Lazorkit Engine</MobileLink>
+                            <MobileLink href="https://kaspa.org/" onClick={() => setIsOpen(false)}>Kaspa</MobileLink>
                             <hr className="border-white/10" />
                             <MobileLink href="/signin" onClick={() => setIsOpen(false)}>Log In</MobileLink>
                             <Link

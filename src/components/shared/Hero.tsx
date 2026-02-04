@@ -44,7 +44,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
     <section className="relative z-50 min-h-[75vh] w-full text-white pt-8 md:pt-4 pb-0 bg-black shadow-2xl">
 
       {/* VANTA BACKGROUND */}
-      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-16 md:translate-y-0" />
+      <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-20 md:translate-y-0" />
 
 
       {/* CONTENT CONTAINER */}
@@ -105,7 +105,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
       </div>
 
       {/* CURVED BOTTOM EDGE (Minimal Deep Arch - Outside) */}
-      <div className="absolute -bottom-10 md:-bottom-16 left-0 w-full h-10 md:h-16 z-20 pointer-events-none drop-shadow-2xl">
+      <div className="absolute -bottom-28 md:-bottom-16 left-0 w-full h-16 md:h-16 z-20 pointer-events-none drop-shadow-2xl">
         <svg
           viewBox="0 0 1440 320"
           className="w-full h-full"
