@@ -13,6 +13,7 @@ export default function CreateAccount() {
     const [useBiometrics, setUseBiometrics] = useState(true);
     const [status, setStatus] = useState<'idle' | 'checking' | 'generating' | 'creating' | 'success' | 'error'>('idle');
     const [walletAddress, setWalletAddress] = useState<string>('');
+    const [walletMnemonic, setWalletMnemonic] = useState<string>('');
 
     const {
         createWallet,
@@ -58,8 +59,9 @@ export default function CreateAccount() {
 
         try {
             // Generate Kaspa wallet
-            const kaspaWallet = await generateKaspaWallet('mainnet');
+            const kaspaWallet = await generateKaspaWallet('testnet-10');
             setWalletAddress(kaspaWallet.address);
+            setWalletMnemonic(kaspaWallet.mnemonic);
 
             setStatus('creating');
 
@@ -236,12 +238,20 @@ export default function CreateAccount() {
                             <p className="text-xs text-zinc-500 mb-6">
                                 📥 Your recovery kit has been downloaded. Keep it safe!
                             </p>
-                            <Link
-                                href="/dashboard"
-                                className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all"
-                            >
-                                Go to Dashboard
-                            </Link>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => downloadRecoveryKit(walletAddress, walletMnemonic)}
+                                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition-all border border-zinc-700"
+                                >
+                                    Download Again
+                                </button>
+                                <Link
+                                    href="/dashboard"
+                                    className="flex-1 text-center bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all"
+                                >
+                                    Go to Dashboard
+                                </Link>
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center">

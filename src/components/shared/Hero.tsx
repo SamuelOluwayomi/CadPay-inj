@@ -25,8 +25,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           scaleMobile: 1.00,
           color: 0xff6600,       // Orange lines
           backgroundColor: 0x000000,
-          points: 14.00,
-          maxDistance: 22.00,
+          points: 11.00,
+          maxDistance: 20.00,
           spacing: 16.00,
           showDots: true,
           THREE: THREE
