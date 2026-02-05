@@ -12,12 +12,12 @@ interface SubscribeModalProps {
     service: Service | null;
     onSubscribe: (serviceId: string, plan: SubscriptionPlan, email: string, price: number) => Promise<void>;
     balance: number;
-    usdcBalance: number;
-    solPrice: number | null;
+    balance: number;
+    kasPrice: number | null;
     existingSubscriptions?: Array<{ serviceId: string; email: string }>;
 }
 
-export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, balance, usdcBalance, solPrice, existingSubscriptions = [] }: SubscribeModalProps) {
+export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, balance, kasPrice, existingSubscriptions = [] }: SubscribeModalProps) {
     const [step, setStep] = useState<'plans' | 'email' | 'pin' | 'confirm' | 'loading' | 'success'>('plans');
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
     const [email, setEmail] = useState('');
@@ -34,14 +34,18 @@ export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, 
 
     if (!service) return null;
 
-    // Use REAL USDC Balance for checks
-    const sufficientFunds = selectedPlan ? usdcBalance >= selectedPlan.price : true;
+    // Use Native Balance for checks (since we paying in KAS equivalent or just checking solvency)
+    // For this hackathon stub, we assume payment is in KAS if we display KAS
+    const sufficientFunds = selectedPlan ? balance * (kasPrice || 0) >= selectedPlan.price : true;
+    // Note: This check is approximate. Ideally we check KAS vs KAS cost. 
+    // Plan price is USD. KAS needed = plan.price / kasPrice. 
+    // Balance (KAS) >= plan.price / kasPrice  => Balance * kasPrice >= plan.price.
 
     const handleConfirm = async () => {
         if (!selectedPlan) return;
 
         if (!sufficientFunds) {
-            setError(`Insufficient USDC! Need $${selectedPlan.price} but only have $${usdcBalance.toFixed(2)}`);
+            setError(`Insufficient KAS! Need $${selectedPlan.price} worth but only have ${(balance * (kasPrice || 0)).toFixed(2)} USD worth`);
             return;
         }
 
@@ -127,9 +131,9 @@ export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, 
                                                         <p className="text-2xl font-bold mt-1" style={{ color: service.color }}>
                                                             ${plan.price}<span className="text-sm text-zinc-500">/month</span>
                                                         </p>
-                                                        {solPrice && (
+                                                        {kasPrice && (
                                                             <p className="text-xs text-zinc-500 mt-1">
-                                                                ≈ {(plan.price / solPrice).toFixed(4)} SOL
+                                                                ≈ {(plan.price / kasPrice).toFixed(2)} KAS
                                                             </p>
                                                         )}
                                                     </div>
@@ -253,14 +257,14 @@ export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, 
                                                 <span className="text-zinc-400">Monthly Cost</span>
                                                 <div className="text-right">
                                                     <p className="text-2xl font-bold text-white">${selectedPlan.price}</p>
-                                                    <p className="text-xs text-orange-400">Paid in USDC</p>
+                                                    <p className="text-xs text-orange-400">Paid in KAS</p>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex justify-between pt-3 border-t border-white/10">
-                                            <span className="text-zinc-400">Your USDC Balance</span>
+                                            <span className="text-zinc-400">Your KAS Balance</span>
                                             <span className={`font-medium ${!sufficientFunds ? 'text-red-400' : 'text-green-400'}`}>
-                                                ${usdcBalance.toFixed(2)}
+                                                {balance.toFixed(2)} KAS
                                             </span>
                                         </div>
                                     </div>
@@ -269,8 +273,8 @@ export default function SubscribeModal({ isOpen, onClose, service, onSubscribe, 
                                         <div className="mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-start gap-3">
                                             <WarningIcon size={20} className="text-orange-400 shrink-0 mt-0.5" />
                                             <div className="text-sm">
-                                                <p className="text-orange-400 font-medium mb-1">Insufficient USDC</p>
-                                                <p className="text-orange-200/60">Please add funds to your wallet using the 'Add Funds' button above.</p>
+                                                <p className="text-orange-400 font-medium mb-1">Insufficient Funds</p>
+                                                <p className="text-orange-200/60">Please add funds to your wallet using the 'Fund Wallet' button in overview.</p>
                                             </div>
                                         </div>
                                     )}

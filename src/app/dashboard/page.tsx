@@ -34,7 +34,7 @@ type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'paymen
 
 export default function Dashboard() {
 
-    const { address, balance, isLoading: loading, connect, isConnected } = useKasWare();
+    const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance } = useKasWare();
     const { showToast } = useToast();
     const usdcBalance = 0;
 
@@ -42,7 +42,10 @@ export default function Dashboard() {
     const pots: any[] = []; // Stub pots
     const wallet = null;
     const requestAirdrop = async () => console.log("Airdrop not supported on Kaspa yet");
-    const logout = () => window.location.reload(); // Simple reload to disconnect for now
+    const logout = () => {
+        disconnect();
+        router.push('/');
+    };
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -111,7 +114,7 @@ export default function Dashboard() {
                     'success'
                 );
                 // Also log a full link for manual inspection
-                console.log('Profile creation tx:', `https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+                console.log('Profile creation tx:', `https://explorer.kaspa.org/tx/${signature}?testnet=true`);
             } else {
                 showToast("Profile created on-chain!", "success");
             }
@@ -325,6 +328,7 @@ export default function Dashboard() {
                             address={walletAddress}
                             usdcBalance={usdcBalance}   // <-- Real Balance
                             refetchUsdc={refetchUsdc}   // <-- Refetch Function
+                            refreshBalance={refreshBalance} // <-- Refresh Native Balance
                             loading={loading}
                             copyToClipboard={copyToClipboard}
                             onOpenSend={() => setShowSendModal(true)}
@@ -371,7 +375,6 @@ export default function Dashboard() {
                 onSend={handleUnifiedSend}
                 pots={pots}
                 balance={balance || 0}
-                usdcBalance={usdcBalance}
             />
         </div>
     );
@@ -455,7 +458,7 @@ function NavItem({ icon, label, active, onClick }: any) {
 }
 
 // Overview Section
-function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend }: any) {
+function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend, refreshBalance }: any) {
     const [showUSD, setShowUSD] = useState(true);
     const [kasPrice, setKasPrice] = useState<number | null>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
@@ -502,7 +505,10 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                 const newBal = currentBal + 100;
                 localStorage.setItem('demo_balance', newBal.toString());
 
-                setTimeout(() => window.location.reload(), 2000); // Simple refresh to show new balance (since we don't have real listener/store for stubbed faucet)
+                localStorage.setItem('demo_balance', newBal.toString());
+
+                // Refresh balance immediately
+                if (refreshBalance) refreshBalance();
             } else {
                 showToast(data.error || "Faucet failed", "error");
             }
@@ -554,12 +560,11 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                         <div className="flex items-center gap-2 mb-4 text-xs text-[#70C7BA]/60">
                             <div className="flex items-center gap-1.5">
                                 <span>≈ ${usdValue} USD</span>
-                                <span className="px-2 py-0.5 bg-zinc-900/50 border border-orange-500/20 rounded text-[10px] font-bold text-orange-400">NOT NEEDED</span>
                             </div>
                         </div>
-                        <p className="text-xs text-orange-200/60 mb-6">
+                        {/* <p className="text-xs text-orange-200/60 mb-6">
                             Paymaster covers all network fees • You only need USDC to transact
-                        </p>
+                        </p> */}
                         <div className="flex flex-wrap items-center gap-4">
                             <button
                                 onClick={handleFundDemo}
@@ -732,11 +737,11 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
                 const data = await response.json();
-                setSolPrice(data.solana.usd);
+                setSolPrice(data.kaspa.usd);
             } catch (error) {
-                console.error('Failed to fetch SOL price:', error);
+                console.error('Failed to fetch KAS price:', error);
             }
         };
         fetchPrice();
@@ -978,7 +983,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                                         <p className="text-4xl font-bold text-white">${getMonthlyTotal().toFixed(2)}</p>
                                         {solPrice && (
                                             <p className="text-sm text-orange-200/40 mt-1">
-                                                ≈ {(getMonthlyTotal() / solPrice).toFixed(4)} SOL
+                                                ≈ {(getMonthlyTotal() / solPrice).toFixed(2)} KAS
                                             </p>
                                         )}
                                     </div>
@@ -1099,8 +1104,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 service={selectedService}
                 onSubscribe={handleSubscribe}
                 balance={balance || 0}
-                usdcBalance={usdcBalance}
-                solPrice={solPrice}
+                kasPrice={solPrice}
                 existingSubscriptions={subscriptions}
             />
         </div>
@@ -1115,7 +1119,7 @@ function WalletSection({ balance, address, copyToClipboard }: any) {
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-linear-to-br from-zinc-900/80 to-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-8">
                     <h3 className="text-lg font-bold mb-6">Main Wallet</h3>
-                    <p className="text-4xl font-bold mb-6">{balance} SOL</p>
+                    <p className="text-4xl font-bold mb-6">{balance} KAS</p>
                     <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5 text-sm">
                         <span className="font-mono text-zinc-300 truncate">{address}</span>
                         <button onClick={copyToClipboard} className="text-orange-500 ml-3">

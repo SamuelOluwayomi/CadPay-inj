@@ -14,10 +14,10 @@ interface UnifiedSendModalProps {
     onSend: (recipient: string, amount: number, isSavings: boolean, memo?: string) => Promise<void>;
     pots: any[];
     balance: number;
-    usdcBalance?: number; // Add USDC balance prop
+    // usdcBalance?: number; // Removed to force KAS usage
 }
 
-export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balance, usdcBalance }: UnifiedSendModalProps) {
+export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balance }: UnifiedSendModalProps) {
     const [mode, setMode] = useState<'external' | 'savings'>('external');
     const [recipient, setRecipient] = useState('');
     const [selectedPot, setSelectedPot] = useState<any>(null);
@@ -26,8 +26,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Use USDC balance for validation (not SOL balance)
-    const availableBalance = usdcBalance !== undefined ? usdcBalance : balance;
+    // Use KAS balance for validation
+    const availableBalance = balance;
 
     const handleSend = async () => {
         setError(null);
@@ -43,7 +43,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             return;
         }
         if (numAmount > availableBalance) {
-            setError(`Insufficient balance. You have ${availableBalance.toFixed(2)} USDC but need ${numAmount.toFixed(2)} USDC.`);
+            setError(`Insufficient balance. You have ${availableBalance.toFixed(2)} KAS but need ${numAmount.toFixed(2)} KAS.`);
             return;
         }
 
@@ -124,7 +124,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Recipient Address</label>
                                         <div className="relative">
                                             <input
-                                                placeholder="Enter Kaspa address"
+                                                placeholder="kaspa:..."
                                                 className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all font-mono"
                                                 value={recipient}
                                                 onChange={(e) => setRecipient(e.target.value)}
@@ -161,7 +161,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                 )}
 
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Amount (USDC)</label>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Amount (KAS)</label>
                                     <div className="relative">
                                         <input
                                             type="number"
@@ -178,7 +178,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         </button>
                                     </div>
                                     <p className="text-[10px] text-zinc-500 mt-2 text-right uppercase tracking-widest">
-                                        Balance: <span className="text-zinc-300 font-bold">{availableBalance.toFixed(2)} USDC</span>
+                                        Balance: <span className="text-zinc-300 font-bold">{availableBalance.toFixed(2)} KAS</span>
                                     </p>
                                 </div>
 

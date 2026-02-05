@@ -9,6 +9,22 @@ export const useKasWare = () => {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    const fetchBalance = async (addr: string) => {
+        try {
+            if (window.kasware) {
+                const balanceData = await window.kasware.getBalance();
+                setBalance(balanceData.total / 100000000);
+            } else {
+                // Fallback to local demo balance
+                const localBalance = localStorage.getItem('demo_balance');
+                setBalance(localBalance ? parseFloat(localBalance) : 0);
+            }
+        } catch (e) {
+            console.error("Failed to fetch balance", e);
+        }
+    };
+
+
     // Check if KasWare is installed
     const checkKasWare = () => {
         if (typeof window === 'undefined') return false;
@@ -107,12 +123,29 @@ export const useKasWare = () => {
         attemptReconnect();
     }, []);
 
+    const refreshBalance = () => {
+        if (address) {
+            fetchBalance(address);
+        }
+    };
+
+    const disconnect = useCallback(() => {
+        setAddress(null);
+        setBalance(0);
+        setIsConnected(false);
+        localStorage.removeItem('active_wallet_address');
+    }, []);
+
+
     return {
         address,
         balance,
         isConnected,
         error,
         isLoading,
-        connect
+        connect,
+        disconnect,
+        refreshBalance
+
     };
 };
