@@ -872,8 +872,8 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                             />
                         </div>
 
-                        {/* Service Cards Grid - Mobile: 2 cols, Desktop: 2 cols */}
-                        <div className="grid grid-cols-2 gap-3 md:gap-4">
+                        {/* Service Cards Grid - Mobile: 2 cols, Desktop: 3 cols */}
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                             {filteredServices.map(service => (
                                 <ServiceCard
                                     key={service.id}
@@ -944,12 +944,12 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                                 <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
                                     <div className="flex justify-between items-end mb-2">
                                         <p className="text-zinc-500 text-xs font-bold uppercase">Estimated Gas Saved</p>
-                                        <p className="text-lg font-bold text-green-400">0.024 SOL</p>
+                                        <p className="text-lg font-bold text-green-400">0.024 KAS</p>
                                     </div>
                                     <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                                         <div className="bg-green-500 h-full w-[85%]" />
                                     </div>
-                                    <p className="text-[10px] text-zinc-500 mt-2 text-right">Lazorkit covers 100% of network fees</p>
+                                    <p className="text-[10px] text-zinc-500 mt-2 text-right">CadPay covers 100% of network fees</p>
                                 </div>
                             </div>
                         </div>
