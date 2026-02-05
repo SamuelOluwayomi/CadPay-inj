@@ -12,7 +12,6 @@ interface SubscribeModalProps {
     service: Service | null;
     onSubscribe: (serviceId: string, plan: SubscriptionPlan, email: string, price: number) => Promise<void>;
     balance: number;
-    balance: number;
     kasPrice: number | null;
     existingSubscriptions?: Array<{ serviceId: string; email: string }>;
 }
