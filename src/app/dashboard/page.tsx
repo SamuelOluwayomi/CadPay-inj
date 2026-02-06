@@ -34,7 +34,7 @@ type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'paymen
 
 export default function Dashboard() {
 
-    const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance } = useKasWare();
+    const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
     const usdcBalance = 0;
 
@@ -332,6 +332,8 @@ export default function Dashboard() {
                             loading={loading}
                             copyToClipboard={copyToClipboard}
                             onOpenSend={() => setShowSendModal(true)}
+                            transactions={transactions}
+                            fetchTransactions={fetchTransactions}
                         />
                     )}
 
@@ -458,10 +460,9 @@ function NavItem({ icon, label, active, onClick }: any) {
 }
 
 // Overview Section
-function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend, refreshBalance }: any) {
+function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend, refreshBalance, transactions, fetchTransactions }: any) {
     const [showUSD, setShowUSD] = useState(true);
     const [kasPrice, setKasPrice] = useState<number | null>(null);
-    const [transactions, setTransactions] = useState<any[]>([]);
     const { subscriptions } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
@@ -480,10 +481,12 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
         fetchPrice();
     }, []);
 
-    // Stub simple transaction history
+    // Initial fetch for transactions
     useEffect(() => {
-        setTransactions([]);
-    }, []);
+        if (address && fetchTransactions) {
+            fetchTransactions();
+        }
+    }, [address, fetchTransactions]);
 
     const handleFundDemo = async () => {
         if (!address) return;
@@ -507,8 +510,9 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
 
                 localStorage.setItem('demo_balance', newBal.toString());
 
-                // Refresh balance immediately
+                // Refresh balance immediately (this now also refreshes transactions in useKasWare)
                 if (refreshBalance) refreshBalance();
+                if (fetchTransactions) fetchTransactions();
             } else {
                 showToast(data.error || "Faucet failed", "error");
             }
@@ -636,7 +640,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                     {transactions.length === 0 ? (
                         <p className="text-zinc-500 text-sm text-center py-8">No transactions yet</p>
                     ) : (
-                        transactions.map((tx, i) => (
+                        transactions.map((tx: any) => (
                             <div key={tx.signature} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.err ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
                                     }`}>

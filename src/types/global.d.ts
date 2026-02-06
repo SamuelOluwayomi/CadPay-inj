@@ -9,5 +9,6 @@ interface Window {
         signMessage: (message: string) => Promise<string>;
         signTransaction: (tx: string) => Promise<string>;
         getBalance: () => Promise<{ total: number; confirmed: number; unconfirmed: number }>;
+        on: (event: string, handler: (data: any) => void) => void;
     };
 }

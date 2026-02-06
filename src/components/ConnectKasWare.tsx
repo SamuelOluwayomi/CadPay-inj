@@ -4,10 +4,14 @@ import { useKasWare } from '@/hooks/useKasWare';
 import { useRouter } from 'next/navigation';
 
 export default function ConnectKasWare() {
-    const { connect, isConnected, isLoading, error } = useKasWare();
+    const { connect, isConnected, isLoading, error, isAvailable } = useKasWare();
     const router = useRouter();
 
     const handleConnect = async () => {
+        if (!isAvailable) {
+            window.open('https://www.kasware.xyz/', '_blank');
+            return;
+        }
         const addr = await connect();
         if (addr) {
             // Successfully connected!
@@ -31,15 +35,15 @@ export default function ConnectKasWare() {
 
                 <div className="flex flex-col items-start">
                     <span className="font-bold text-white text-lg">
-                        {isLoading ? "Connecting..." : isConnected ? "Connected" : "Connect KasWare"}
+                        {!isAvailable ? "Install KasWare" : isLoading ? "Connecting..." : isConnected ? "Connected" : "Connect KasWare"}
                     </span>
                     <span className="text-xs text-zinc-400 group-hover:text-orange-400 transition-colors">
-                        Browser Extension
+                        {isAvailable ? "Browser Extension Detected" : "Browser Extension Required"}
                     </span>
                 </div>
 
                 {/* Status Indicator */}
-                <div className={`absolute right-4 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-zinc-600'}`} />
+                <div className={`absolute right-4 w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : isAvailable ? 'bg-orange-500' : 'bg-zinc-600'}`} />
             </button>
 
             {error && (
