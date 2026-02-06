@@ -123,15 +123,33 @@ export const useKasWare = () => {
         }
     };
 
-    // Initialize availability
+    // Initialize availability and passive account check
     useEffect(() => {
         checkKasWare();
+
+        const passiveCheck = async () => {
+            if (typeof window !== 'undefined' && window.kasware) {
+                try {
+                    const accounts = await window.kasware.getAccounts();
+                    if (accounts.length > 0) {
+                        setAddress(accounts[0]);
+                        setIsConnected(true);
+                        fetchBalance(accounts[0]);
+                    }
+                } catch (e) {
+                    console.warn("Passive KasWare check failed", e);
+                }
+            }
+        };
+
+        passiveCheck();
 
         // Listen for account changes if connected
         if (typeof window !== 'undefined' && window.kasware) {
             window.kasware.on('accountsChanged', (accounts: string[]) => {
                 if (accounts.length > 0) {
                     setAddress(accounts[0]);
+                    setIsConnected(true);
                     fetchBalance(accounts[0]);
                 } else {
                     setAddress(null);
