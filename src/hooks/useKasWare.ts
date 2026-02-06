@@ -23,21 +23,40 @@ export const useKasWare = () => {
         try {
             // Using Kaspa Explorer API (Testnet-10)
             const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/full-transactions?limit=10`);
+            if (!response.ok) throw new Error("Failed to fetch transactions");
             const data = await response.json();
 
             // Format transactions for the UI
-            const formatted = data.map((tx: any) => ({
-                signature: tx.transaction_id,
-                blockTime: tx.block_time / 1000, // Convert to seconds
-                amount: 0, // Would need more logic to sum inputs/outputs for specific address
-                isOutgoing: tx.inputs.some((input: any) => input.previous_outpoint_address === addr),
-                status: 'Success'
-            }));
+            const formatted = data.map((tx: any) => {
+                const isOutgoing = tx.inputs.some((input: any) => input.previous_outpoint_address === addr);
+                let amount = 0;
+
+                if (isOutgoing) {
+                    // Outgoing: Sum of outputs that go to OTHER addresses
+                    amount = tx.outputs
+                        .filter((out: any) => out.script_public_key_address !== addr)
+                        .reduce((acc: number, out: any) => acc + (out.amount || 0), 0);
+                } else {
+                    // Incoming: Sum of outputs that go to THIS address
+                    amount = tx.outputs
+                        .filter((out: any) => out.script_public_key_address === addr)
+                        .reduce((acc: number, out: any) => acc + (out.amount || 0), 0);
+                }
+
+                return {
+                    signature: tx.transaction_id,
+                    blockTime: Math.floor(tx.block_time / 1000),
+                    amount: amount / 100000000,
+                    isOutgoing,
+                    status: 'Success',
+                    timestamp: tx.block_time,
+                    err: false
+                };
+            });
 
             setTransactions(formatted);
         } catch (e) {
             console.error("Failed to fetch transactions", e);
-            // Fallback to empty or local if API fails
         }
     }, []);
 
@@ -53,15 +72,15 @@ export const useKasWare = () => {
                 const balanceData = await window.kasware.getBalance();
                 setBalance(balanceData.total / 100000000);
             } else {
-                // 1. Check local demo balance first (for faucet simulation)
-                const localBalance = localStorage.getItem(`demo_balance_${addr}`);
-                if (localBalance) {
-                    setBalance(parseFloat(localBalance));
-                } else {
-                    // 2. Fallback to real API
-                    const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/balance`);
+                // Prioritize real API for balance
+                const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/balance`);
+                if (response.ok) {
                     const data = await response.json();
                     setBalance(data.balance / 100000000);
+                } else {
+                    // Fallback to local only if API fails
+                    const localBalance = localStorage.getItem(`demo_balance_${addr}`);
+                    if (localBalance) setBalance(parseFloat(localBalance));
                 }
             }
             // Also fetch transactions when balance is fetched
@@ -142,35 +161,38 @@ export const useKasWare = () => {
 
         const passiveCheck = async () => {
             if (typeof window !== 'undefined') {
+                setIsLoading(true);
                 console.log("🔍 Passive session check started...");
-                // 1. Check local storage for persistent wallets (e.g. biometric)
-                const localAddr = localStorage.getItem('active_wallet_address');
-                if (localAddr) {
-                    console.log("✅ Found active session in local storage:", localAddr);
-                    setAddress(localAddr);
-                    setIsConnected(true);
-                    fetchBalance(localAddr);
-                    return; // Prefer local if just set
-                }
+                try {
+                    // 1. Check local storage for persistent wallets (e.g. biometric)
+                    const localAddr = localStorage.getItem('active_wallet_address');
+                    if (localAddr) {
+                        console.log("✅ Found active session in local storage:", localAddr);
+                        setAddress(localAddr);
+                        setIsConnected(true);
+                        await fetchBalance(localAddr);
+                        return; // Prefer local if just set
+                    }
 
-                // 2. Check KasWare extension
-                if (window.kasware) {
-                    console.log("🔍 Checking KasWare for authorized accounts...");
-                    try {
+                    // 2. Check KasWare extension
+                    if (window.kasware) {
+                        console.log("🔍 Checking KasWare for authorized accounts...");
                         const accounts = await window.kasware.getAccounts();
                         if (accounts.length > 0) {
                             console.log("✅ KasWare already authorized:", accounts[0]);
                             setAddress(accounts[0]);
                             setIsConnected(true);
-                            fetchBalance(accounts[0]);
+                            await fetchBalance(accounts[0]);
                         } else {
                             console.log("ℹ️ KasWare detected but no accounts authorized.");
                         }
-                    } catch (e) {
-                        console.warn("⚠️ Passive KasWare check failed", e);
+                    } else {
+                        console.log("ℹ️ KasWare extension not found.");
                     }
-                } else {
-                    console.log("ℹ️ KasWare extension not found.");
+                } catch (e) {
+                    console.warn("⚠️ Passive KasWare check failed", e);
+                } finally {
+                    setIsLoading(false);
                 }
             }
         };

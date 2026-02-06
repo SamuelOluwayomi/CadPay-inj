@@ -94,7 +94,11 @@ export default function Dashboard() {
     const refetchUsdc = async () => { };
 
     useEffect(() => {
+        // If we're still loading either the wallet or the profile, do nothing.
+        // This prevents the modal from flashing before we know if a profile exists.
         if (loading || profileLoading) return;
+
+        // Only show onboarding if the wallet is connected BUT no profile was found.
         if (address && !profile) {
             setShowOnboarding(true);
         } else {
@@ -1142,7 +1146,7 @@ function PaymentLinkSection() {
         <div className="space-y-6">
             <h1 className="text-4xl font-bold">Create Payment Link</h1>
             <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-8">
-                <p className="text-zinc-400 mb-6">Generate payment links to receive SOL payments</p>
+                <p className="text-zinc-400 mb-6">Generate payment links to receive KAS payments</p>
                 <button className="px-8 py-4 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all flex items-center gap-2">
                     <PlusIcon weight="bold" size={20} /> Create New Payment Link
                 </button>
