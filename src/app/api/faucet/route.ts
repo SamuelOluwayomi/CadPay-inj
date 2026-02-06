@@ -15,7 +15,7 @@ async function getKaspa() {
 
     // Dynamic import the JS glue
     // @ts-ignore
-    const kaspa = await import('../../../../../vendor/kluster/kaspa-wasm-web/kaspa.js');
+    const kaspa = await import('../../../../vendor/kluster/kaspa-wasm-web/kaspa.js');
 
     // Load WASM buffer manually for Node.js environment
     const wasmPath = path.join(process.cwd(), 'vendor/kluster/kaspa-wasm-web/kaspa_bg.wasm');
