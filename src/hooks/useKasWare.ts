@@ -102,8 +102,19 @@ export const useKasWare = () => {
 
         } catch (err: any) {
             console.error("KasWare Connection Error:", err);
-            // Only show error text if it's not the user cancelling
-            if (!err.message?.includes("User rejected")) {
+
+            // SPECIFIC FIX FOR CODE 4900
+            if (err.code === 4900) {
+                setError("Wallet is disconnected. Please open KasWare and switch to Testnet-10 manually.");
+                // Optional: Try to programmatically reconnect
+                try {
+                    if (window.kasware) {
+                        await window.kasware.switchNetwork('testnet-10');
+                    }
+                } catch (retryErr) {
+                    // If that fails, just ask user to do it
+                }
+            } else if (!err.message?.includes("User rejected")) {
                 setError(err.message || "Failed to connect.");
             }
             setIsConnected(false);
