@@ -492,7 +492,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
         if (!address) return;
         setIsFunding(true);
         try {
-            showToast("Requesting funds from Private Faucet...", "info");
+            showToast("Requesting funds from Private Vault...", "info");
             const res = await fetch('/api/faucet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -501,14 +501,14 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
             const data = await res.json();
 
             if (data.success) {
-                showToast("Funding Successful! +100 KAS", "success");
+                const fundingAmount = data.amount || 100;
+                showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
 
                 // Update Local Demo Balance (for Biometric Wallet)
-                const currentBal = parseFloat(balance) || 0;
-                const newBal = currentBal + 100;
-                localStorage.setItem('demo_balance', newBal.toString());
-
-                localStorage.setItem('demo_balance', newBal.toString());
+                // This helps reflect the change before the chain indexer picks it up
+                const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
+                const newBal = currentBal + fundingAmount;
+                localStorage.setItem(`demo_balance_${address}`, newBal.toString());
 
                 // Refresh balance immediately (this now also refreshes transactions in useKasWare)
                 if (refreshBalance) refreshBalance();

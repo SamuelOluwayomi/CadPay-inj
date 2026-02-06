@@ -43,13 +43,26 @@ export const useKasWare = () => {
 
     const fetchBalance = useCallback(async (addr: string) => {
         try {
+            let kasWareAddr = null;
             if (window.kasware) {
+                const accounts = await window.kasware.getAccounts();
+                kasWareAddr = accounts[0];
+            }
+
+            if (window.kasware && addr === kasWareAddr) {
                 const balanceData = await window.kasware.getBalance();
                 setBalance(balanceData.total / 100000000);
             } else {
-                // Fallback to local demo balance
-                const localBalance = localStorage.getItem('demo_balance');
-                setBalance(localBalance ? parseFloat(localBalance) : 0);
+                // 1. Check local demo balance first (for faucet simulation)
+                const localBalance = localStorage.getItem(`demo_balance_${addr}`);
+                if (localBalance) {
+                    setBalance(parseFloat(localBalance));
+                } else {
+                    // 2. Fallback to real API
+                    const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/balance`);
+                    const data = await response.json();
+                    setBalance(data.balance / 100000000);
+                }
             }
             // Also fetch transactions when balance is fetched
             fetchTransactions(addr);
@@ -128,16 +141,36 @@ export const useKasWare = () => {
         checkKasWare();
 
         const passiveCheck = async () => {
-            if (typeof window !== 'undefined' && window.kasware) {
-                try {
-                    const accounts = await window.kasware.getAccounts();
-                    if (accounts.length > 0) {
-                        setAddress(accounts[0]);
-                        setIsConnected(true);
-                        fetchBalance(accounts[0]);
+            if (typeof window !== 'undefined') {
+                console.log("🔍 Passive session check started...");
+                // 1. Check local storage for persistent wallets (e.g. biometric)
+                const localAddr = localStorage.getItem('active_wallet_address');
+                if (localAddr) {
+                    console.log("✅ Found active session in local storage:", localAddr);
+                    setAddress(localAddr);
+                    setIsConnected(true);
+                    fetchBalance(localAddr);
+                    return; // Prefer local if just set
+                }
+
+                // 2. Check KasWare extension
+                if (window.kasware) {
+                    console.log("🔍 Checking KasWare for authorized accounts...");
+                    try {
+                        const accounts = await window.kasware.getAccounts();
+                        if (accounts.length > 0) {
+                            console.log("✅ KasWare already authorized:", accounts[0]);
+                            setAddress(accounts[0]);
+                            setIsConnected(true);
+                            fetchBalance(accounts[0]);
+                        } else {
+                            console.log("ℹ️ KasWare detected but no accounts authorized.");
+                        }
+                    } catch (e) {
+                        console.warn("⚠️ Passive KasWare check failed", e);
                     }
-                } catch (e) {
-                    console.warn("Passive KasWare check failed", e);
+                } else {
+                    console.log("ℹ️ KasWare extension not found.");
                 }
             }
         };
@@ -147,6 +180,7 @@ export const useKasWare = () => {
         // Listen for account changes if connected
         if (typeof window !== 'undefined' && window.kasware) {
             window.kasware.on('accountsChanged', (accounts: string[]) => {
+                console.log("🔄 KasWare Account Changed:", accounts);
                 if (accounts.length > 0) {
                     setAddress(accounts[0]);
                     setIsConnected(true);
@@ -154,6 +188,7 @@ export const useKasWare = () => {
                 } else {
                     setAddress(null);
                     setIsConnected(false);
+                    localStorage.removeItem('active_wallet_address');
                 }
             });
         }

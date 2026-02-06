@@ -88,26 +88,10 @@ export default function CreateAccount() {
                 : await createWalletWithPassword(email, kaspaWallet.mnemonic, password);
 
             if (result.success) {
-                // 1. Upload to Supabase (User Request)
-                const { error: sbError } = await supabase.from('profiles').upsert([
-                    {
-                        wallet_address: kaspaWallet.address,
-                        username: email.split('@')[0], // Default username from email
-                        emoji: '👤',
-                        gender: 'other',
-                        pin: '0000'
-                    }
-                ]);
-
-                if (sbError) {
-                    console.error("Supabase upload failed:", sbError);
-                    // Don't block flow, but maybe warn?
-                }
-
-                // 2. Set Active Session (Local Storage)
+                // 1. Set Active Session (Local Storage)
                 localStorage.setItem('active_wallet_address', kaspaWallet.address);
 
-                // Auto-download recovery kit
+                // 2. Auto-download recovery kit
                 downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic);
                 setStatus('success');
 
