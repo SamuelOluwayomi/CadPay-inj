@@ -88,14 +88,37 @@ export default function CreateAccount() {
                 : await createWalletWithPassword(email, kaspaWallet.mnemonic, password);
 
             if (result.success) {
-                // 1. Set Active Session (Local Storage)
-                localStorage.setItem('active_wallet_address', kaspaWallet.address);
+                // 1. Store credentials in Supabase
+                const { hashPassword } = await import('@/utils/passwordHash');
+                const passwordHash = useBiometrics ? null : await hashPassword(password);
 
-                // 2. Auto-download recovery kit
+                const { error: credError } = await supabase
+                    .from('user_credentials')
+                    .insert([
+                        {
+                            email: email,
+                            wallet_address: kaspaWallet.address,
+                            auth_method: useBiometrics ? 'biometric' : 'password',
+                            password_hash: passwordHash
+                        }
+                    ]);
+
+                if (credError) {
+                    console.error('Failed to store credentials:', credError);
+                    setStatus('error');
+                    setErrorMessage('Failed to save account credentials');
+                    return;
+                }
+
+                // 2. Set Active Session (Local Storage)
+                localStorage.setItem('active_wallet_address', kaspaWallet.address);
+                localStorage.setItem('auth_email', email);
+
+                // 3. Auto-download recovery kit
                 downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic);
                 setStatus('success');
 
-                // 3. Redirect to Dashboard after short delay
+                // 4. Redirect to Dashboard after short delay
                 setTimeout(() => {
                     router.push('/dashboard');
                 }, 1500);
