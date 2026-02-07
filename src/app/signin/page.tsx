@@ -17,23 +17,33 @@ export default function SignIn() {
     const [checkingEmail, setCheckingEmail] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    // Check email when user enters it
-    const handleEmailCheck = async () => {
-        if (!email) return;
-
-        setCheckingEmail(true);
-        setErrorMessage('');
-
-        const result = await checkEmailExists(email);
-        if (result.exists && result.authMethod) {
-            setAuthMethod(result.authMethod);
-        } else {
-            setErrorMessage('No account found with this email');
+    // Auto-check email with debounce
+    useEffect(() => {
+        if (!email || email.length < 5) {
             setAuthMethod(null);
+            setCheckingEmail(false);
+            return;
         }
 
-        setCheckingEmail(false);
-    };
+        // Show loading immediately
+        setCheckingEmail(true);
+        setErrorMessage('');
+        setAuthMethod(null);
+
+        // Debounce the actual check
+        const timer = setTimeout(async () => {
+            const result = await checkEmailExists(email);
+            if (result.exists && result.authMethod) {
+                setAuthMethod(result.authMethod);
+            } else {
+                setErrorMessage('No account found with this email');
+                setAuthMethod(null);
+            }
+            setCheckingEmail(false);
+        }, 800); // 800ms debounce
+
+        return () => clearTimeout(timer);
+    }, [email, checkEmailExists]);
 
     // Handle sign in
     const handleSignIn = async (e: React.FormEvent) => {
@@ -118,11 +128,7 @@ export default function SignIn() {
                                 <input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => {
-                                        setEmail(e.target.value);
-                                        setAuthMethod(null);
-                                    }}
-                                    onBlur={handleEmailCheck}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="you@example.com"
                                     className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all"
                                     required
