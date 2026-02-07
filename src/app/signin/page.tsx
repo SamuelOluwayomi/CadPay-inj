@@ -43,7 +43,8 @@ export default function SignIn() {
         }, 800); // 800ms debounce
 
         return () => clearTimeout(timer);
-    }, [email, checkEmailExists]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [email]); // Only re-run when email changes
 
     // Handle sign in
     const handleSignIn = async (e: React.FormEvent) => {
