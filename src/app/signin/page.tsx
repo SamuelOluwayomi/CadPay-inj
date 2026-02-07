@@ -17,23 +17,29 @@ export default function SignIn() {
     const [checkingEmail, setCheckingEmail] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-    // Check email when user enters it
-    const handleEmailCheck = async () => {
-        if (!email) return;
-
-        setCheckingEmail(true);
-        setErrorMessage('');
-
-        const result = await checkEmailExists(email);
-        if (result.exists && result.authMethod) {
-            setAuthMethod(result.authMethod);
-        } else {
-            setErrorMessage('No account found with this email');
+    // Check email when user enters it (with debounce)
+    useEffect(() => {
+        if (!email || email.length < 5) {
             setAuthMethod(null);
+            return;
         }
 
-        setCheckingEmail(false);
-    };
+        const timeoutId = setTimeout(async () => {
+            setCheckingEmail(true);
+            setErrorMessage('');
+
+            const result = await checkEmailExists(email);
+            if (result.exists && result.authMethod) {
+                setAuthMethod(result.authMethod);
+            } else {
+                setAuthMethod(null);
+            }
+
+            setCheckingEmail(false);
+        }, 800);
+
+        return () => clearTimeout(timeoutId);
+    }, [email, checkEmailExists]);
 
     // Handle sign in
     const handleSignIn = async (e: React.FormEvent) => {
@@ -119,11 +125,7 @@ export default function SignIn() {
                                     <input
                                         type="email"
                                         value={email}
-                                        onChange={(e) => {
-                                            setEmail(e.target.value);
-                                            setAuthMethod(null);
-                                        }}
-                                        onBlur={handleEmailCheck}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@example.com"
                                         className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all"
                                         required
@@ -183,8 +185,8 @@ export default function SignIn() {
 
                             <button
                                 type="submit"
-                                disabled={!authMethod || isLoading}
-                                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                                disabled={!authMethod || isLoading || checkingEmail}
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 {isLoading ? (
                                     <>
