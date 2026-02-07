@@ -7,7 +7,7 @@ import { CheckCircleIcon, XCircleIcon, ClockIcon, CopyIcon } from '@phosphor-ico
 import Link from 'next/link';
 
 export default function AdminPage() {
-    const { address, isConnected, requestAccount, sendKaspa } = useKasWare();
+    const { address, isConnected, connect } = useKasWare();
     const { pendingRequests, isLoading, updateRequestStatus, refetch } = useFundRequests();
     const [processing, setProcessing] = useState<string[]>([]);
 
@@ -23,17 +23,30 @@ export default function AdminPage() {
             // Convert sompi to KAS (divide by 100,000,000)
             const amountKAS = request.amount / 100_000_000;
 
-            console.log(`Sending ${amountKAS} KAS to ${request.user_address}`);
+            // For demo purposes, prompt admin to send via KasWare UI
+            const confirmed = confirm(
+                `Send ${amountKAS} KAS to:\n${request.user_address}\n\nThis will open KasWare. After sending, paste the transaction ID.`
+            );
 
-            // Send transaction using KasWare
-            const txId = await sendKaspa(request.user_address, amountKAS);
+            if (!confirmed) {
+                setProcessing(processing.filter(id => id !== request.id));
+                return;
+            }
 
-            console.log('Transaction successful:', txId);
+            // Prompt for transaction ID
+            const txId = prompt('Enter the transaction ID from KasWare:');
+
+            if (!txId || txId.trim() === '') {
+                throw new Error('Transaction ID is required');
+            }
+
+            console.log('Transaction ID:', txId);
 
             // Update request status
             await updateRequestStatus(request.id, 'approved', txId);
 
-            alert(`✅ Sent ${amountKAS} KAS! TxID: ${txId}`);
+            alert(`✅ Request approved! TxID: ${txId}`);
+            refetch();
         } catch (error: any) {
             console.error('Failed to approve request:', error);
 
@@ -103,7 +116,7 @@ export default function AdminPage() {
                         </div>
                     ) : (
                         <button
-                            onClick={requestAccount}
+                            onClick={connect}
                             className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-all"
                         >
                             Connect Admin Wallet
