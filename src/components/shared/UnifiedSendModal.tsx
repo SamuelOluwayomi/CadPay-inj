@@ -124,7 +124,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Recipient Address</label>
                                         <div className="relative">
                                             <input
-                                                placeholder="kaspatest:kaspatest:qzsv8nxe2qpe2qwpromeun0lqu4z5fyfgthdgh...."
+                                                placeholder="kaspatest:qzsv8nxe2qpe2qwpromeun0lqu4z5fyfgthdgh...."
                                                 className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all font-mono"
                                                 value={recipient}
                                                 onChange={(e) => setRecipient(e.target.value)}
