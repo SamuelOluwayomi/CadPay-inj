@@ -1,44 +1,20 @@
 import { NextResponse } from 'next/server';
 
-// 1. Force Edge Runtime (Compatible with Vercel's Edge Functions)
-export const runtime = 'edge';
+// 1. Use Node.js Runtime (Max size: 50MB) - Solves the "4.28MB" error
+export const runtime = 'nodejs';
 
-// 2. Lazy-load the WASM library
-let kaspaModule: any = null;
-let isInitialized = false;
+// 2. Import the WASM library
+import * as kaspa from '@kluster/kaspa-wasm-web';
 
-async function initializeKaspa(request: Request) {
-    if (isInitialized && kaspaModule) {
-        return kaspaModule;
-    }
-
-    // Import the JS glue code
-    const kaspa = await import('@kluster/kaspa-wasm-web');
-
-    // Load WASM file from public folder (guaranteed to be deployed)
-    const proto = request.headers.get('x-forwarded-proto') || 'https';
-    const host = request.headers.get('host') || 'localhost:3000';
-    const wasmUrl = `${proto}://${host}/kaspa_wasm_bg.wasm`;
-
-    console.log(`🔄 Loading WASM from: ${wasmUrl}`);
-
-    const response = await fetch(wasmUrl);
-    if (!response.ok) {
-        throw new Error(`Failed to load WASM file: ${response.status} ${response.statusText}`);
-    }
-
-    const wasmBuffer = await response.arrayBuffer();
-    console.log(`📦 WASM loaded, size: ${wasmBuffer.byteLength} bytes`);
-
-    // Initialize the library with the manual buffer
-    await kaspa.default(wasmBuffer);
-    console.log(`✅ WASM initialized successfully`);
-
-    kaspaModule = kaspa;
-    isInitialized = true;
-
-    return kaspa;
+// Polyfill WebSocket for Node.js environment (required by kaspa-wasm-web)
+// @ts-ignore
+if (typeof global !== 'undefined' && !global.WebSocket) {
+    // @ts-ignore
+    global.WebSocket = globalThis.WebSocket;
 }
+
+// Cache the initialized WASM to avoid re-fetching on every request
+let isWasmInitialized = false;
 
 export async function POST(request: Request) {
     let rpc: any = null;
@@ -50,16 +26,37 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });
         }
         if (!faucetKey) {
-            console.error("❌ Missing FAUCET_PRIVATE_KEY");
+            console.error("❌ Missing FAUCET_PRIVATE_KEY in environment");
             return NextResponse.json({ error: 'Faucet configuration error' }, { status: 500 });
         }
 
+        // --- THE FIX: Self-Fetch Strategy ---
+        // Fetch WASM from our own public folder via HTTP
+        if (!isWasmInitialized) {
+            const host = request.headers.get('host');
+            const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+            const wasmUrl = `${protocol}://${host}/kaspa_wasm_bg.wasm`;
+
+            console.log(`🔄 Fetching WASM from: ${wasmUrl}`);
+
+            const wasmResponse = await fetch(wasmUrl);
+            if (!wasmResponse.ok) {
+                throw new Error(`Failed to load WASM from public folder: ${wasmResponse.status} ${wasmResponse.statusText}`);
+            }
+
+            const wasmBuffer = await wasmResponse.arrayBuffer();
+            console.log(`📦 WASM loaded, size: ${wasmBuffer.byteLength} bytes`);
+
+            // Initialize the library with the downloaded buffer
+            await kaspa.default(wasmBuffer);
+            isWasmInitialized = true;
+            console.log(`✅ WASM initialized successfully`);
+        }
+        // ------------------------------------
+
         console.log(`💧 Faucet request for: ${address}`);
 
-        // Initialize Kaspa WASM
-        const kaspa = await initializeKaspa(request);
-
-        // Setup RPC Client (Public Testnet Node)
+        // 3. Setup RPC
         console.log(`🔗 Connecting to RPC...`);
         rpc = new kaspa.RpcClient({
             url: "wss://photon-10.kaspa.red/kaspa/testnet-10/wrpc/borsh",
@@ -70,12 +67,12 @@ export async function POST(request: Request) {
         await rpc.connect();
         console.log(`✅ RPC connected`);
 
-        // Setup Private Key and Address
+        // 4. Setup Faucet Wallet
         const privateKey = new kaspa.PrivateKey(faucetKey);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
         console.log(`🔑 Faucet address: ${sourceAddress.toString()}`);
 
-        // Fetch UTXOs
+        // 5. Fetch UTXOs
         console.log(`📡 Fetching UTXOs...`);
         const { entries } = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
 
@@ -90,7 +87,7 @@ export async function POST(request: Request) {
 
         console.log(`📦 Found ${entries.length} UTXOs`);
 
-        // Create Transaction
+        // 6. Create Transaction
         const amountSompi = 100n * 100_000_000n; // 100 KAS
         console.log(`💸 Creating transaction for ${amountSompi} sompi...`);
 
@@ -105,7 +102,7 @@ export async function POST(request: Request) {
             feeRate: 1.0
         });
 
-        // Generate and Sign
+        // 7. Generate and Sign
         console.log(`🔨 Generating transaction...`);
         const pendingTx = await generator.next();
 
@@ -120,7 +117,7 @@ export async function POST(request: Request) {
         console.log(`✍️ Signing transaction...`);
         await pendingTx.sign([privateKey]);
 
-        // Submit Transaction
+        // 8. Submit Transaction
         console.log(`📤 Broadcasting transaction...`);
         const txId = await pendingTx.submit(rpc);
 
@@ -131,7 +128,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             txId: txId,
-            message: "Funding successfully broadcasted from Private Faucet!",
+            message: "Funds sent successfully from Private Faucet!",
             amount: 100
         });
 
@@ -150,7 +147,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({
-            error: error.message || "Internal transaction error",
+            error: error.message || "Transaction failed",
             details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
         }, { status: 500 });
     }
