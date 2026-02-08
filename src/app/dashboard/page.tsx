@@ -29,7 +29,6 @@ import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useKasWare } from '@/hooks/useKasWare';
 import { useToast } from '@/context/ToastContext';
-import { useFundRequests } from '@/hooks/useFundRequests';
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'invoices' | 'dev-keys' | 'savings';
 
@@ -471,7 +470,6 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
     const { subscriptions } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
-    const { latestRequest, refetch: refetchFundRequests } = useFundRequests(address);
 
     // Fetch KAS price
     useEffect(() => {
@@ -494,29 +492,11 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
         }
     }, [address, fetchTransactions]);
 
-    // Monitor fund request status
-    useEffect(() => {
-        if (latestRequest && latestRequest.status === 'approved' && latestRequest.tx_id) {
-            showToast(`Funded! ✅ Received ${latestRequest.amount / 100_000_000} KAS`, "success");
-            if (refreshBalance) refreshBalance();
-            if (fetchTransactions) fetchTransactions();
-        } else if (latestRequest && latestRequest.status === 'failed') {
-            showToast(`Fund request failed: ${latestRequest.error_message}`, "error");
-        }
-    }, [latestRequest]);
-
     const handleFundDemo = async () => {
         if (!address) return;
-
-        // Check if there's already a pending request
-        if (latestRequest && latestRequest.status === 'pending') {
-            showToast("You already have a pending fund request. Please wait.", "info");
-            return;
-        }
-
         setIsFunding(true);
         try {
-            showToast("Submitting fund request...", "info");
+            showToast("Requesting funds from Private Vault...", "info");
             const res = await fetch('/api/faucet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -525,13 +505,23 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
             const data = await res.json();
 
             if (data.success) {
-                showToast(`Request submitted! Awaiting admin approval...`, "success");
-                refetchFundRequests();
+                const fundingAmount = data.amount || 100;
+                showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
+
+                // Update Local Demo Balance (for Biometric Wallet)
+                // This helps reflect the change before the chain indexer picks it up
+                const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
+                const newBal = currentBal + fundingAmount;
+                localStorage.setItem(`demo_balance_${address}`, newBal.toString());
+
+                // Refresh balance immediately (this now also refreshes transactions in useKasWare)
+                if (refreshBalance) refreshBalance();
+                if (fetchTransactions) fetchTransactions();
             } else {
-                showToast(data.error || "Fund request failed", "error");
+                showToast(data.error || "Faucet failed", "error");
             }
         } catch (e) {
-            showToast("Fund request failed", "error");
+            showToast("Faucet request failed", "error");
         } finally {
             setIsFunding(false);
         }
