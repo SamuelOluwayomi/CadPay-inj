@@ -8,7 +8,8 @@ import { StorefrontIcon } from '@phosphor-icons/react';
 
 export interface SubscriptionPlan {
     name: string;
-    price: number;
+    priceKas: number;   // Primary: Price in KAS
+    priceUsd: number;   // Secondary: USD equivalent for display
     features: string[];
 }
 
@@ -31,9 +32,9 @@ export const SERVICES: Service[] = [
         icon: SiNetflix,
         description: 'Stream movies and TV shows',
         plans: [
-            { name: 'Basic', price: 9.99, features: ['720p', '1 screen', 'Unlimited content'] },
-            { name: 'Standard', price: 15.49, features: ['1080p', '2 screens', 'Downloads'] },
-            { name: 'Premium', price: 19.99, features: ['4K+HDR', '4 screens', 'Spatial audio'] }
+            { name: 'Basic', priceKas: 66.6, priceUsd: 9.99, features: ['720p', '1 screen', 'Unlimited content'] },
+            { name: 'Standard', priceKas: 103.3, priceUsd: 15.49, features: ['1080p', '2 screens', 'Downloads'] },
+            { name: 'Premium', priceKas: 133.3, priceUsd: 19.99, features: ['4K+HDR', '4 screens', 'Spatial audio'] }
         ]
     },
     {
@@ -44,9 +45,9 @@ export const SERVICES: Service[] = [
         icon: SiSpotify,
         description: 'Music streaming service',
         plans: [
-            { name: 'Free', price: 0, features: ['Ads', 'Shuffle play', 'Limited skips'] },
-            { name: 'Premium', price: 10.99, features: ['Ad-free', 'Download', 'High quality'] },
-            { name: 'Family', price: 16.99, features: ['6 accounts', 'Kid profiles', 'Ad-free'] }
+            { name: 'Free', priceKas: 0, priceUsd: 0, features: ['Ads', 'Shuffle play', 'Limited skips'] },
+            { name: 'Premium', priceKas: 73.3, priceUsd: 10.99, features: ['Ad-free', 'Download', 'High quality'] },
+            { name: 'Family', priceKas: 113.3, priceUsd: 16.99, features: ['6 accounts', 'Kid profiles', 'Ad-free'] }
         ]
     },
     {
@@ -57,8 +58,8 @@ export const SERVICES: Service[] = [
         icon: SiYoutube,
         description: 'Ad-free videos and music',
         plans: [
-            { name: 'Individual', price: 13.99, features: ['Ad-free', 'Background play', 'Downloads'] },
-            { name: 'Family', price: 22.99, features: ['5 members', 'YouTube Music', 'Ad-free'] }
+            { name: 'Individual', priceKas: 93.3, priceUsd: 13.99, features: ['Ad-free', 'Background play', 'Downloads'] },
+            { name: 'Family', priceKas: 153.3, priceUsd: 22.99, features: ['5 members', 'YouTube Music', 'Ad-free'] }
         ]
     },
     {
@@ -69,8 +70,8 @@ export const SERVICES: Service[] = [
         icon: FaFilm,
         description: 'Disney, Pixar, Marvel & more',
         plans: [
-            { name: 'Basic', price: 7.99, features: ['With ads', '1080p', 'Download'] },
-            { name: 'Premium', price: 13.99, features: ['No ads', '4K UHD', '4 streams'] }
+            { name: 'Basic', priceKas: 53.3, priceUsd: 7.99, features: ['With ads', '1080p', 'Download'] },
+            { name: 'Premium', priceKas: 93.3, priceUsd: 13.99, features: ['No ads', '4K UHD', '4 streams'] }
         ]
     },
     {
@@ -81,8 +82,8 @@ export const SERVICES: Service[] = [
         icon: SiAmazonprime,
         description: 'Free shipping + streaming',
         plans: [
-            { name: 'Monthly', price: 14.99, features: ['Free shipping', 'Prime Video', 'Prime Music'] },
-            { name: 'Annual', price: 139, features: ['All benefits', 'Save $40/year'] }
+            { name: 'Monthly', priceKas: 100, priceUsd: 14.99, features: ['Free shipping', 'Prime Video', 'Prime Music'] },
+            { name: 'Annual', priceKas: 926.7, priceUsd: 139, features: ['All benefits', 'Save $40/year'] }
         ]
     },
     {
@@ -93,8 +94,8 @@ export const SERVICES: Service[] = [
         icon: SiApplemusic,
         description: '100M+ songs streaming',
         plans: [
-            { name: 'Individual', price: 10.99, features: ['Lossless', 'Spatial Audio', 'Offline'] },
-            { name: 'Family', price: 16.99, features: ['6 members', 'All features'] }
+            { name: 'Individual', priceKas: 73.3, priceUsd: 10.99, features: ['Lossless', 'Spatial Audio', 'Offline'] },
+            { name: 'Family', priceKas: 113.3, priceUsd: 16.99, features: ['6 members', 'All features'] }
         ]
     },
     {
@@ -105,8 +106,8 @@ export const SERVICES: Service[] = [
         icon: SiHbo,
         description: 'HBO originals & blockbusters',
         plans: [
-            { name: 'With Ads', price: 9.99, features: ['1080p', 'Limited ads', 'Download'] },
-            { name: 'Ad-Free', price: 15.99, features: ['4K', 'No ads', '4 streams'] }
+            { name: 'With Ads', priceKas: 66.6, priceUsd: 9.99, features: ['1080p', 'Limited ads', 'Download'] },
+            { name: 'Ad-Free', priceKas: 106.6, priceUsd: 15.99, features: ['4K', 'No ads', '4 streams'] }
         ]
     },
     {
@@ -117,8 +118,8 @@ export const SERVICES: Service[] = [
         icon: FaTv,
         description: 'TV shows next day',
         plans: [
-            { name: 'Basic', price: 7.99, features: ['With ads', 'Streaming library'] },
-            { name: 'No Ads', price: 17.99, features: ['Ad-free', 'Download', 'Live TV'] }
+            { name: 'Basic', priceKas: 53.3, priceUsd: 7.99, features: ['With ads', 'Streaming library'] },
+            { name: 'No Ads', priceKas: 120, priceUsd: 17.99, features: ['Ad-free', 'Download', 'Live TV'] }
         ]
     },
     {
@@ -129,8 +130,8 @@ export const SERVICES: Service[] = [
         icon: SiDiscord,
         description: 'Enhanced Discord experience',
         plans: [
-            { name: 'Basic', price: 2.99, features: ['Custom emoji', '50MB uploads'] },
-            { name: 'Nitro', price: 9.99, features: ['Boosts', '500MB uploads', 'HD streaming'] }
+            { name: 'Basic', priceKas: 20, priceUsd: 2.99, features: ['Custom emoji', '50MB uploads'] },
+            { name: 'Nitro', priceKas: 66.6, priceUsd: 9.99, features: ['Boosts', '500MB uploads', 'HD streaming'] }
         ]
     },
     {
@@ -141,9 +142,9 @@ export const SERVICES: Service[] = [
         icon: SiAdobe,
         description: 'Design & creative tools',
         plans: [
-            { name: 'Photography', price: 9.99, features: ['Photoshop', 'Lightroom', '20GB'] },
-            { name: 'Single App', price: 22.99, features: ['1 app', '100GB', 'Adobe Fonts'] },
-            { name: 'All Apps', price: 54.99, features: ['20+ apps', '100GB', 'Portfolio'] }
+            { name: 'Photography', priceKas: 66.6, priceUsd: 9.99, features: ['Photoshop', 'Lightroom', '20GB'] },
+            { name: 'Single App', priceKas: 153.3, priceUsd: 22.99, features: ['1 app', '100GB', 'Adobe Fonts'] },
+            { name: 'All Apps', priceKas: 366.6, priceUsd: 54.99, features: ['20+ apps', '100GB', 'Portfolio'] }
         ]
     },
     {
@@ -154,8 +155,8 @@ export const SERVICES: Service[] = [
         icon: SiGithub,
         description: 'Advanced collaboration',
         plans: [
-            { name: 'Pro', price: 4, features: ['Private repos', 'Insights', 'Protected branches'] },
-            { name: 'Team', price: 4, features: ['Per user', 'Team discussions', 'SAML SSO'] }
+            { name: 'Pro', priceKas: 26.7, priceUsd: 4, features: ['Private repos', 'Insights', 'Protected branches'] },
+            { name: 'Team', priceKas: 26.7, priceUsd: 4, features: ['Per user', 'Team discussions', 'SAML SSO'] }
         ]
     },
     {
@@ -166,7 +167,7 @@ export const SERVICES: Service[] = [
         icon: SiOpenai,
         description: 'Advanced AI assistant',
         plans: [
-            { name: 'Plus', price: 20, features: ['GPT-4', 'Priority access', 'Faster response'] }
+            { name: 'Plus', priceKas: 133.3, priceUsd: 20, features: ['GPT-4', 'Priority access', 'Faster response'] }
         ]
     }
 ];
