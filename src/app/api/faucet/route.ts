@@ -99,7 +99,8 @@ export async function POST(request: Request) {
             changeAddress: sourceAddress.toString(),
             entries: entries,
             networkId: "testnet-10",
-            feeRate: 1.0
+            feeRate: 1.0,
+            priorityFee: 0n // Explicitly set zero priority fee (sender pays standard fees)
         });
 
         // 7. Generate and Sign
