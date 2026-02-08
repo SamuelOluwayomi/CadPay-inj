@@ -116,7 +116,8 @@ export async function POST(request: Request) {
         }
 
         console.log(`✍️ Signing transaction...`);
-        await pendingTx.sign([privateKey]);
+        // Fix: Pass the key as a string to bypass WASM instanceof check failure
+        await pendingTx.sign([privateKey.toString()]);
 
         // 8. Submit Transaction
         console.log(`📤 Broadcasting transaction...`);
