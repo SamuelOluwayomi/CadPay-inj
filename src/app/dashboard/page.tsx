@@ -517,6 +517,18 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                 // Refresh balance immediately (this now also refreshes transactions in useKasWare)
                 if (refreshBalance) refreshBalance();
                 if (fetchTransactions) fetchTransactions();
+
+                // Refresh again after 2 seconds to catch blockchain confirmation
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    if (fetchTransactions) fetchTransactions();
+                }, 2000);
+
+                // Final refresh after 5 seconds for any slow confirmations
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    if (fetchTransactions) fetchTransactions();
+                }, 5000);
             } else {
                 showToast(data.error || "Faucet failed", "error");
             }
