@@ -10,7 +10,7 @@ import {
     ReceiptIcon, KeyIcon, SignOutIcon, CopyIcon, ArrowRightIcon, WalletIcon,
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
-    PaperPlaneTiltIcon
+    PaperPlaneTiltIcon, CheckCircleIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -29,8 +29,9 @@ import SavingsPotView from '@/components/shared/SavingsPotView';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useKasWare } from '@/hooks/useKasWare';
 import { useToast } from '@/context/ToastContext';
+import { useReceipts } from '@/hooks/useReceipts';
 
-type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'invoices' | 'dev-keys' | 'savings';
+type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'receipts' | 'dev-keys' | 'savings';
 
 export default function Dashboard() {
 
@@ -294,9 +295,9 @@ export default function Dashboard() {
                                 <div className="space-y-1">
                                     <NavItem
                                         icon={<ReceiptIcon size={20} />}
-                                        label="Invoices"
-                                        active={activeSection === 'invoices'}
-                                        onClick={() => { setActiveSection('invoices'); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                                        label="Receipts"
+                                        active={activeSection === 'receipts'}
+                                        onClick={() => { setActiveSection('receipts'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                                     />
                                     <NavItem
                                         icon={<KeyIcon size={20} />}
@@ -348,7 +349,7 @@ export default function Dashboard() {
                         address={walletAddress} copyToClipboard={copyToClipboard} />}
                     {activeSection === 'security' && <SecuritySettings />}
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
-                    {activeSection === 'invoices' && <InvoicesSection />}
+                    {activeSection === 'receipts' && <ReceiptsSection />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
                     {activeSection === 'savings' && <SavingsSection />}
                 </div>
@@ -738,7 +739,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 features: ['Unified Billing', 'Gasless Payments', 'Instant Access'],
                 plans: [{
                     name: 'Standard',
-                    price: ds.price,
+                    priceUSD: ds.price,
                     features: ['Full Access', 'Priority Support', 'HD Streaming']
                 }]
             }))
@@ -1167,15 +1168,153 @@ function PaymentLinkSection() {
     );
 }
 
-// Invoices Section
-function InvoicesSection() {
+// Receipts Section - Display Subscription Payment History
+function ReceiptsSection() {
+    const { address } = useKasWare();
+    const { receipts, loading, totalSpending, totalSpendingUSD } = useReceipts(address);
+
     return (
         <div className="space-y-6">
-            <h1 className="text-4xl font-bold">Invoices</h1>
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
-                <CreditCardIcon size={64} className="mx-auto mb-4 text-zinc-600" />
-                <p className="text-zinc-400">No invoices yet</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-bold">Receipts</h1>
+                    <p className="text-zinc-400 mt-2">View all your subscription payment receipts</p>
+                </div>
+
+                {receipts.length > 0 && (
+                    <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
+                        <p className="text-xs text-zinc-400 mb-1">Total Spent</p>
+                        <p className="text-2xl font-bold text-[#70C7BA]">{totalSpending.toFixed(2)} KAS</p>
+                        <p className="text-xs text-zinc-500">≈ ${totalSpendingUSD.toFixed(2)} USD</p>
+                    </div>
+                )}
             </div>
+
+            {loading ? (
+                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
+                    <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-zinc-400">Loading receipts...</p>
+                </div>
+            ) : receipts.length === 0 ? (
+                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
+                    <CreditCardIcon size={64} className="mx-auto mb-4 text-zinc-600" />
+                    <h2 className="text-xl font-bold mb-2">No receipts yet</h2>
+                    <p className="text-zinc-400">Your subscription payment receipts will appear here</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {receipts.map(receipt => (
+                        <motion.div
+                            key={receipt.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-orange-500/30 transition-all"
+                        >
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${receipt.status === 'completed'
+                                                ? 'bg-green-500/20 text-green-400'
+                                                : 'bg-red-500/20 text-red-400'
+                                                }`}
+                                        >
+                                            {receipt.status === 'completed' ? (
+                                                <CheckCircleIcon size={20} />
+                                            ) : (
+                                                <XIcon size={20} />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">{receipt.service_name}</h3>
+                                            <p className="text-sm text-zinc-400">{receipt.plan_name} Plan</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm mt-4">
+                                        <div>
+                                            <p className="text-zinc-500">Amount</p>
+                                            <p className="text-white font-bold">
+                                                {receipt.amount_kas.toFixed(2)} KAS
+                                                <span className="text-zinc-500 font-normal ml-2">
+                                                    (≈ ${receipt.amount_usd.toFixed(2)})
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-zinc-500">Date</p>
+                                            <p className="text-white">
+                                                {new Date(receipt.timestamp).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-zinc-500">Transaction ID</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-white font-mono text-xs truncate">
+                                                    {receipt.tx_signature}
+                                                </p>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(receipt.tx_signature);
+                                                    }}
+                                                    className="text-orange-500 hover:text-orange-400"
+                                                >
+                                                    <CopyIcon size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            window.open(
+                                                `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
+                                                '_blank'
+                                            );
+                                        }}
+                                        className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                                    >
+                                        <LinkIcon size={16} />
+                                        View
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            // Generate downloadable receipt
+                                            const receiptText = `
+CadPay Subscription Receipt
+============================
+Service: ${receipt.service_name}
+Plan: ${receipt.plan_name}
+Amount: ${receipt.amount_kas.toFixed(2)} KAS (≈ $${receipt.amount_usd.toFixed(2)} USD)
+Transaction: ${receipt.tx_signature}
+Date: ${new Date(receipt.timestamp).toLocaleString()}
+Status: ${receipt.status}
+Merchant: ${receipt.merchant_wallet}
+============================
+                                            `.trim();
+
+                                            const blob = new Blob([receiptText], { type: 'text/plain' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `receipt-${receipt.service_name.toLowerCase()}-${receipt.id.slice(0, 8)}.txt`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }}
+                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-xl text-sm font-medium transition-colors"
+                                    >
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

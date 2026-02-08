@@ -8,9 +8,14 @@ import { StorefrontIcon } from '@phosphor-icons/react';
 
 export interface SubscriptionPlan {
     name: string;
-    priceKas: number;   // Primary: Price in KAS
-    priceUsd: number;   // Secondary: USD equivalent for display
+    priceUSD: number; // Price in USD for reference
     features: string[];
+}
+
+// Helper function to convert USD to KAS (will be updated dynamically)
+export function convertUSDtoKAS(usdPrice: number, kasPrice: number = 0.15): number {
+    // Default KAS price: $0.15 (will be fetched from CoinGecko in real-time)
+    return Math.ceil((usdPrice / kasPrice) * 100) / 100; // Round to 2 decimals
 }
 
 export interface Service {
@@ -32,9 +37,9 @@ export const SERVICES: Service[] = [
         icon: SiNetflix,
         description: 'Stream movies and TV shows',
         plans: [
-            { name: 'Basic', priceKas: 66.6, priceUsd: 9.99, features: ['720p', '1 screen', 'Unlimited content'] },
-            { name: 'Standard', priceKas: 103.3, priceUsd: 15.49, features: ['1080p', '2 screens', 'Downloads'] },
-            { name: 'Premium', priceKas: 133.3, priceUsd: 19.99, features: ['4K+HDR', '4 screens', 'Spatial audio'] }
+            { name: 'Basic', priceUSD: 9.99, features: ['720p', '1 screen', 'Unlimited content'] },
+            { name: 'Standard', priceUSD: 15.49, features: ['1080p', '2 screens', 'Downloads'] },
+            { name: 'Premium', priceUSD: 19.99, features: ['4K+HDR', '4 screens', 'Spatial audio'] }
         ]
     },
     {
@@ -45,9 +50,9 @@ export const SERVICES: Service[] = [
         icon: SiSpotify,
         description: 'Music streaming service',
         plans: [
-            { name: 'Free', priceKas: 0, priceUsd: 0, features: ['Ads', 'Shuffle play', 'Limited skips'] },
-            { name: 'Premium', priceKas: 73.3, priceUsd: 10.99, features: ['Ad-free', 'Download', 'High quality'] },
-            { name: 'Family', priceKas: 113.3, priceUsd: 16.99, features: ['6 accounts', 'Kid profiles', 'Ad-free'] }
+            { name: 'Free', priceUSD: 0, features: ['Ads', 'Shuffle play', 'Limited skips'] },
+            { name: 'Premium', priceUSD: 10.99, features: ['Ad-free', 'Download', 'High quality'] },
+            { name: 'Family', priceUSD: 16.99, features: ['6 accounts', 'Kid profiles', 'Ad-free'] }
         ]
     },
     {
@@ -58,8 +63,8 @@ export const SERVICES: Service[] = [
         icon: SiYoutube,
         description: 'Ad-free videos and music',
         plans: [
-            { name: 'Individual', priceKas: 93.3, priceUsd: 13.99, features: ['Ad-free', 'Background play', 'Downloads'] },
-            { name: 'Family', priceKas: 153.3, priceUsd: 22.99, features: ['5 members', 'YouTube Music', 'Ad-free'] }
+            { name: 'Individual', priceUSD: 13.99, features: ['Ad-free', 'Background play', 'Downloads'] },
+            { name: 'Family', priceUSD: 22.99, features: ['5 members', 'YouTube Music', 'Ad-free'] }
         ]
     },
     {
@@ -70,8 +75,8 @@ export const SERVICES: Service[] = [
         icon: FaFilm,
         description: 'Disney, Pixar, Marvel & more',
         plans: [
-            { name: 'Basic', priceKas: 53.3, priceUsd: 7.99, features: ['With ads', '1080p', 'Download'] },
-            { name: 'Premium', priceKas: 93.3, priceUsd: 13.99, features: ['No ads', '4K UHD', '4 streams'] }
+            { name: 'Basic', priceUSD: 7.99, features: ['With ads', '1080p', 'Download'] },
+            { name: 'Premium', priceUSD: 13.99, features: ['No ads', '4K UHD', '4 streams'] }
         ]
     },
     {
@@ -82,8 +87,8 @@ export const SERVICES: Service[] = [
         icon: SiAmazonprime,
         description: 'Free shipping + streaming',
         plans: [
-            { name: 'Monthly', priceKas: 100, priceUsd: 14.99, features: ['Free shipping', 'Prime Video', 'Prime Music'] },
-            { name: 'Annual', priceKas: 926.7, priceUsd: 139, features: ['All benefits', 'Save $40/year'] }
+            { name: 'Monthly', priceUSD: 14.99, features: ['Free shipping', 'Prime Video', 'Prime Music'] },
+            { name: 'Annual', priceUSD: 139, features: ['All benefits', 'Save $40/year'] }
         ]
     },
     {
@@ -94,8 +99,8 @@ export const SERVICES: Service[] = [
         icon: SiApplemusic,
         description: '100M+ songs streaming',
         plans: [
-            { name: 'Individual', priceKas: 73.3, priceUsd: 10.99, features: ['Lossless', 'Spatial Audio', 'Offline'] },
-            { name: 'Family', priceKas: 113.3, priceUsd: 16.99, features: ['6 members', 'All features'] }
+            { name: 'Individual', priceUSD: 10.99, features: ['Lossless', 'Spatial Audio', 'Offline'] },
+            { name: 'Family', priceUSD: 16.99, features: ['6 members', 'All features'] }
         ]
     },
     {
@@ -106,8 +111,8 @@ export const SERVICES: Service[] = [
         icon: SiHbo,
         description: 'HBO originals & blockbusters',
         plans: [
-            { name: 'With Ads', priceKas: 66.6, priceUsd: 9.99, features: ['1080p', 'Limited ads', 'Download'] },
-            { name: 'Ad-Free', priceKas: 106.6, priceUsd: 15.99, features: ['4K', 'No ads', '4 streams'] }
+            { name: 'With Ads', priceUSD: 9.99, features: ['1080p', 'Limited ads', 'Download'] },
+            { name: 'Ad-Free', priceUSD: 15.99, features: ['4K', 'No ads', '4 streams'] }
         ]
     },
     {
@@ -118,8 +123,8 @@ export const SERVICES: Service[] = [
         icon: FaTv,
         description: 'TV shows next day',
         plans: [
-            { name: 'Basic', priceKas: 53.3, priceUsd: 7.99, features: ['With ads', 'Streaming library'] },
-            { name: 'No Ads', priceKas: 120, priceUsd: 17.99, features: ['Ad-free', 'Download', 'Live TV'] }
+            { name: 'Basic', priceUSD: 7.99, features: ['With ads', 'Streaming library'] },
+            { name: 'No Ads', priceUSD: 17.99, features: ['Ad-free', 'Download', 'Live TV'] }
         ]
     },
     {
@@ -130,8 +135,8 @@ export const SERVICES: Service[] = [
         icon: SiDiscord,
         description: 'Enhanced Discord experience',
         plans: [
-            { name: 'Basic', priceKas: 20, priceUsd: 2.99, features: ['Custom emoji', '50MB uploads'] },
-            { name: 'Nitro', priceKas: 66.6, priceUsd: 9.99, features: ['Boosts', '500MB uploads', 'HD streaming'] }
+            { name: 'Basic', priceUSD: 2.99, features: ['Custom emoji', '50MB uploads'] },
+            { name: 'Nitro', priceUSD: 9.99, features: ['Boosts', '500MB uploads', 'HD streaming'] }
         ]
     },
     {
@@ -142,9 +147,9 @@ export const SERVICES: Service[] = [
         icon: SiAdobe,
         description: 'Design & creative tools',
         plans: [
-            { name: 'Photography', priceKas: 66.6, priceUsd: 9.99, features: ['Photoshop', 'Lightroom', '20GB'] },
-            { name: 'Single App', priceKas: 153.3, priceUsd: 22.99, features: ['1 app', '100GB', 'Adobe Fonts'] },
-            { name: 'All Apps', priceKas: 366.6, priceUsd: 54.99, features: ['20+ apps', '100GB', 'Portfolio'] }
+            { name: 'Photography', priceUSD: 9.99, features: ['Photoshop', 'Lightroom', '20GB'] },
+            { name: 'Single App', priceUSD: 22.99, features: ['1 app', '100GB', 'Adobe Fonts'] },
+            { name: 'All Apps', priceUSD: 54.99, features: ['20+ apps', '100GB', 'Portfolio'] }
         ]
     },
     {
@@ -155,8 +160,8 @@ export const SERVICES: Service[] = [
         icon: SiGithub,
         description: 'Advanced collaboration',
         plans: [
-            { name: 'Pro', priceKas: 26.7, priceUsd: 4, features: ['Private repos', 'Insights', 'Protected branches'] },
-            { name: 'Team', priceKas: 26.7, priceUsd: 4, features: ['Per user', 'Team discussions', 'SAML SSO'] }
+            { name: 'Pro', priceUSD: 4, features: ['Private repos', 'Insights', 'Protected branches'] },
+            { name: 'Team', priceUSD: 4, features: ['Per user', 'Team discussions', 'SAML SSO'] }
         ]
     },
     {
@@ -167,7 +172,7 @@ export const SERVICES: Service[] = [
         icon: SiOpenai,
         description: 'Advanced AI assistant',
         plans: [
-            { name: 'Plus', priceKas: 133.3, priceUsd: 20, features: ['GPT-4', 'Priority access', 'Faster response'] }
+            { name: 'Plus', priceUSD: 20, features: ['GPT-4', 'Priority access', 'Faster response'] }
         ]
     }
 ];

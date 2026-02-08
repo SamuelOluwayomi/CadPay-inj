@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Service } from '@/data/subscriptions';
+import { Service, convertUSDtoKAS } from '@/data/subscriptions';
+import { useState, useEffect } from 'react';
 
 interface ServiceCardProps {
     service: Service;
@@ -9,7 +10,24 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service, onClick }: ServiceCardProps) {
-    const minPrice = Math.min(...service.plans.map(p => p.price));
+    const [kasPrice, setKasPrice] = useState(0.15); // Default KAS price
+
+    // Fetch real-time KAS price
+    useEffect(() => {
+        const fetchPrice = async () => {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const data = await response.json();
+                setKasPrice(data.kaspa.usd);
+            } catch (error) {
+                console.error('Failed to fetch KAS price:', error);
+            }
+        };
+        fetchPrice();
+    }, []);
+
+    const minPriceUSD = Math.min(...service.plans.map(p => p.priceUSD));
+    const minPriceKAS = convertUSDtoKAS(minPriceUSD, kasPrice);
 
     return (
         <motion.div
@@ -44,7 +62,7 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                 <h3 className="text-lg font-bold text-white mb-1 leading-tight">{service.name}</h3>
                 <p className="text-xs text-zinc-400 line-clamp-2 max-w-[140px] mx-auto mb-2 opacity-80 group-hover:opacity-100 transition-opacity">{service.description}</p>
 
-                {/* Price pill */}
+                {/* Price pill with KAS */}
                 <div
                     className="inline-block px-3 py-1 rounded-full text-xs font-bold"
                     style={{
@@ -52,8 +70,11 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                         color: service.color
                     }}
                 >
-                    ${minPrice === 0 ? 'Free' : minPrice}
+                    {minPriceUSD === 0 ? 'Free' : `${minPriceKAS.toFixed(0)} KAS`}
                 </div>
+                {minPriceUSD > 0 && (
+                    <p className="text-[10px] text-zinc-500 mt-1">≈ ${minPriceUSD} USD</p>
+                )}
             </div>
         </motion.div>
     );

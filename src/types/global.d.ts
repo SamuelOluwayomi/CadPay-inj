@@ -9,6 +9,7 @@ interface Window {
         signMessage: (message: string) => Promise<string>;
         signTransaction: (tx: string) => Promise<string>;
         getBalance: () => Promise<{ total: number; confirmed: number; unconfirmed: number }>;
+        sendKaspa: (toAddress: string, amountSompi: number) => Promise<string>;
         on: (event: string, handler: (data: any) => void) => void;
     };
 }
