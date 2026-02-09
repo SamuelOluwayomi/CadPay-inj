@@ -9,6 +9,8 @@ import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { verifyPassword } from '@/utils/passwordHash';
 import { supabase } from '@/lib/supabase';
 import { useReceipts } from '@/hooks/useReceipts';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { CaretDownIcon, EnvelopeSimpleIcon, UserIcon } from '@phosphor-icons/react';
 
 const MERCHANT_WALLET = 'kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay';
 
@@ -40,8 +42,12 @@ export default function SubscribeModal({
     const [txSignature, setTxSignature] = useState('');
 
     const { address } = useKasWare();
+    const { profile } = useUserProfile();
     const { unlockWallet, unlockWalletWithPassword } = useBiometricWallet();
     const { createReceipt } = useReceipts(address);
+
+    const [emailType, setEmailType] = useState<'profile' | 'custom'>(profile?.email ? 'profile' : 'custom');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen && service) {
@@ -49,6 +55,8 @@ export default function SubscribeModal({
             setSelectedPlan(service.plans[0] || null);
             setEmail('');
             setStep('select');
+            setEmailType(profile?.email ? 'profile' : 'custom');
+            setEmail(profile?.email || '');
             setVerificationMethod(null);
             setPassword('');
             setError('');
@@ -163,6 +171,8 @@ export default function SubscribeModal({
             console.error('Subscription payment failed:', err);
             setError(err.message || 'Payment failed. Please try again.');
             setStep('verify');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -252,16 +262,60 @@ export default function SubscribeModal({
                                     </div>
                                 </div>
 
-                                {/* Email Input */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Email for notifications</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={e => setEmail(e.target.value)}
-                                        placeholder="your@email.com"
-                                        className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
-                                    />
+                                {/* Email Selection */}
+                                <div className="mb-6 space-y-4">
+                                    <label className="block text-sm font-medium text-zinc-400">Subscription Email</label>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setEmailType('profile');
+                                                setEmail(profile?.email || '');
+                                            }}
+                                            className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${emailType === 'profile'
+                                                    ? 'bg-orange-500/10 border-orange-500 text-white'
+                                                    : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <UserIcon size={18} weight={emailType === 'profile' ? "fill" : "regular"} />
+                                            <span className="text-xs font-bold">Profile Email</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setEmailType('custom')}
+                                            className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${emailType === 'custom'
+                                                    ? 'bg-orange-500/10 border-orange-500 text-white'
+                                                    : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <EnvelopeSimpleIcon size={18} weight={emailType === 'custom' ? "fill" : "regular"} />
+                                            <span className="text-xs font-bold">Custom Email</span>
+                                        </button>
+                                    </div>
+
+                                    {emailType === 'custom' ? (
+                                        <div className="relative">
+                                            <EnvelopeSimpleIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={e => setEmail(e.target.value)}
+                                                placeholder="Enter custom email"
+                                                className="w-full pl-12 pr-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-all"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
+                                            <span className="text-sm text-zinc-300">{profile?.email || 'No email in profile'}</span>
+                                            {!profile?.email && (
+                                                <button
+                                                    onClick={() => setEmailType('custom')}
+                                                    className="text-xs text-orange-400 hover:underline"
+                                                >
+                                                    Set custom
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Balance Warning */}
@@ -290,8 +344,8 @@ export default function SubscribeModal({
 
                                 <button
                                     onClick={handleProceedToVerification}
-                                    disabled={!hasEnoughBalance || alreadySubscribed}
-                                    className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-colors"
+                                    disabled={!hasEnoughBalance || alreadySubscribed || (emailType === 'custom' && !email)}
+                                    className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
                                     Continue to Payment
                                 </button>

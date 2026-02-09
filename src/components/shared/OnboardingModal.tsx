@@ -8,7 +8,7 @@ interface OnboardingModalProps {
     isOpen: boolean;
     isSubmitting?: boolean;
     walletAddress?: string;
-    onComplete: (data: { username: string; pin: string; gender: string; avatar: string }) => void;
+    onComplete: (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => void;
 }
 
 const AVATAR_OPTIONS = [
@@ -23,10 +23,10 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
     const [confirmPin, setConfirmPin] = useState('');
     const [gender, setGender] = useState('');
     const [avatar, setAvatar] = useState(AVATAR_OPTIONS[0]);
-
+    const [email, setEmail] = useState('');
     const handleComplete = () => {
         if (username && pin && pin === confirmPin && gender && avatar) {
-            onComplete({ username, pin, gender, avatar });
+            onComplete({ username, pin, gender, avatar, email });
         }
     };
 
@@ -61,7 +61,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
 
                     {/* Progress Bar */}
                     <div className="flex gap-2 mt-4">
-                        {[1, 2, 3, 4].map((s) => (
+                        {[1, 2, 3, 4, 5].map((s) => (
                             <div
                                 key={s}
                                 className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${s <= step ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'bg-zinc-800'}`}
@@ -98,15 +98,48 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                         <button
                             onClick={() => username && setStep(2)}
                             disabled={!username}
-                            className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
+                            className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20"
                         >
-                            Continue
+                            Next Step
                         </button>
                     </motion.div>
                 )}
 
-                {/* Step 2: PIN */}
+                {/* Step 2: Email */}
                 {step === 2 && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-2 font-medium">Notification Email (Optional)</label>
+                            <div className="relative">
+                                <CheckIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    className="w-full pl-12 pr-4 py-4 bg-zinc-800 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-all font-medium"
+                                    autoFocus
+                                />
+                            </div>
+                            <p className="text-[10px] text-zinc-500 mt-2">This will be used for your smart subscriptions</p>
+                        </div>
+                        <button
+                            onClick={() => setStep(3)}
+                            className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20"
+                        >
+                            Continue
+                        </button>
+                        <button
+                            onClick={() => setStep(1)}
+                            className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
+                        >
+                            Back
+                        </button>
+                    </motion.div>
+                )}
+
+                {/* Step 3: PIN */}
+                {step === 3 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                         <div>
                             <label className="block text-sm text-zinc-400 mb-2 font-medium">Create a 4-digit PIN</label>

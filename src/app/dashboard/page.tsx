@@ -62,7 +62,8 @@ export default function Dashboard() {
         username: profile?.username || 'User',
         gender: profile?.gender || 'other',
         avatar: profile?.emoji || '👤',
-        pin: profile?.pin || ''
+        pin: profile?.pin || '',
+        email: profile?.email || ''
     };
 
     const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -115,23 +116,16 @@ export default function Dashboard() {
     }, [address, loading, profile, profileLoading]);
 
     // Onboarding handlers
-    const handleOnboardingComplete = async (data: { username: string; pin: string; gender: string; avatar: string }) => {
+    const handleOnboardingComplete = async (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => {
         setIsOnboardingSubmitting(true);
         try {
-            const signature = await createProfile(data.username, data.avatar, data.gender, data.pin);
+            const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email);
             setShowOnboarding(false);
-            if (signature) {
-                showToast(
-                    `Profile created successfully ${signature.slice(0, 8)}...`,
-                    'success'
-                );
-                // Also log a full link for manual inspection
-                console.log('Profile creation tx:', `https://explorer.kaspa.org/tx/${signature}?testnet=true`);
-            } else {
+            if (result) {
                 showToast("Profile created successfully!", "success");
             }
 
-            // Finalize setup
+            // Navigate to dashboard root
             router.push('/dashboard');
         } catch (e) {
             console.error("Onboarding failed", e);
@@ -142,17 +136,14 @@ export default function Dashboard() {
     };
 
     // Save profile -> UPDATE ON-CHAIN PROFILE
-    const saveUserProfile = async (data: { username: string; gender: string; avatar: string; pin?: string }) => {
+    const saveUserProfile = async (data: { username: string; gender: string; avatar: string; pin?: string; email?: string }) => {
         setIsProfileSaving(true);
         try {
-            if (data.pin && data.pin.length === 4) {
-                // Update with PIN
-                await updateProfile(data.username, data.avatar, data.gender, data.pin);
-            } else {
-                // Use existing PIN if not provided (should fetch from profile, but for now we require it or use default)
-                const existingPin = profile?.pin || "0000";
-                await updateProfile(data.username, data.avatar, data.gender, existingPin);
-            }
+            const existingPin = profile?.pin || "0000";
+            const targetPin = data.pin && data.pin.length === 4 ? data.pin : existingPin;
+            const targetEmail = data.email !== undefined ? data.email : profile?.email;
+
+            await updateProfile(data.username, data.avatar, data.gender, targetPin, targetEmail);
             setShowProfileEdit(false);
             showToast("Profile updated on-chain!", "success");
         } catch (e) {
@@ -529,7 +520,7 @@ function OverviewSection({
         setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
         try {
-            showToast("Requesting funds from Private Vault...", "info");
+            showToast("Requesting funds from Private Vault...", "pending");
             const res = await fetch('/api/faucet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -594,6 +585,20 @@ function OverviewSection({
                     <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleFundDemo}
+                        disabled={isFunding}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-white hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        {isFunding ? (
+                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                <LightningIcon size={18} />
+                            </motion.div>
+                        ) : (
+                            <LightningIcon size={18} className="text-orange-500" />
+                        )}
+                        {isFunding ? "Funding..." : "Get Demo KAS"}
+                    </button>
                     <KaspaPulseCard />
                 </div>
             </div>
@@ -1019,109 +1024,116 @@ function SubscriptionsSection({
                 />
             </div>
 
-            {/* Browse Tab */}
             {activeTab === 'browse' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-                    {/* Left Column: Subscriptions List */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <StorefrontIcon size={24} className="text-orange-500" />
-                                <span className="whitespace-nowrap">Your Subscriptions</span>
-                            </h2>
-                            {/* Desktop Filter Pills */}
-                            <div className="hidden sm:flex flex-wrap gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
-                                {CATEGORIES.filter(c => c.count > 0).slice(0, 4).map(cat => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setCategoryFilter(cat.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${categoryFilter === cat.id
-                                            ? 'bg-white text-black shadow-lg'
-                                            : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                                            }`}
-                                    >
-                                        {cat.name}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Mobile Category Dropdown */}
-                            <MobileDropdown
-                                options={CATEGORIES.filter(c => c.count > 0).slice(0, 4)}
-                                value={categoryFilter}
-                                onChange={setCategoryFilter}
-                                label="Category"
-                            />
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <StorefrontIcon size={24} className="text-orange-500" />
+                            <span className="whitespace-nowrap">Your Subscriptions</span>
+                        </h2>
+                        {/* Desktop Filter Pills */}
+                        <div className="hidden sm:flex flex-wrap gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
+                            {CATEGORIES.filter(c => c.count > 0).slice(0, 4).map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setCategoryFilter(cat.id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${categoryFilter === cat.id
+                                        ? 'bg-white text-black shadow-lg'
+                                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Improved Service Grid for Mobile */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-items-center">
-                            {filteredServices.map(service => (
+                        {/* Mobile Category Dropdown */}
+                        <MobileDropdown
+                            options={CATEGORIES.filter(c => c.count > 0).slice(0, 4)}
+                            value={categoryFilter}
+                            onChange={setCategoryFilter}
+                            label="Category"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {(() => {
+                            const items: React.ReactNode[] = filteredServices.map(service => (
                                 <ServiceCard
                                     key={service.id}
                                     service={service}
                                     onClick={() => handleServiceClick(service)}
                                 />
-                            ))}
-                        </div>
-                    </div>
+                            ));
 
-                    {/* Right Column: Stats & Analytics */}
-                    <div className="space-y-6">
-                        {/* Spending Analytics Chart */}
-                        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl group">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="font-bold text-white">Spending Activity</h3>
-                                    <p className="text-xs text-zinc-400">Past 6 Months</p>
+                            const spendingWidget = (
+                                <div key="spending-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl group h-full">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div>
+                                            <h3 className="font-bold text-white">Spending Activity</h3>
+                                            <p className="text-xs text-zinc-400">Past 6 Months</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-black text-white">$365</p>
+                                            <p className="text-[10px] text-green-400 font-bold uppercase">+12% vs last mo</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="h-[150px] w-full mt-4">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={spendingData}>
+                                                <XAxis
+                                                    dataKey="name"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#71717a', fontSize: 10 }}
+                                                />
+                                                <RechartsTooltip
+                                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
+                                                    labelStyle={{ color: '#a1a1aa' }}
+                                                />
+                                                <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                                                    {spendingData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-black text-white">$365</p>
-                                    <p className="text-[10px] text-green-400 font-bold uppercase">+12% vs last mo</p>
+                            );
+
+                            const overviewWidget = (
+                                <div key="overview-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl h-full flex flex-col justify-center">
+                                    <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                                        <WalletIcon size={20} className="text-blue-500" />
+                                        Monthly Overview
+                                    </h3>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                                            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Budget</p>
+                                            <p className="text-xl font-bold text-white">$500</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                                            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Savings</p>
+                                            <p className="text-xl font-bold text-orange-400">$125</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            );
 
-                            <div className="h-[200px] w-full mt-4">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={spendingData}>
-                                        <XAxis
-                                            dataKey="name"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fill: '#71717a', fontSize: 10 }}
-                                        />
-                                        <RechartsTooltip
-                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
-                                            labelStyle={{ color: '#a1a1aa' }}
-                                        />
-                                        <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-                                            {spendingData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
+                            // Insert Spending Widget at index 3 (4th position)
+                            if (items.length >= 3) items.splice(3, 0, spendingWidget);
+                            else items.push(spendingWidget);
 
-                    <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
-                        <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                            <WalletIcon size={20} className="text-blue-500" />
-                            Monthly Overview
-                        </h3>
+                            // Insert Overview Widget at index 7 (8th position)
+                            if (items.length >= 7) items.splice(7, 0, overviewWidget);
+                            else items.push(overviewWidget);
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
-                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Budget</p>
-                                <p className="text-xl font-bold text-white">$500</p>
-                            </div>
-                            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
-                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Savings</p>
-                                <p className="text-xl font-bold text-orange-400">$125</p>
-                            </div>
-                        </div>
+                            return items;
+                        })()}
                     </div>
                 </div>
             )}

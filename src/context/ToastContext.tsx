@@ -4,7 +4,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircleIcon, WarningIcon, XIcon, InfoIcon } from '@phosphor-icons/react';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = 'success' | 'error' | 'warning' | 'pending';
 
 interface Toast {
     id: string;
@@ -21,7 +21,7 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = (message: string, type: ToastType = 'info') => {
+    const showToast = (message: string, type: ToastType = 'success') => {
         const id = Math.random().toString(36);
         setToasts((prev) => [...prev, { id, message, type }]);
 
@@ -59,27 +59,27 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
     const config = {
         success: {
             icon: <CheckCircleIcon size={20} weight="fill" />,
-            bg: 'bg-green-500/20',
-            border: 'border-green-500/50',
-            text: 'text-green-400',
+            bg: 'bg-[#10b981]/10',
+            border: 'border-[#10b981]/30',
+            text: 'text-[#10b981]',
         },
         error: {
             icon: <WarningIcon size={20} weight="fill" />,
-            bg: 'bg-red-500/20',
-            border: 'border-red-500/50',
-            text: 'text-red-400',
+            bg: 'bg-[#ef4444]/10',
+            border: 'border-[#ef4444]/30',
+            text: 'text-[#ef4444]',
         },
         warning: {
             icon: <WarningIcon size={20} weight="fill" />,
-            bg: 'bg-orange-500/20',
-            border: 'border-orange-500/50',
-            text: 'text-orange-400',
+            bg: 'bg-[#ef4444]/10',
+            border: 'border-[#ef4444]/30',
+            text: 'text-[#ef4444]',
         },
-        info: {
-            icon: <InfoIcon size={20} weight="fill" />,
-            bg: 'bg-blue-500/20',
-            border: 'border-blue-500/50',
-            text: 'text-blue-400',
+        pending: {
+            icon: <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}><InfoIcon size={20} weight="fill" /></motion.div>,
+            bg: 'bg-[#f59e0b]/10',
+            border: 'border-[#f59e0b]/30',
+            text: 'text-[#f59e0b]',
         },
     };
 

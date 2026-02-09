@@ -10,7 +10,6 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Added Router
-import { Connection, PublicKey } from '@/lib/solana-stubs';
 import { CADPAY_MINT } from '@/utils/cadpayToken';
 import { useMerchant } from '@/context/MerchantContext'; // Added Context
 
@@ -74,7 +73,6 @@ export default function MerchantDashboard() {
     }, []);
 
     // Calculate Base Logic & Fetch Ledger
-    // Calculate Base Logic & Fetch Ledger
     // useEffect(() => {
     // if (!merchant) return;
 
@@ -105,19 +103,6 @@ export default function MerchantDashboard() {
         ];
     }
 
-    // Use custom RPC URL from environment (fallback to public devnet)
-
-    const envRpc = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
-    let rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com';
-
-    // Use env RPC if it exists and isn't a flaky Helius one
-    if (envRpc && !envRpc.includes('helius')) {
-        rpcUrl = envRpc;
-    }
-
-    const connection = new Connection(rpcUrl, 'confirmed');
-    // const merchantKey = new PublicKey(merchant.walletPublicKey); // Unused here, kept for ref
-
     const fetchHistory = useCallback(async () => {
         try {
             // Only fetch for the default seeded admin merchant to reduce load
@@ -126,178 +111,55 @@ export default function MerchantDashboard() {
                 return;
             }
 
-            const merchantTokenAccount = new PublicKey('58Bx8fD3RP4dCaoKiYQW76PUMEXSmLvcb5pT1sv2ypRj');
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            let signatures;
-            try {
-                signatures = await connection.getSignaturesForAddress(merchantTokenAccount, { limit: 10 });
-            } catch (rpcError) {
-                console.log('RPC fetch failed, using empty data:', rpcError);
-                setTransactions([]);
-                setLoading(false);
-                return;
-            }
-
-            if (signatures.length === 0) {
-                setTransactions([]);
-                setChartData(initialChartData);
-                setLoading(false);
-                return;
-            }
-
-            // 1. IMPROVEMENT: Show skeletons/placeholders immediately
-            const placeholders = signatures.map(s => ({
-                id: s.signature,
-                customer: 'Loading...',
-                amount: 0,
-                memo: 'Scanning...',
-                date: s.blockTime ? new Date(s.blockTime * 1000).toLocaleString() : 'Pending',
-                status: 'loading',
-                service: { name: '...', color: '#27272a' }
-            }));
-            setTransactions(placeholders);
-            setLoading(false); // Unblock UI immediately
-
-            const txIds = signatures.map(s => s.signature);
-            const txMap = new Map();
-
-            // Helius free tier / Public RPC rate limit handling
-            // Fetch incrementally and update UI per transaction or in small batches
-            for (let i = 0; i < txIds.length; i++) {
-                const sig = txIds[i];
-                try {
-                    const single: any = await connection.getParsedTransaction(sig, 'confirmed');
-                    if (single) {
-                        txMap.set(sig, single);
-
-                        // Process SINGLE transaction immediately for UI update
-                        const tx = single;
-                        let amount = 0;
-                        let memoText = '';
-
-                        // --- MEMO & AMOUNT LOGIC START ---
-                        const checkInstructionForMemo = (instr: any) => {
-                            let extracted = '';
-                            if (instr.parsed?.type === 'memo' && instr.parsed?.info?.memo) {
-                                extracted = instr.parsed.info.memo;
-                            }
-                            if (!extracted && instr.programId) {
-                                const programId = typeof instr.programId === 'string'
-                                    ? instr.programId
-                                    : instr.programId.toBase58?.() || String(instr.programId);
-
-                                if (programId === 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr' ||
-                                    programId === 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo') {
-                                    if (instr.data) {
-                                        try {
-                                            const decoded = typeof instr.data === 'string'
-                                                ? Buffer.from(instr.data, 'base64').toString('utf-8')
-                                                : instr.data;
-                                            extracted = decoded;
-                                        } catch (e) { }
-                                    }
-                                }
-                            }
-                            return extracted;
-                        };
-
-                        if (tx?.transaction?.message?.instructions) {
-                            for (const instr of tx.transaction.message.instructions) {
-                                const found = checkInstructionForMemo(instr);
-                                if (found) memoText = found;
-                                if (instr.parsed?.type === 'mintTo' && instr.parsed?.info?.amount) {
-                                    amount = Number(BigInt(instr.parsed.info.amount)) / 1_000_000;
-                                }
-                                if ((instr.parsed?.type === 'transfer' || instr.parsed?.type === 'transferChecked') && instr.parsed?.info?.tokenAmount?.uiAmount) {
-                                    amount = instr.parsed.info.tokenAmount.uiAmount;
-                                }
-                            }
-                        }
-                        if (!memoText && tx?.meta?.innerInstructions) {
-                            for (const innerSet of tx.meta.innerInstructions) {
-                                for (const instr of innerSet.instructions) {
-                                    const found = checkInstructionForMemo(instr);
-                                    if (found) { memoText = found; break; }
-                                }
-                                if (memoText) break;
-                            }
-                        }
-                        if (!memoText && tx?.meta?.logMessages) {
-                            const logs = tx.meta.logMessages;
-                            for (const log of logs) {
-                                const match = log.match(/Memo \(len \d+\): "(.*?)"/);
-                                if (match && match[1]) { memoText = match[1]; break; }
-                            }
-                        }
-                        // Fallback Balance Logic
-                        if (amount === 0) {
-                            const preBalances = tx?.meta?.preTokenBalances || [];
-                            const postBalances = tx?.meta?.postTokenBalances || [];
-                            if (postBalances.length > 0) {
-                                for (const p of postBalances) {
-                                    const postAmt = p?.uiTokenAmount?.uiAmount || 0;
-                                    const preMatch = preBalances.find((q: any) => q.accountIndex === p.accountIndex);
-                                    const preAmt = preMatch?.uiTokenAmount?.uiAmount || 0;
-                                    if (postAmt - preAmt > 0) { amount = postAmt - preAmt; break; }
-                                    if (preBalances.length === 0 && postAmt > 0) { amount = postAmt; break; }
-                                }
-                            }
-                        }
-                        // --- MEMO & AMOUNT LOGIC END ---
-
-                        // Update State for this specific transaction
-                        setTransactions(prev => prev.map(item => {
-                            if (item.id === sig) {
-                                return {
-                                    ...item,
-                                    customer: '0x' + sig.slice(0, 4) + '...' + sig.slice(-4),
-                                    amount: amount,
-                                    memo: memoText,
-                                    status: 'success',
-                                    service: {
-                                        name: memoText || 'Subscription',
-                                        color: '#10B981'
-                                    }
-                                };
-                            }
-                            return item;
-                        }));
-
-                        // Update Metrics Incrementally
-                        if (amount > 0) {
-                            const realRevenue = amount;
-                            setTotalRevenue(prev => prev + realRevenue);
-                            setMrr(prev => prev + realRevenue);
-                            setGasSaved(prev => prev + 0.000005);
-
-                            // Update Chart Incrementally
-                            setChartData(prevData => {
-                                const sName = memoText || 'Subscription';
-                                const existingIndex = prevData.findIndex(d => d.name === sName);
-                                const newD = [...prevData];
-                                if (existingIndex >= 0) {
-                                    newD[existingIndex] = { ...newD[existingIndex], value: newD[existingIndex].value + amount };
-                                } else {
-                                    newD.push({ name: sName, value: amount, color: '#10B981' });
-                                }
-                                return newD;
-                            });
-                        }
-                    }
-                } catch (singleError) {
-                    console.log(`Failed to fetch tx ${sig}`, singleError);
+            // Mock data for the dashboard
+            const mockTransactions = [
+                {
+                    id: 'dca3...8f9a',
+                    customer: '0x1234...5678',
+                    amount: 19.99,
+                    memo: 'Premium Plan',
+                    date: new Date().toLocaleString(),
+                    status: 'success',
+                    service: { name: 'Premium Plan', color: '#10B981' }
+                },
+                {
+                    id: 'abc1...2d3e',
+                    customer: '0x9876...4321',
+                    amount: 49.99,
+                    memo: 'Pro Bundle',
+                    date: new Date(Date.now() - 3600000).toLocaleString(),
+                    status: 'success',
+                    service: { name: 'Pro Bundle', color: '#F59E0B' }
+                },
+                {
+                    id: 'fee5...1a2b',
+                    customer: '0xabcd...ef09',
+                    amount: 9.99,
+                    memo: 'Basic Tier',
+                    date: new Date(Date.now() - 7200000).toLocaleString(),
+                    status: 'success',
+                    service: { name: 'Basic Tier', color: '#3B82F6' }
                 }
+            ];
 
-                // small delay to reduce burst rate (1000ms) - kept for safety
-                if (i + 1 < txIds.length) await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-            // End of loop
+            // Calculate totals from mock data
+            const total = mockTransactions.reduce((acc, tx) => acc + tx.amount, 0);
+
+            setTransactions(mockTransactions);
+            setTotalRevenue(prev => prev + total);
+            setMrr(prev => prev + total); // Simplified MRR calculation
+            setChartData(initialChartData);
+            setLoading(false);
 
         } catch (error) {
             console.error("Error fetching merchant history:", error);
             setLoading(false);
         }
     }, [merchant?.walletPublicKey, isDefaultMerchant]);
+
 
     useEffect(() => {
         if (!merchant?.walletPublicKey) return;

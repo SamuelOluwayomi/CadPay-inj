@@ -8,6 +8,7 @@ export interface UserProfile {
     emoji: string;
     gender: string;
     pin: string;
+    email?: string;
     authority: string; // Wallet address
 }
 
@@ -42,6 +43,7 @@ export function useUserProfile() {
                     emoji: data.emoji || '👤',
                     gender: data.gender || 'other',
                     pin: data.pin || '',
+                    email: data.email || '',
                     authority: data.wallet_address
                 });
             } else {
@@ -84,13 +86,13 @@ export function useUserProfile() {
         };
     }, [address, fetchProfile]);
 
-    const createProfile = async (username: string, emoji: string, gender: string, pin: string) => {
-        if (!address) throw new Error("Wallet not connected");
+    const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
+        if (!address) return null;
         setLoading(true);
         setError(null);
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .insert([
                     {
@@ -98,22 +100,27 @@ export function useUserProfile() {
                         username,
                         emoji,
                         gender,
-                        pin
+                        pin,
+                        email,
+                        created_at: new Date().toISOString()
                     }
-                ]);
+                ])
+                .select()
+                .single();
 
             if (error) throw error;
 
             // Optimistic update
             setProfile({
-                username,
-                emoji,
-                gender,
-                pin,
-                authority: address
+                username: data.username,
+                emoji: data.emoji || '👤',
+                gender: data.gender || 'other',
+                pin: data.pin || '',
+                email: data.email || '',
+                authority: data.wallet_address
             });
 
-            return "profile_created_signature_placeholder"; // Return a fake signature/ID to satisfy existing callers
+            return data;
         } catch (err: any) {
             console.error('Error creating profile:', err);
             setError(err.message);
@@ -121,40 +128,48 @@ export function useUserProfile() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [address]);
 
-    const updateProfile = async (username: string, emoji: string, gender: string, pin: string) => {
-        if (!address) throw new Error("Wallet not connected");
+    const updateProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
+        if (!address) return null;
         setLoading(true);
+        setError(null);
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .update({
                     username,
                     emoji,
                     gender,
-                    pin
+                    pin,
+                    email,
+                    updated_at: new Date().toISOString()
                 })
-                .eq('wallet_address', address);
+                .eq('wallet_address', address)
+                .select()
+                .single();
 
             if (error) throw error;
 
             // Optimistic update
             setProfile({
-                username,
-                emoji,
-                gender,
-                pin,
-                authority: address
+                username: data.username,
+                emoji: data.emoji || '👤',
+                gender: data.gender || 'other',
+                pin: data.pin || '',
+                email: data.email || '',
+                authority: data.wallet_address
             });
+
+            return data;
         } catch (err: any) {
             console.error('Error updating profile:', err);
             throw err;
         } finally {
             setLoading(false);
         }
-    };
+    }, [address]);
 
     return {
         profile,
