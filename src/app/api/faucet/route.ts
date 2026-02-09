@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         console.log(`📦 Found ${entries.length} UTXOs`);
 
         // 6. Create Transaction
-        const amountSompi = 100n * 100_000_000n; // 100 KAS
+        const amountSompi = 1000n * 100_000_000n; // 1000 KAS
         console.log(`💸 Creating transaction for ${amountSompi} sompi...`);
 
         const generator = new kaspa.Generator({
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
             success: true,
             txId: txId,
             message: "Funds sent successfully from Private Faucet!",
-            amount: 100
+            amount: 1000
         });
 
     } catch (error: any) {
