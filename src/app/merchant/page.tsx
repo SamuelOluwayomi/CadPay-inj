@@ -72,12 +72,9 @@ export default function MerchantDashboard() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Calculate Base Logic & Fetch Ledger
-    // useEffect(() => {
-    // if (!merchant) return;
-
     // 1. Determine Authorization for Mock Data
-    const isDefaultMerchant = merchant?.email?.toLowerCase() === 'admin@gmail.com';
+    const ADMIN_KEY = "kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay";
+    const isDefaultMerchant = merchant?.walletPublicKey === ADMIN_KEY || merchant?.email?.toLowerCase() === 'admin@gmail.com';
 
     let baseRevenue = 0;
     let baseUsers = 0;
@@ -336,27 +333,27 @@ export default function MerchantDashboard() {
                                 <MetricCard
                                     title="Total Revenue"
                                     value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                    trend={merchant.email === 'admin@gmail.com' ? "+12%" : "+0%"}
+                                    trend={isDefaultMerchant ? "+12%" : "+0%"}
                                     icon={<TrendUpIcon size={24} className="text-green-400" />}
                                     color="green"
                                 />
                                 <MetricCard
                                     title="Total Customers"
                                     value={txCount.toLocaleString()}
-                                    trend={merchant.email === 'admin@gmail.com' ? "+42 new" : "+0 new"}
+                                    trend={isDefaultMerchant ? "+42 new" : "+0 new"}
                                     icon={<UsersIcon size={24} className="text-blue-400" />}
                                     color="blue"
                                 />
                                 <MetricCard
                                     title="Monthly Recurring (MRR)"
                                     value={`$${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                    trend={merchant.email === 'admin@gmail.com' ? "+8%" : "+0%"}
+                                    trend={isDefaultMerchant ? "+8%" : "+0%"}
                                     icon={<ReceiptIcon size={24} className="text-purple-400" />}
                                     color="purple"
                                 />
                                 <MetricCard
                                     title="Gas Subsidized (The Flex)"
-                                    value={`${gasSaved.toFixed(4)} SOL`}
+                                    value={`${gasSaved.toFixed(4)} KAS`}
                                     trend="100% Covered"
                                     icon={<LightningIcon size={24} className="text-orange-400 fill-orange-400" />}
                                     color="orange"

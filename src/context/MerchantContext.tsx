@@ -74,7 +74,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
 
                 // If it's the specific "Admin 01" demo account (identified by ID or Key), seed default services
                 // For hackathon: checks if it matches our hardcoded admin key
-                const ADMIN_KEY = "CqUmZNET15kK6qjNPrtPZdE3VUMem9ULtQ77GtVpUo1f";
+                const ADMIN_KEY = "kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay";
 
                 if (merchant.walletPublicKey === ADMIN_KEY) {
                     // Check if services already seeded
