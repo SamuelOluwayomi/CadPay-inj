@@ -11,7 +11,7 @@ import {
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
     PaperPlaneTiltIcon, CheckCircleIcon,
-    DownloadIcon
+    DownloadIcon, LightningIcon, ActivityIcon, TimerIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -33,6 +33,12 @@ import { useToast } from '@/context/ToastContext';
 import { useReceipts } from '@/hooks/useReceipts';
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'receipts' | 'dev-keys' | 'savings';
+
+interface TxSpeed {
+    start: number | null;
+    end: number | null;
+    status: 'idle' | 'running' | 'completed';
+}
 
 export default function Dashboard() {
 
@@ -65,6 +71,16 @@ export default function Dashboard() {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isOnboardingSubmitting, setIsOnboardingSubmitting] = useState(false);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
+    const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
+
+    // Speed Timer Effect
+    useEffect(() => {
+        let interval: any;
+        if (txSpeed.status === 'running') {
+            interval = setInterval(() => { }, 50);
+        }
+        return () => clearInterval(interval);
+    }, [txSpeed.status]);
 
     // Explicitly log wallet address to console (User Request)
     useEffect(() => {
@@ -340,10 +356,12 @@ export default function Dashboard() {
                             onOpenSend={() => setShowSendModal(true)}
                             transactions={transactions}
                             fetchTransactions={fetchTransactions}
+                            txSpeed={txSpeed}
+                            setTxSpeed={setTxSpeed}
                         />
                     )}
 
-                    {activeSection === 'subscriptions' && <SubscriptionsSection usdcBalance={usdcBalance} refetchUsdc={refetchUsdc} />}
+                    {activeSection === 'subscriptions' && <SubscriptionsSection usdcBalance={usdcBalance} refetchUsdc={refetchUsdc} txSpeed={txSpeed} setTxSpeed={setTxSpeed} />}
 
                     {activeSection === 'wallet' && <WalletSection
                         balance={displayBalance}
@@ -384,6 +402,8 @@ export default function Dashboard() {
                 pots={pots}
                 balance={balance || 0}
             />
+
+            <SpeedConfirmationOverlay txSpeed={txSpeed} />
         </div>
     );
 }
@@ -466,12 +486,35 @@ function NavItem({ icon, label, active, onClick }: any) {
 }
 
 // Overview Section
-function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc, loading, copyToClipboard, onOpenSend, refreshBalance, transactions, fetchTransactions }: any) {
+function OverviewSection({
+    userName, balance, address, usdcBalance, refetchUsdc, loading,
+    copyToClipboard, onOpenSend, refreshBalance, transactions,
+    fetchTransactions, txSpeed, setTxSpeed
+}: {
+    userName: string, balance: string, address: string, usdcBalance: number,
+    refetchUsdc: () => void, loading: boolean, copyToClipboard: () => void,
+    onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
+    fetchTransactions: () => void,
+    txSpeed: TxSpeed,
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
+}) {
     const [showUSD, setShowUSD] = useState(true);
     const [kasPrice, setKasPrice] = useState<number | null>(null);
     const { subscriptions } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
+    const { createReceipt } = useReceipts(address);
+
+    // Speed Timer Effect
+    useEffect(() => {
+        let interval: any;
+        if (txSpeed.status === 'running') {
+            interval = setInterval(() => {
+                // Just to trigger re-renders if we wanted a live counter
+            }, 50);
+        }
+        return () => clearInterval(interval);
+    }, [txSpeed.status]);
 
     // Fetch KAS price
     useEffect(() => {
@@ -497,6 +540,8 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
     const handleFundDemo = async () => {
         if (!address) return;
         setIsFunding(true);
+        setTxSpeed({ start: Date.now(), end: null, status: 'running' });
+
         try {
             showToast("Requesting funds from Private Vault...", "info");
             const res = await fetch('/api/faucet', {
@@ -507,34 +552,55 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
             const data = await res.json();
 
             if (data.success) {
+                const endTime = Date.now();
+                setTxSpeed((prev: TxSpeed) => ({ ...prev, end: endTime, status: 'completed' }));
+
                 const fundingAmount = data.amount || 100;
+
+                // Create receipt for funding
+                await createReceipt({
+                    wallet_address: address,
+                    service_name: 'Private Vault',
+                    plan_name: 'Faucet Funding',
+                    amount_kas: fundingAmount,
+                    amount_usd: fundingAmount * (kasPrice || 0),
+                    status: 'completed',
+                    tx_signature: data.signature || `faucet_${Date.now()}`,
+                    merchant_wallet: 'Vault_System'
+                });
+
                 showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
 
-                // Update Local Demo Balance (for Biometric Wallet)
-                // This helps reflect the change before the chain indexer picks it up
+                // --- OPTIMISTIC UI ---
+                // We update the local storage and trigger a refresh immediately
                 const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
                 const newBal = currentBal + fundingAmount;
                 localStorage.setItem(`demo_balance_${address}`, newBal.toString());
 
-                // Refresh balance immediately (this now also refreshes transactions in useKasWare)
+                // Trigger immediate balance update in UI
                 if (refreshBalance) refreshBalance();
-                if (fetchTransactions) fetchTransactions();
 
-                // Refresh again after 2 seconds to catch blockchain confirmation
+                // Hide speed overlay after a delay
+                setTimeout(() => {
+                    setTxSpeed({ start: null, end: null, status: 'idle' });
+                }, 4000);
+
+                // Background refreshes for indexer sync
                 setTimeout(() => {
                     if (refreshBalance) refreshBalance();
                     if (fetchTransactions) fetchTransactions();
                 }, 2000);
 
-                // Final refresh after 5 seconds for any slow confirmations
                 setTimeout(() => {
                     if (refreshBalance) refreshBalance();
                     if (fetchTransactions) fetchTransactions();
                 }, 5000);
             } else {
+                setTxSpeed({ start: null, end: null, status: 'idle' });
                 showToast(data.error || "Faucet failed", "error");
             }
         } catch (e) {
+            setTxSpeed({ start: null, end: null, status: 'idle' });
             showToast("Faucet request failed", "error");
         } finally {
             setIsFunding(false);
@@ -596,7 +662,7 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                                     {isFunding ? (
                                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                                     ) : (
-                                        <PlusIcon weight="bold" />
+                                        <LightningIcon weight="bold" />
                                     )}
                                     {isFunding ? 'Funding...' : 'Fund Wallet'}
                                 </button>
@@ -612,8 +678,9 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
                     </motion.div>
                 </div>
 
-                {/* Quick Stats & Savings (Only show if pots exist) */}
+                {/* Quick Stats & Savings */}
                 <div className="space-y-4">
+                    <KaspaPulseCard />
                     <StatCard title="Active Subscriptions" value={subscriptions.length.toString()} color="blue" />
 
                     {pots.length > 0 && (
@@ -705,6 +772,92 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
     );
 }
 
+// Kaspa Pulse Card - Visualizing 1 BPS
+function KaspaPulseCard() {
+    return (
+        <div className="flex justify-center">
+            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[200px] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0, 0.2, 0] }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-2 border-2 border-orange-500 rounded-full"
+                />
+                <div className="relative z-10 flex flex-col items-center">
+                    <ActivityIcon size={24} className="text-orange-500 mb-2" />
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Network Pulse</p>
+                    <p className="text-2xl font-black text-white">1.0 <span className="text-xs font-normal text-zinc-400">BPS</span></p>
+                    <div className="mt-2 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[8px] text-green-500 font-bold uppercase">Healthy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Speed Confirmation Overlay - Subtle Corner Badge
+function SpeedConfirmationOverlay({ txSpeed }: { txSpeed: { start: number | null, end: number | null, status: 'idle' | 'running' | 'completed' } }) {
+    const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        let interval: any;
+        if (txSpeed.status === 'running' && txSpeed.start) {
+            interval = setInterval(() => {
+                setElapsed((Date.now() - txSpeed.start!) / 1000);
+            }, 10);
+        } else if (txSpeed.status === 'completed' && txSpeed.start && txSpeed.end) {
+            setElapsed((txSpeed.end - txSpeed.start) / 1000);
+        } else if (txSpeed.status === 'idle') {
+            setElapsed(0);
+        }
+        return () => clearInterval(interval);
+    }, [txSpeed.status, txSpeed.start, txSpeed.end]);
+
+    return (
+        <AnimatePresence>
+            {txSpeed.status !== 'idle' && (
+                <motion.div
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 100 }}
+                    className="fixed bottom-8 right-8 z-100 pointer-events-none"
+                >
+                    <div className="bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-full p-1 pr-6 flex items-center gap-4 shadow-2xl overflow-hidden min-w-[240px]">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${txSpeed.status === 'running' ? 'bg-orange-500' : 'bg-green-500'}`}>
+                            {txSpeed.status === 'running' ? (
+                                <LightningIcon size={24} className="text-white animate-pulse" />
+                            ) : (
+                                <CheckCircleIcon size={24} className="text-white" />
+                            )}
+                        </div>
+
+                        <div className="flex-1">
+                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">
+                                {txSpeed.status === 'running' ? 'Broadcasting...' : 'Sonic Confirmation'}
+                            </p>
+                            <div className="flex items-baseline gap-2">
+                                <span className={`text-xl font-black tabular-nums ${txSpeed.status === 'running' ? 'text-white' : 'text-green-500'}`}>
+                                    {elapsed.toFixed(3)}s
+                                </span>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase">Kaspa L1</span>
+                            </div>
+                        </div>
+
+                        {txSpeed.status === 'running' && (
+                            <motion.div
+                                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                                className="w-2 h-2 rounded-full bg-orange-500 mr-2"
+                            />
+                        )}
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
+
 function StatCard({ title, value, color }: { title: string; value: string; color: 'blue' | 'purple' }) {
     const colors = {
         blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
@@ -721,7 +874,14 @@ function StatCard({ title, value, color }: { title: string; value: string; color
 }
 
 // Subscriptions Section
-function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: number, refetchUsdc: () => void }) {
+function SubscriptionsSection({
+    usdcBalance, refetchUsdc, txSpeed, setTxSpeed
+}: {
+    usdcBalance: number,
+    refetchUsdc: () => void,
+    txSpeed: TxSpeed,
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
+}) {
     const [activeTab, setActiveTab] = useState<'browse' | 'active' | 'analytics'>('browse');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -793,6 +953,8 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
         try {
             if (!address) throw new Error("Wallet not connected");
 
+            setTxSpeed({ start: Date.now(), end: null, status: 'running' });
+
             // STUB: Removed Solana subscription logic
             showToast("Subscriptions coming soon on Kaspa!", "info");
 
@@ -810,10 +972,18 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 transactionSignature: "demo_sig_" + Date.now()
             });
 
+            const endTime = Date.now();
+            setTxSpeed((prev: TxSpeed) => ({ ...prev, end: endTime, status: 'completed' }));
+
             // Show success toast
             showToast(`Successfully subscribed to ${actualService?.name || serviceId}! 🎉`, 'success');
             setShowSubscribeModal(false);
+
+            setTimeout(() => {
+                setTxSpeed({ start: null, end: null, status: 'idle' });
+            }, 4000);
         } catch (error: any) {
+            setTxSpeed({ start: null, end: null, status: 'idle' });
             console.error("Subscription failed:", error);
             showToast("Subscription failed", "error");
         }
