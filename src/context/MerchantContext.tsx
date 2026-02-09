@@ -85,7 +85,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                             merchantId: merchant.id,
                             name: s.name,
                             description: s.description,
-                            price: s.plans[0].price,
+                            price: s.plans[0].priceUSD,
                             icon: s.id,
                             color: s.color
                         }));

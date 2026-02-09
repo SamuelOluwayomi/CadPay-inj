@@ -89,13 +89,13 @@ export default function MerchantDashboard() {
     if (isDefaultMerchant) {
         // Calculate totals from hardcoded SERVICES
         baseUsers = SERVICES.length * 42; // Fake multiplier for scale
-        baseRevenue = SERVICES.reduce((acc, s) => acc + (s.plans[0].price * 42), 0);
+        baseRevenue = SERVICES.reduce((acc, s) => acc + (s.plans[0].priceUSD * 42), 0);
         baseMrr = baseRevenue; // Simple assumption
 
         // Prepare Pie Chart Data from SERVICES
         initialChartData = SERVICES.slice(0, 5).map(s => ({
             name: s.name,
-            value: s.plans[0].price * 42,
+            value: s.plans[0].priceUSD * 42,
             color: s.color
         }));
     } else {

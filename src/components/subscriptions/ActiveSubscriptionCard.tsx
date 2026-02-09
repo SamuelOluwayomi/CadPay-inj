@@ -48,7 +48,7 @@ export default function ActiveSubscriptionCard({ subscription, onUnsubscribe }: 
                         </div>
                         <div className="flex items-center gap-1">
                             <span className="font-medium" style={{ color: subscription.color }}>
-                                ${subscription.price}/mo
+                                ${subscription.priceUSD}/mo
                             </span>
                         </div>
                     </div>

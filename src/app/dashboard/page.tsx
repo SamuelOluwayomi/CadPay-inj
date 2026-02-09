@@ -732,7 +732,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 id: ds.id,
                 name: ds.name,
                 description: ds.description || 'Custom Service',
-                price: ds.price,
+                priceUSD: ds.price,
                 icon: StorefrontIcon, // Default icon for dynamic services
                 color: ds.color,
                 category: 'other' as const, // Default category
@@ -789,7 +789,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 serviceId,
                 serviceName: actualService ? actualService.name : serviceId,
                 plan: plan.name,
-                price,
+                priceUSD: plan.priceUSD, // Use USD price for analytics
                 email,
                 color: actualService ? actualService.color : '#FF6B35',
                 icon: (actualService ? actualService.icon : StorefrontIcon) as any,
@@ -1081,9 +1081,9 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                                                 <p className="text-xs text-zinc-500">{sub.plan} Plan</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm font-bold text-white">${sub.price}</p>
+                                                <p className="text-sm font-bold text-white">${sub.priceUSD}</p>
                                                 <p className="text-xs text-zinc-500">
-                                                    {((sub.price / getMonthlyTotal()) * 100).toFixed(0)}%
+                                                    {((sub.priceUSD / getMonthlyTotal()) * 100).toFixed(0)}%
                                                 </p>
                                             </div>
                                         </div>
@@ -1109,7 +1109,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                             <p className="text-xs text-zinc-500 mb-1">Most Expensive</p>
                             <p className="text-2xl font-bold text-white">
                                 {subscriptions.length > 0
-                                    ? `$${Math.max(...subscriptions.map(s => s.price)).toFixed(2)}`
+                                    ? `$${Math.max(...subscriptions.map(s => s.priceUSD)).toFixed(2)}`
                                     : '$0.00'
                                 }
                             </p>
