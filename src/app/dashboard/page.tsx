@@ -11,7 +11,7 @@ import {
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
     PaperPlaneTiltIcon, CheckCircleIcon,
-    DownloadIcon, LightningIcon, ActivityIcon, TimerIcon
+    DownloadIcon, LightningIcon, ActivityIcon, TimerIcon, MagnifyingGlassIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -870,6 +870,7 @@ function SubscriptionsSection({
 }) {
     const [activeTab, setActiveTab] = useState<'browse' | 'active' | 'analytics'>('browse');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
     const [kasPrice, setKasPrice] = useState<number | null>(null);
@@ -977,8 +978,9 @@ function SubscriptionsSection({
     };
 
     const filteredServices = allServices.filter(s => {
-        if (categoryFilter === 'all') return true;
-        return s.category === categoryFilter;
+        const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
+        const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
     });
 
     return (
@@ -1031,6 +1033,31 @@ function SubscriptionsSection({
                             <StorefrontIcon size={24} className="text-orange-500" />
                             <span className="whitespace-nowrap">Your Subscriptions</span>
                         </h2>
+
+                        {/* Search Bar */}
+                        <div className="relative flex-1 max-w-md mx-4 hidden md:block">
+                            <MagnifyingGlassIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                            <input
+                                type="text"
+                                placeholder="Search subscriptions..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 transition-all"
+                            />
+                        </div>
+
+                        {/* Mobile Search Bar (Visible only on mobile) */}
+                        <div className="relative w-full md:hidden mb-2">
+                            <MagnifyingGlassIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                            <input
+                                type="text"
+                                placeholder="Search subscriptions..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500/50 transition-all"
+                            />
+                        </div>
+
                         {/* Desktop Filter Pills */}
                         <div className="hidden sm:flex flex-wrap gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
                             {CATEGORIES.filter(c => c.count > 0).slice(0, 4).map(cat => (

@@ -10,7 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Added Router
-import { CADPAY_MINT } from '@/utils/cadpayToken';
+
 import { useMerchant } from '@/context/MerchantContext'; // Added Context
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
