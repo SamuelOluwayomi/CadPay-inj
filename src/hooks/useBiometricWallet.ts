@@ -11,14 +11,14 @@ import {
     authenticateAndGetKey,
 } from "@/utils/biometricAuth";
 import { encryptSeed, decryptSeed } from "@/utils/seedEncryption";
-import { storeSeed, retrieveSeed, walletExists } from "@/utils/seedStorage";
+import { storeSeed, retrieveSeed, walletExists, deleteSeed } from "@/utils/seedStorage";
 import {
     encryptWithPassword,
     decryptWithPassword,
     serializePasswordEncryptedSeed,
     deserializePasswordEncryptedSeed,
 } from "@/utils/passwordEncryption";
-import { set, get } from "idb-keyval";
+import { set, get, del } from "idb-keyval";
 
 export function useBiometricWallet() {
     const [isLoading, setIsLoading] = useState(false);
@@ -199,6 +199,23 @@ export function useBiometricWallet() {
         return biometric || password;
     };
 
+    /**
+     * Delete existing wallet (local data only)
+     */
+    const deleteWallet = async (username: string) => {
+        setIsLoading(true);
+        try {
+            await deleteSeed(username);
+            await del(`wallet-password:${username}`);
+            return { success: true };
+        } catch (err: any) {
+            setError(err.message || "Failed to delete wallet");
+            return { success: false, error: err.message };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         isLoading,
         error,
@@ -208,5 +225,6 @@ export function useBiometricWallet() {
         unlockWallet,
         unlockWalletWithPassword,
         checkWalletExists,
+        deleteWallet,
     };
 }

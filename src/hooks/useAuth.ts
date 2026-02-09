@@ -164,11 +164,33 @@ export function useAuth() {
         }
     };
 
+    /**
+     * Get user's wallet address from Supabase (for recovery validation)
+     */
+    const getWalletAddress = async (email: string): Promise<string | null> => {
+        try {
+            const { data, error } = await supabase
+                .from('user_credentials')
+                .select('wallet_address')
+                .eq('email', email)
+                .single();
+
+            if (error || !data) {
+                return null;
+            }
+
+            return data.wallet_address;
+        } catch (err) {
+            return null;
+        }
+    };
+
     return {
         signInWithPassword,
         signInWithBiometric,
         signOut,
         checkEmailExists,
+        getWalletAddress,
         isLoading,
         error
     };
