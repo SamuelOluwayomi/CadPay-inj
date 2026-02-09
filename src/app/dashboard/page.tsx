@@ -10,7 +10,8 @@ import {
     ReceiptIcon, KeyIcon, SignOutIcon, CopyIcon, ArrowRightIcon, WalletIcon,
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
-    PaperPlaneTiltIcon, CheckCircleIcon
+    PaperPlaneTiltIcon, CheckCircleIcon,
+    DownloadIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -452,7 +453,7 @@ function NavItem({ icon, label, active, onClick }: any) {
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${active
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all group ${active
                 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
@@ -557,62 +558,59 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Balance Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="md:col-span-2 bg-linear-to-br from-orange-500/20 to-orange-600/10 backdrop-blur-md border border-orange-500/30 rounded-3xl p-8 relative overflow-hidden group"
-                >
-                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <CurrencyDollarIcon size={150} />
-                    </div>
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-[#70C7BA] text-sm">Kaspa Balance</p>
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
-                                <span className="text-[10px] font-bold text-[#70C7BA]">PRIVATE VAULT</span>
-                            </div>
+                <div className="md:col-span-2 flex justify-center w-full">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-linear-to-br from-orange-500/20 to-orange-600/10 backdrop-blur-md border border-orange-500/30 rounded-full aspect-square w-full max-w-[450px] p-12 flex flex-col items-center justify-center text-center shadow-xl relative overflow-hidden group"
+                    >
+                        <div className="absolute inset-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity flex items-center justify-center pointer-events-none">
+                            <CurrencyDollarIcon size={300} />
                         </div>
-                        <h2 className="text-5xl font-bold mb-2 text-white">
-                            <span className={balanceValue > 0 ? "text-[#70C7BA]" : "text-white"}>
-                                {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            <span className="text-[#70C7BA]/60 text-2xl font-normal ml-2">KAS</span>
-                        </h2>
-                        <div className="flex items-center gap-2 mb-4 text-xs text-[#70C7BA]/60">
-                            <div className="flex items-center gap-1.5">
-                                <span>≈ ${usdValue} USD</span>
-                            </div>
-                        </div>
-                        {/* <p className="text-xs text-orange-200/60 mb-6">
-                            Paymaster covers all network fees • You only need USDC to transact
-                        </p> */}
-                        <div className="flex flex-wrap items-center gap-4">
-                            <button
-                                onClick={handleFundDemo}
-                                disabled={loading || isFunding}
-                                className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-bold hover:bg-orange-100 transition-all hover:scale-105 disabled:opacity-50"
-                            >
-                                {isFunding ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                        Funding...
-                                    </>
-                                ) : (
-                                    <>
-                                        <PlusIcon weight="bold" /> Fund Wallet
-                                    </>
-                                )}
-                            </button>
 
-                            <button
-                                onClick={onOpenSend}
-                                className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white border border-orange-400/30 rounded-xl font-bold hover:bg-orange-600 transition-all hover:scale-105 shadow-lg shadow-orange-500/20"
-                            >
-                                <PaperPlaneTiltIcon weight="bold" /> Send Funds
-                            </button>
+                        <div className="relative z-10 w-full max-w-[320px]">
+                            <div className="flex flex-col items-center mb-6">
+                                <p className="text-[#70C7BA] text-xs font-bold uppercase tracking-widest mb-2">Kaspa Balance</p>
+                                <div className="px-3 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
+                                    <span className="text-[10px] font-bold text-[#70C7BA]">PRIVATE VAULT</span>
+                                </div>
+                            </div>
+
+                            <h2 className="text-4xl md:text-5xl font-black mb-2 text-white flex flex-col items-center">
+                                <span className={balanceValue > 0 ? "text-[#70C7BA]" : "text-white"}>
+                                    {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-[#70C7BA]/60 text-xl font-normal">KAS</span>
+                            </h2>
+
+                            <div className="text-sm text-[#70C7BA]/60 mb-8 font-medium">
+                                ≈ ${usdValue} USD
+                            </div>
+
+                            <div className="flex flex-col items-center gap-3">
+                                <button
+                                    onClick={handleFundDemo}
+                                    disabled={loading || isFunding}
+                                    className="w-full px-6 py-4 bg-white text-black rounded-full font-black text-xs hover:bg-orange-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isFunding ? (
+                                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <PlusIcon weight="bold" />
+                                    )}
+                                    {isFunding ? 'Funding...' : 'Fund Wallet'}
+                                </button>
+                                <button
+                                    onClick={onOpenSend}
+                                    className="w-full px-6 py-4 bg-orange-500 text-white rounded-full font-black text-xs hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <PaperPlaneTiltIcon size={16} weight="bold" />
+                                    Send Funds
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                </div>
 
                 {/* Quick Stats & Savings (Only show if pots exist) */}
                 <div className="space-y-4">
@@ -651,42 +649,56 @@ function OverviewSection({ userName, balance, address, usdcBalance, refetchUsdc,
             </div>
 
             {/* Transaction History */}
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-6">
-                <h3 className="text-lg font-bold mb-4">Recent Activity</h3>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {transactions.length === 0 ? (
-                        <p className="text-zinc-500 text-sm text-center py-8">No transactions yet</p>
-                    ) : (
-                        transactions.map((tx: any) => (
-                            <div key={tx.signature} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.err ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
-                                    }`}>
-                                    {tx.err ? <ArrowDownIcon size={16} /> : <ArrowUpIcon size={16} />}
+            <div className="flex justify-center w-full">
+                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[400px] p-10 flex flex-col items-center justify-center text-center">
+                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <ListIcon size={20} className="text-blue-500" />
+                        Recent Activity
+                    </h3>
+                    <div className="space-y-3 max-h-52 overflow-y-auto w-full max-w-[280px] pr-2 custom-scrollbar">
+                        {transactions.length === 0 ? (
+                            <p className="text-zinc-500 text-xs text-center py-8">No transactions yet</p>
+                        ) : (
+                            transactions.map((tx: any) => (
+                                <div key={tx.signature} className="flex items-center gap-3 p-3 bg-black/30 rounded-full border border-white/5">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
+                                        }`}>
+                                        {tx.err ? <ArrowDownIcon size={14} /> : <ArrowUpIcon size={14} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0 text-left">
+                                        <p className="text-[10px] font-medium text-white truncate">
+                                            {tx.signature.slice(0, 15)}...
+                                        </p>
+                                    </div>
+                                    <div className={`text-[10px] font-bold ${tx.err ? 'text-red-400' : 'text-orange-400'
+                                        }`}>
+                                        {tx.err ? 'Err' : 'OK'}
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-white truncate">
-                                        {tx.signature.slice(0, 20)}...{tx.signature.slice(-20)}
-                                    </p>
-                                    <p className="text-xs text-zinc-500">
-                                        {new Date((tx.blockTime || 0) * 1000).toLocaleString()}
-                                    </p>
-                                </div>
-                                <div className={`text-xs font-medium ${tx.err ? 'text-red-400' : 'text-orange-400'
-                                    }`}>
-                                    {tx.err ? 'Failed' : 'Success'}
-                                </div>
-                            </div>
-                        ))
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Wallet Address Card */}
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-6">
-                <h3 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">Your Smart Wallet</h3>
-                <div className="flex items-center justify-between bg-black/30 p-4 rounded-xl border border-white/5">
-                    <span className="font-mono text-sm text-zinc-200 truncate flex-1">{address}</span>
-                    <CopyButton text={address} />
+            <div className="flex justify-center w-full">
+                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[300px] flex flex-col items-center justify-center p-8 text-center">
+                    <h3 className="text-[10px] font-black text-zinc-500 mb-6 uppercase tracking-widest">Smart Wallet</h3>
+                    <div className="flex flex-col items-center gap-4 w-full">
+                        <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center border border-orange-500/20">
+                            <WalletIcon size={32} className="text-orange-500" />
+                        </div>
+                        <div className="bg-black/40 p-3 rounded-full border border-white/5 w-full flex items-center justify-between px-4">
+                            <span className="font-mono text-[10px] text-zinc-300 truncate flex-1">{address.slice(0, 16)}...</span>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(address)}
+                                className="ml-2 text-zinc-500 hover:text-white transition-colors"
+                            >
+                                <CopyIcon size={14} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -699,9 +711,11 @@ function StatCard({ title, value, color }: { title: string; value: string; color
         purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
     };
     return (
-        <div className={`bg-linear-to-br ${colors[color]} backdrop-blur-md border rounded-2xl p-5`}>
-            <p className="text-xs text-zinc-400 mb-1">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+        <div className="flex justify-center">
+            <div className={`bg-linear-to-br ${colors[color]} backdrop-blur-md border rounded-full aspect-square w-full max-w-[200px] flex flex-col items-center justify-center p-6 text-center shadow-lg`}>
+                <p className="text-xs text-zinc-400 mb-1">{title}</p>
+                <p className="text-2xl md:text-3xl font-bold">{value}</p>
+            </div>
         </div>
     );
 }
@@ -822,10 +836,10 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                 <h2 className="text-3xl font-bold">Subscriptions</h2>
 
                 {/* Desktop Tabs */}
-                <div className="hidden md:flex flex-wrap gap-2 bg-zinc-900/50 p-1 rounded-xl">
+                <div className="hidden md:flex flex-wrap gap-2 bg-zinc-900/50 p-1 rounded-full border border-white/5">
                     <button
                         onClick={() => setActiveTab('browse')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white'
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-orange-500 text-white shadow-lg' : 'text-zinc-400 hover:text-white'
                             }`}
                     >
                         Browse
@@ -894,7 +908,7 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                         </div>
 
                         {/* Service Cards Grid - Mobile: 2 cols, Desktop: 3 cols */}
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-items-center">
                             {filteredServices.map(service => (
                                 <ServiceCard
                                     key={service.id}
@@ -908,69 +922,65 @@ function SubscriptionsSection({ usdcBalance, refetchUsdc }: { usdcBalance: numbe
                     {/* Right Column: Stats & Analytics */}
                     <div className="space-y-6">
                         {/* Spending Analytics Chart */}
-                        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
+                        <div className="flex justify-center">
+                            <div className="bg-zinc-900/50 border border-white/10 rounded-full p-10 backdrop-blur-xl aspect-square w-full max-w-[400px] flex flex-col items-center justify-center text-center">
+                                <div className="mb-6">
                                     <h3 className="font-bold text-white">Spending Activity</h3>
                                     <p className="text-xs text-zinc-400">Past 6 Months</p>
+                                    <div className="mt-2">
+                                        <p className="text-3xl font-black text-white">$365</p>
+                                        <p className="text-xs text-green-400 font-bold">+12% vs last mo</p>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-black text-white">$365</p>
-                                    <p className="text-xs text-green-400 font-bold">+12% vs last mo</p>
-                                </div>
-                            </div>
 
-                            <div className="h-48 w-full min-h-48">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={spendingData}>
-                                        <XAxis
-                                            dataKey="name"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fill: '#71717a', fontSize: 10 }}
-                                            dy={10}
-                                        />
-                                        <RechartsTooltip
-                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
-                                            labelStyle={{ color: '#a1a1aa' }}
-                                        />
-                                        <Bar dataKey="amount" radius={[4, 4, 4, 4]}>
-                                            {spendingData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <div className="h-40 w-full max-w-[280px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={spendingData}>
+                                            <XAxis
+                                                dataKey="name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#71717a', fontSize: 10 }}
+                                            />
+                                            <RechartsTooltip
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                                contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
+                                                labelStyle={{ color: '#a1a1aa' }}
+                                            />
+                                            <Bar dataKey="amount" radius={[4, 4, 4, 4]}>
+                                                {spendingData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-xl sticky top-8">
-                            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                                <WalletIcon size={20} className="text-blue-500" />
-                                Monthly Overview
-                            </h3>
+                        <div className="flex justify-center">
+                            <div className="bg-zinc-900/50 border border-white/10 rounded-full p-10 backdrop-blur-xl aspect-square w-full max-w-[400px] flex flex-col items-center justify-center text-center sticky top-8">
+                                <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                                    <WalletIcon size={20} className="text-blue-500" />
+                                    Monthly Overview
+                                </h3>
 
-                            <div className="space-y-4">
-                                <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-zinc-500 text-xs font-bold uppercase">Total Budget</p>
-                                        <p className="text-lg font-bold text-white">$250.00</p>
+                                <div className="space-y-6 w-full max-w-[280px]">
+                                    <div className="p-6 rounded-full aspect-square bg-black/40 border border-white/5 flex flex-col justify-center items-center">
+                                        <p className="text-zinc-500 text-[10px] font-bold uppercase">Budget</p>
+                                        <p className="text-xl font-bold text-white">$250.00</p>
+                                        <div className="mt-2 w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                                            <span className="text-[10px] font-bold text-zinc-400">75%</span>
+                                        </div>
                                     </div>
-                                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                                        <span className="text-xs font-bold text-zinc-400">75%</span>
-                                    </div>
-                                </div>
 
-                                <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <p className="text-zinc-500 text-xs font-bold uppercase">Estimated Gas Saved</p>
+                                    <div className="p-6 rounded-full aspect-square bg-black/40 border border-white/5 flex flex-col justify-center items-center">
+                                        <p className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Gas Saved</p>
                                         <p className="text-lg font-bold text-green-400">0.024 KAS</p>
+                                        <div className="w-full max-w-[60px] bg-zinc-800 h-1 rounded-full mt-2 overflow-hidden mx-auto">
+                                            <div className="bg-green-500 h-full w-[85%]" />
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                                        <div className="bg-green-500 h-full w-[85%]" />
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500 mt-2 text-right">CadPay covers 100% of network fees</p>
                                 </div>
                             </div>
                         </div>
@@ -1202,89 +1212,61 @@ function ReceiptsSection() {
                     <p className="text-zinc-400">Your subscription payment receipts will appear here</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
                     {receipts.map(receipt => (
                         <motion.div
                             key={receipt.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-orange-500/30 transition-all"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[280px] p-8 flex flex-col items-center justify-center text-center group hover:border-orange-500/30 transition-all relative overflow-hidden"
                         >
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center ${receipt.status === 'completed'
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-red-500/20 text-red-400'
-                                                }`}
-                                        >
-                                            {receipt.status === 'completed' ? (
-                                                <CheckCircleIcon size={20} />
-                                            ) : (
-                                                <XIcon size={20} />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white">{receipt.service_name}</h3>
-                                            <p className="text-sm text-zinc-400">{receipt.plan_name} Plan</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 text-sm mt-4">
-                                        <div>
-                                            <p className="text-zinc-500">Amount</p>
-                                            <p className="text-white font-bold">
-                                                {receipt.amount_kas.toFixed(2)} KAS
-                                                <span className="text-zinc-500 font-normal ml-2">
-                                                    (≈ ${receipt.amount_usd.toFixed(2)})
-                                                </span>
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-zinc-500">Date</p>
-                                            <p className="text-white">
-                                                {new Date(receipt.timestamp).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
-                                            </p>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <p className="text-zinc-500">Transaction ID</p>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-white font-mono text-xs truncate">
-                                                    {receipt.tx_signature}
-                                                </p>
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(receipt.tx_signature);
-                                                    }}
-                                                    className="text-orange-500 hover:text-orange-400"
-                                                >
-                                                    <CopyIcon size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            window.open(
-                                                `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
-                                                '_blank'
-                                            );
-                                        }}
-                                        className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
-                                    >
-                                        <LinkIcon size={16} />
-                                        View
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            // Generate downloadable receipt
-                                            const receiptText = `
+                            <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${receipt.status === 'completed'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                    }`}
+                            >
+                                {receipt.status === 'completed' ? (
+                                    <CheckCircleIcon size={24} />
+                                ) : (
+                                    <XIcon size={24} />
+                                )}
+                            </div>
+
+                            <div className="space-y-1 mb-4">
+                                <h3 className="text-lg font-bold text-white truncate max-w-[200px]">{receipt.service_name}</h3>
+                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{receipt.plan_name} Plan</p>
+                            </div>
+
+                            <div className="mb-4">
+                                <p className="text-xl font-black text-white">
+                                    {receipt.amount_kas.toFixed(0)} KAS
+                                </p>
+                                <p className="text-[10px] text-zinc-500">
+                                    {new Date(receipt.timestamp).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric'
+                                    })}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-20">
+                                <button
+                                    onClick={() => {
+                                        window.open(
+                                            `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
+                                            '_blank'
+                                        );
+                                    }}
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                                    title="View on Explorer"
+                                >
+                                    <LinkIcon size={20} />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        // Generate downloadable receipt
+                                        const receiptText = `
 CadPay Subscription Receipt
 ============================
 Service: ${receipt.service_name}
@@ -1295,21 +1277,21 @@ Date: ${new Date(receipt.timestamp).toLocaleString()}
 Status: ${receipt.status}
 Merchant: ${receipt.merchant_wallet}
 ============================
-                                            `.trim();
+                                        `.trim();
 
-                                            const blob = new Blob([receiptText], { type: 'text/plain' });
-                                            const url = URL.createObjectURL(blob);
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = `receipt-${receipt.service_name.toLowerCase()}-${receipt.id.slice(0, 8)}.txt`;
-                                            a.click();
-                                            URL.revokeObjectURL(url);
-                                        }}
-                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-xl text-sm font-medium transition-colors"
-                                    >
-                                        Download
-                                    </button>
-                                </div>
+                                        const blob = new Blob([receiptText], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `receipt-${receipt.service_name.toLowerCase()}-${receipt.id.slice(0, 8)}.txt`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                    }}
+                                    className="p-3 bg-orange-500 hover:bg-orange-600 rounded-full text-white transition-colors"
+                                    title="Download Receipt"
+                                >
+                                    <DownloadIcon size={20} />
+                                </button>
                             </div>
                         </motion.div>
                     ))}

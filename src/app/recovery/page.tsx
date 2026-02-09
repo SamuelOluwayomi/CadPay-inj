@@ -53,6 +53,7 @@ function RecoveryContent() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [targetAddress, setTargetAddress] = useState<string | null>(null);
+    const [isVerifying, setIsVerifying] = useState(false);
 
     // Get email from URL on mount
     useEffect(() => {
@@ -84,9 +85,10 @@ function RecoveryContent() {
     // --- STEP 2: VERIFY MNEMONIC ---
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-
+        setIsVerifying(true);
         try {
+            // Give UI a moment to show loader (WASM can be blocking)
+            await new Promise(r => setTimeout(r, 500));
             const restored = await restoreKaspaWallet(mnemonic.trim());
 
             if (restored.address !== targetAddress) {
@@ -97,6 +99,8 @@ function RecoveryContent() {
             setStep('protect');
         } catch (err: any) {
             setError(err.message || 'Invalid seed phrase');
+        } finally {
+            setIsVerifying(false);
         }
     };
 
@@ -253,9 +257,14 @@ function RecoveryContent() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all"
+                                        disabled={isVerifying || !mnemonic}
+                                        className="flex-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
                                     >
-                                        Verify Phrase
+                                        {isVerifying ? (
+                                            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verifying...</>
+                                        ) : (
+                                            'Verify Phrase'
+                                        )}
                                     </button>
                                 </div>
                             </form>

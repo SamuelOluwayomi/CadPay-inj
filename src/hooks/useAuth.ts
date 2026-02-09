@@ -185,12 +185,15 @@ export function useAuth() {
         }
     };
 
+    const clearError = () => setError(null);
+
     return {
         signInWithPassword,
         signInWithBiometric,
         signOut,
         checkEmailExists,
         getWalletAddress,
+        clearError,
         isLoading,
         error
     };
