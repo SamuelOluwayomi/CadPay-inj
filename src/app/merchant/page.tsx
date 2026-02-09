@@ -17,6 +17,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { SERVICES } from '@/data/subscriptions';
 
 
+const SkeletonLoader = ({ className }: { className?: string }) => (
+    <div className={`animate-pulse bg-white/5 rounded-lg ${className}`} />
+);
+
 export default function MerchantDashboard() {
     const { merchant, createNewService, logoutMerchant, isLoading } = useMerchant();
     const router = useRouter();
@@ -33,7 +37,8 @@ export default function MerchantDashboard() {
     const [mrr, setMrr] = useState(0);
     const [gasSaved, setGasSaved] = useState(0);
     const [chartData, setChartData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Renamed loading to isLoadingData to avoid conflict with context isLoading
+    const [isLoadingData, setIsLoadingData] = useState(true);
     const [showKey, setShowKey] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -72,101 +77,28 @@ export default function MerchantDashboard() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // 1. Determine Authorization for Mock Data
-    const ADMIN_KEY = "kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay";
-    const isDefaultMerchant = merchant?.walletPublicKey === ADMIN_KEY || merchant?.email?.toLowerCase() === 'admin@gmail.com';
-
-    let baseRevenue = 0;
-    let baseUsers = 0;
-    let baseMrr = 0;
-    let initialChartData: any[] = [];
-
-    if (isDefaultMerchant) {
-        // Calculate totals from hardcoded SERVICES
-        baseUsers = SERVICES.length * 42; // Fake multiplier for scale
-        baseRevenue = SERVICES.reduce((acc, s) => acc + (s.plans[0].priceUSD * 42), 0);
-        baseMrr = baseRevenue; // Simple assumption
-
-        // Prepare Pie Chart Data from SERVICES
-        initialChartData = SERVICES.slice(0, 5).map(s => ({
-            name: s.name,
-            value: s.plans[0].priceUSD * 42,
-            color: s.color
-        }));
-    } else {
-        // New Merchant starts fresh
-        initialChartData = [
-            { name: 'No Data', value: 100, color: '#27272a' }
-        ];
-    }
+    // Initial Data Fetch
+    useEffect(() => {
+        if (merchant) {
+            fetchHistory();
+        }
+    }, [merchant]);
 
     const fetchHistory = useCallback(async () => {
-        try {
-            // Only fetch for the default seeded admin merchant to reduce load
-            if (!isDefaultMerchant) {
-                setLoading(false);
-                return;
-            }
+        setIsLoadingData(true);
 
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 800));
+        // Simulating Network Delay for "Refresh" feel
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Mock data for the dashboard
-            const mockTransactions = [
-                {
-                    id: 'dca3...8f9a',
-                    customer: '0x1234...5678',
-                    amount: 19.99,
-                    memo: 'Premium Plan',
-                    date: new Date().toLocaleString(),
-                    status: 'success',
-                    service: { name: 'Premium Plan', color: '#10B981' }
-                },
-                {
-                    id: 'abc1...2d3e',
-                    customer: '0x9876...4321',
-                    amount: 49.99,
-                    memo: 'Pro Bundle',
-                    date: new Date(Date.now() - 3600000).toLocaleString(),
-                    status: 'success',
-                    service: { name: 'Pro Bundle', color: '#F59E0B' }
-                },
-                {
-                    id: 'fee5...1a2b',
-                    customer: '0xabcd...ef09',
-                    amount: 9.99,
-                    memo: 'Basic Tier',
-                    date: new Date(Date.now() - 7200000).toLocaleString(),
-                    status: 'success',
-                    service: { name: 'Basic Tier', color: '#3B82F6' }
-                }
-            ];
+        setTransactions([]);
+        setTotalRevenue(0);
+        setTxCount(0);
+        setMrr(0);
+        setGasSaved(0);
+        setChartData([]);
 
-            // Calculate totals from mock data
-            const total = mockTransactions.reduce((acc, tx) => acc + tx.amount, 0);
-
-            setTransactions(mockTransactions);
-            setTotalRevenue(prev => prev + total);
-            setMrr(prev => prev + total); // Simplified MRR calculation
-            setChartData(initialChartData);
-            setLoading(false);
-
-        } catch (error) {
-            console.error("Error fetching merchant history:", error);
-            setLoading(false);
-        }
-    }, [merchant?.walletPublicKey, isDefaultMerchant]);
-
-
-    useEffect(() => {
-        if (!merchant?.walletPublicKey) return;
-
-        fetchHistory();
-
-        // Refresh every 60 seconds (increased from 30s to avoid rate limits)
-        const interval = setInterval(fetchHistory, 60000);
-        return () => clearInterval(interval);
-    }, [merchant?.walletPublicKey, fetchHistory]);
+        setIsLoadingData(false);
+    }, [merchant]);
 
     const copyToClipboard = async (text: string, id: string) => {
         try {
@@ -192,7 +124,7 @@ export default function MerchantDashboard() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
+            <div className="flex items-center justify-center h-screen bg-black text-white">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                     <p className="text-zinc-500 text-sm">Loading Merchant Portal...</p>
@@ -333,23 +265,26 @@ export default function MerchantDashboard() {
                                 <MetricCard
                                     title="Total Revenue"
                                     value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                    trend={isDefaultMerchant ? "+12%" : "+0%"}
+                                    trend="+0%"
                                     icon={<TrendUpIcon size={24} className="text-green-400" />}
                                     color="green"
+                                    loading={isLoadingData}
                                 />
                                 <MetricCard
                                     title="Total Customers"
                                     value={txCount.toLocaleString()}
-                                    trend={isDefaultMerchant ? "+42 new" : "+0 new"}
+                                    trend="+0 new"
                                     icon={<UsersIcon size={24} className="text-blue-400" />}
                                     color="blue"
+                                    loading={isLoadingData}
                                 />
                                 <MetricCard
                                     title="Monthly Recurring (MRR)"
                                     value={`$${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                    trend={isDefaultMerchant ? "+8%" : "+0%"}
+                                    trend="+0%"
                                     icon={<ReceiptIcon size={24} className="text-purple-400" />}
                                     color="purple"
+                                    loading={isLoadingData}
                                 />
                                 <MetricCard
                                     title="Gas Subsidized (The Flex)"
@@ -358,6 +293,7 @@ export default function MerchantDashboard() {
                                     icon={<LightningIcon size={24} className="text-orange-400 fill-orange-400" />}
                                     color="orange"
                                     subtext="You saved users this much!"
+                                    loading={isLoadingData}
                                 />
                             </div>
                         )}
@@ -372,36 +308,44 @@ export default function MerchantDashboard() {
                                     </div>
 
                                     <div className="h-80 w-full relative min-w-0">
-                                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={chartData}
-                                                    innerRadius={60}
-                                                    outerRadius={80}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                    stroke="none"
-                                                >
-                                                    {chartData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    formatter={(value: any) => `$${value?.toLocaleString()}`}
-                                                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
-                                                    itemStyle={{ color: '#fff' }}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        {/* Center Text */}
-                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                            <div className="text-center">
-                                                <span className="block text-zinc-500 text-xs">Total</span>
-                                                <span className="block text-xl font-bold text-white">
-                                                    ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                </span>
+                                        {isLoadingData ? (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <>
+                                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={chartData.length > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]}
+                                                            innerRadius={60}
+                                                            outerRadius={80}
+                                                            paddingAngle={5}
+                                                            dataKey="value"
+                                                            stroke="none"
+                                                        >
+                                                            {(chartData.length > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]).map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip
+                                                            formatter={(value: any) => `$${value?.toLocaleString()}`}
+                                                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
+                                                            itemStyle={{ color: '#fff' }}
+                                                        />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                                {/* Center Text */}
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                    <div className="text-center">
+                                                        <span className="block text-zinc-500 text-xs">Total</span>
+                                                        <span className="block text-xl font-bold text-white">
+                                                            ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <div className="space-y-3">
@@ -423,11 +367,11 @@ export default function MerchantDashboard() {
                                                 </span>
                                                 <button
                                                     onClick={fetchHistory}
-                                                    disabled={loading}
+                                                    disabled={isLoadingData}
                                                     className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
                                                     title="Refresh Transactions"
                                                 >
-                                                    <ArrowsClockwiseIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                                    <ArrowsClockwiseIcon className={`w-4 h-4 ${isLoadingData ? 'animate-spin' : ''}`} />
                                                 </button>
                                             </div>
                                         </div>
@@ -450,10 +394,18 @@ export default function MerchantDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody className="text-sm divide-y divide-white/5">
-                                                {loading ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="py-8 text-center text-zinc-500">Scanning Blockchain...</td>
-                                                    </tr>
+                                                {isLoadingData ? (
+                                                    // Skeleton Loading Rows
+                                                    Array.from({ length: 5 }).map((_, i) => (
+                                                        <tr key={i}>
+                                                            <td className="py-4 pl-2"><SkeletonLoader className="h-4 w-16" /></td>
+                                                            <td className="py-4 hidden lg:table-cell"><SkeletonLoader className="h-4 w-24" /></td>
+                                                            <td className="py-4 hidden md:table-cell"><SkeletonLoader className="h-4 w-32" /></td>
+                                                            <td className="py-4 px-1"><SkeletonLoader className="h-4 w-20" /></td>
+                                                            <td className="py-4 text-right pr-2"><SkeletonLoader className="h-4 w-12 ml-auto" /></td>
+                                                            <td className="py-4 text-right pr-2 hidden lg:table-cell"><SkeletonLoader className="h-4 w-12 ml-auto" /></td>
+                                                        </tr>
+                                                    ))
                                                 ) : transactions.length === 0 ? (
                                                     <tr>
                                                         <td colSpan={6} className="py-12 text-center text-zinc-700">
@@ -568,7 +520,7 @@ export default function MerchantDashboard() {
 
                                         <div className="space-y-4 relative z-10">
                                             <div>
-                                                <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2 block">Publishable Key</label>
+                                                <label className="block text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2">Publishable Key</label>
                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3">
                                                     <code className="text-sm font-mono text-zinc-300">{merchant.walletPublicKey}</code>
                                                     <CopyIcon size={16} className="text-zinc-500 cursor-pointer hover:text-white" />
@@ -576,7 +528,7 @@ export default function MerchantDashboard() {
                                             </div>
 
                                             <div>
-                                                <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2 block">Secret Key</label>
+                                                <label className="block text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2">Secret Key</label>
                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3">
                                                     <code className="text-sm font-mono text-zinc-300">
                                                         {showKey ? merchant.walletSecretKey : 'sk_live_•••••••••••••••••••••'}
@@ -700,7 +652,8 @@ function NavItem({ icon, label, active, onClick }: any) {
     );
 }
 
-function MetricCard({ title, value, trend, icon, color, subtext }: { title: string, value: string, trend: string, icon: any, color: 'green' | 'blue' | 'purple' | 'orange', subtext?: string }) {
+// 5. Updated Metric Card with Skeleton Support
+function MetricCard({ title, value, trend, icon, color, subtext, loading }: any) {
     const colors: Record<string, string> = {
         green: 'bg-green-500/10 text-green-400 border-green-500/20',
         blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -709,19 +662,31 @@ function MetricCard({ title, value, trend, icon, color, subtext }: { title: stri
     };
 
     return (
-        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-colors">
-            <div className="flex justify-between items-start mb-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
+        <div className="bg-zinc-900/50 backdrop-blur-sm border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-colors">
+            {/* Background Glow */}
+            <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity ${colors[color].split(' ')[1].replace('text-', 'bg-')}`} />
+
+            <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className={`p-3 rounded-2xl border ${colors[color]}`}>
                     {icon}
                 </div>
-                <span className="text-xs font-medium bg-white/5 px-2 py-1 rounded-full text-zinc-400">
-                    {trend}
-                </span>
+                {loading ? (
+                    <SkeletonLoader className="h-5 w-12" />
+                ) : (
+                    <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${trend.includes('+') ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                        {trend}
+                    </div>
+                )}
             </div>
-            <div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-white">{value}</h3>
-                {subtext && <p className="text-xs text-zinc-500 mt-1">{subtext}</p>}
+
+            <div className="space-y-1 relative z-10">
+                <p className="text-sm text-zinc-500 font-medium">{title}</p>
+                {loading ? (
+                    <SkeletonLoader className="h-8 w-3/4 mb-1" />
+                ) : (
+                    <h3 className="text-2xl font-bold text-white">{value}</h3>
+                )}
+                {subtext && !loading && <p className="text-xs text-zinc-500 mt-1">{subtext}</p>}
             </div>
         </div>
     );
