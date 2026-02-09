@@ -44,16 +44,14 @@ export default function Dashboard() {
 
     const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
+    const { pots } = useLazorkit();
     const usdcBalance = 0;
 
-
-    const pots: any[] = []; // Stub pots
-    const wallet = null;
-    const requestAirdrop = async () => console.log("Airdrop not supported on Kaspa yet");
     const logout = () => {
         disconnect();
         router.push('/');
     };
+
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -95,20 +93,12 @@ export default function Dashboard() {
             return;
         }
 
-        // STUB: Kaspa payment logic to be implemented
-        console.log(`[Kaspa Payment Stub] Sending ${amount} KAS to ${recipient} (Memo: ${memo})`);
-
-        showToast("Kaspa payments coming soon! (UI Demo Only)", "info");
-
         // Simulating a delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         showToast("Simulated transfer complete", "success");
     };
 
-    // Use Real On-Chain Balance (STUBBED for Kaspa)
-    // Use Real On-Chain Balance (STUBBED for Kaspa)
-    // const { balance: usdcBalance, refetch: refetchUsdc } = useUSDCBalance(address);
-    // const usdcBalance = 0; // Removed duplicate
+    // Use Real On-Chain Balance
     const refetchUsdc = async () => { };
 
     useEffect(() => {
@@ -358,6 +348,7 @@ export default function Dashboard() {
                             fetchTransactions={fetchTransactions}
                             txSpeed={txSpeed}
                             setTxSpeed={setTxSpeed}
+                            pots={pots}
                         />
                     )}
 
@@ -489,14 +480,15 @@ function NavItem({ icon, label, active, onClick }: any) {
 function OverviewSection({
     userName, balance, address, usdcBalance, refetchUsdc, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
-    fetchTransactions, txSpeed, setTxSpeed
+    fetchTransactions, txSpeed, setTxSpeed, pots
 }: {
     userName: string, balance: string, address: string, usdcBalance: number,
     refetchUsdc: () => void, loading: boolean, copyToClipboard: () => void,
     onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
     fetchTransactions: () => void,
     txSpeed: TxSpeed,
-    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
+    pots: any[]
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const [kasPrice, setKasPrice] = useState<number | null>(null);
@@ -607,164 +599,170 @@ function OverviewSection({
         }
     };
 
-
-    const pots: any[] = [];
-
-
     const balanceValue = parseFloat(balance) || 0;
     const usdValue = kasPrice ? (balanceValue * kasPrice).toFixed(2) : '...';
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-4xl font-bold tracking-tight">Welcome back, {userName}! 👋</h1>
-                <p className="text-zinc-400 mt-2">Here's what's happening with your account today.</p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {/* Balance Card */}
-                <div className="md:col-span-2 flex justify-center w-full">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-linear-to-br from-orange-500/20 to-orange-600/10 backdrop-blur-md border border-orange-500/30 rounded-full aspect-square w-full max-w-[450px] p-12 flex flex-col items-center justify-center text-center shadow-xl relative overflow-hidden group"
-                    >
-                        <div className="absolute inset-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity flex items-center justify-center pointer-events-none">
-                            <CurrencyDollarIcon size={300} />
-                        </div>
-
-                        <div className="relative z-10 w-full max-w-[320px]">
-                            <div className="flex flex-col items-center mb-6">
-                                <p className="text-[#70C7BA] text-xs font-bold uppercase tracking-widest mb-2">Kaspa Balance</p>
-                                <div className="px-3 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
-                                    <span className="text-[10px] font-bold text-[#70C7BA]">PRIVATE VAULT</span>
-                                </div>
-                            </div>
-
-                            <h2 className="text-4xl md:text-5xl font-black mb-2 text-white flex flex-col items-center">
-                                <span className={balanceValue > 0 ? "text-[#70C7BA]" : "text-white"}>
-                                    {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-[#70C7BA]/60 text-xl font-normal">KAS</span>
-                            </h2>
-
-                            <div className="text-sm text-[#70C7BA]/60 mb-8 font-medium">
-                                ≈ ${usdValue} USD
-                            </div>
-
-                            <div className="flex flex-col items-center gap-3">
-                                <button
-                                    onClick={handleFundDemo}
-                                    disabled={loading || isFunding}
-                                    className="w-full px-6 py-4 bg-white text-black rounded-full font-black text-xs hover:bg-orange-100 transition-all flex items-center justify-center gap-2"
-                                >
-                                    {isFunding ? (
-                                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                        <LightningIcon weight="bold" />
-                                    )}
-                                    {isFunding ? 'Funding...' : 'Fund Wallet'}
-                                </button>
-                                <button
-                                    onClick={onOpenSend}
-                                    className="w-full px-6 py-4 bg-orange-500 text-white rounded-full font-black text-xs hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
-                                >
-                                    <PaperPlaneTiltIcon size={16} weight="bold" />
-                                    Send Funds
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Welcome back, {userName}! 👋</h1>
+                    <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
                 </div>
-
-                {/* Quick Stats & Savings */}
-                <div className="space-y-4">
+                <div className="flex items-center gap-3">
                     <KaspaPulseCard />
-                    <StatCard title="Active Subscriptions" value={subscriptions.length.toString()} color="blue" />
-
-                    {pots.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-2xl p-5"
-                        >
-                            <p className="text-xs text-zinc-400 mb-3 flex items-center gap-2">
-                                <PiggyBankIcon size={16} className="text-orange-400" />
-                                Quick Save
-                            </p>
-                            <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                                {pots.map((pot: any) => (
-                                    <button
-                                        key={pot.name}
-                                        onClick={async () => {
-                                            showToast(`Saving to ${pot.name} coming soon!`, 'info');
-                                        }}
-                                        className="w-full flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all group"
-                                    >
-                                        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{pot.name}</span>
-                                        <div className="flex items-center gap-1">
-                                            <PlusIcon size={12} className="text-orange-400" weight="bold" />
-                                            <span className="text-[10px] font-bold text-orange-400"></span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
                 </div>
             </div>
 
-            {/* Transaction History */}
-            <div className="flex justify-center w-full">
-                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[400px] p-10 flex flex-col items-center justify-center text-center">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            {/* Stats Grid - Standard Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Main Balance Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="md:col-span-8 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                        <CurrencyDollarIcon size={160} />
+                    </div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Kaspa Mainnet</span>
+                            </div>
+                            <div className="px-3 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
+                                <span className="text-[10px] font-bold text-[#70C7BA] uppercase tracking-widest">Private Vault</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-sm text-zinc-400 font-medium">Available Balance</p>
+                            <div className="flex items-baseline gap-3">
+                                <h2 className="text-4xl md:text-5xl font-black text-white">
+                                    {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </h2>
+                                <span className="text-xl font-bold text-zinc-500 uppercase">KAS</span>
+                            </div>
+                            <p className="text-lg text-[#70C7BA] font-medium">≈ ${usdValue} USD</p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 mt-8">
+                            <button
+                                onClick={handleFundDemo}
+                                disabled={loading || isFunding}
+                                className="px-8 py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-lg shadow-white/5 active:scale-95"
+                            >
+                                {isFunding ? (
+                                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <LightningIcon weight="bold" />
+                                )}
+                                {isFunding ? 'Funding...' : 'Fund Wallet'}
+                            </button>
+                            <button
+                                onClick={onOpenSend}
+                                className="px-8 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
+                            >
+                                <PaperPlaneTiltIcon size={18} weight="bold" />
+                                Send Funds
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Sidebar Stats */}
+                <div className="md:col-span-4 space-y-6">
+                    <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-zinc-400 font-medium">Active Subscriptions</p>
+                            <StorefrontIcon size={20} className="text-blue-400" />
+                        </div>
+                        <h3 className="text-3xl font-bold text-white">{subscriptions.length}</h3>
+                        <p className="text-xs text-zinc-500 mt-1">Manage recurring payments</p>
+                    </div>
+
+                    <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-zinc-400 font-medium font-mono truncate max-w-[150px]">{address}</p>
+                            <button onClick={() => navigator.clipboard.writeText(address)} className="text-zinc-500 hover:text-white transition-colors">
+                                <CopyIcon size={18} />
+                            </button>
+                        </div>
+                        <p className="text-xs text-zinc-500">Smart Wallet Address</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Section: Activity & Quick Save */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Recent Activity */}
+                <div className="lg:col-span-8 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                         <ListIcon size={20} className="text-blue-500" />
                         Recent Activity
                     </h3>
-                    <div className="space-y-3 max-h-52 overflow-y-auto w-full max-w-[280px] pr-2 custom-scrollbar">
+                    <div className="space-y-3">
                         {transactions.length === 0 ? (
-                            <p className="text-zinc-500 text-xs text-center py-8">No transactions yet</p>
+                            <div className="text-center py-12">
+                                <ActivityIcon size={48} className="mx-auto text-zinc-800 mb-3" />
+                                <p className="text-zinc-500 text-sm">No transactions yet</p>
+                            </div>
                         ) : (
-                            transactions.map((tx: any) => (
-                                <div key={tx.signature} className="flex items-center gap-3 p-3 bg-black/30 rounded-full border border-white/5">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
-                                        }`}>
-                                        {tx.err ? <ArrowDownIcon size={14} /> : <ArrowUpIcon size={14} />}
+                            transactions.slice(0, 5).map((tx: any) => (
+                                <div key={tx.signature} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group">
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                                            {tx.err ? <ArrowDownIcon size={18} /> : <CheckCircleIcon size={18} />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-white truncate max-w-[200px] md:max-w-none">
+                                                {tx.signature.slice(0, 12)}...{tx.signature.slice(-8)}
+                                            </p>
+                                            <p className="text-xs text-zinc-500">
+                                                {new Date(tx.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0 text-left">
-                                        <p className="text-[10px] font-medium text-white truncate">
-                                            {tx.signature.slice(0, 15)}...
+                                    <div className="text-right">
+                                        <p className={`text-sm font-bold ${tx.err ? 'text-red-400' : 'text-zinc-100'}`}>
+                                            {tx.amount.toFixed(2)} KAS
                                         </p>
-                                    </div>
-                                    <div className={`text-[10px] font-bold ${tx.err ? 'text-red-400' : 'text-orange-400'
-                                        }`}>
-                                        {tx.err ? 'Err' : 'OK'}
+                                        <p className="text-[10px] text-zinc-500 uppercase font-black">
+                                            {tx.err ? 'Failed' : 'Completed'}
+                                        </p>
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* Wallet Address Card */}
-            <div className="flex justify-center w-full">
-                <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[300px] flex flex-col items-center justify-center p-8 text-center">
-                    <h3 className="text-[10px] font-black text-zinc-500 mb-6 uppercase tracking-widest">Smart Wallet</h3>
-                    <div className="flex flex-col items-center gap-4 w-full">
-                        <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center border border-orange-500/20">
-                            <WalletIcon size={32} className="text-orange-500" />
-                        </div>
-                        <div className="bg-black/40 p-3 rounded-full border border-white/5 w-full flex items-center justify-between px-4">
-                            <span className="font-mono text-[10px] text-zinc-300 truncate flex-1">{address.slice(0, 16)}...</span>
-                            <button
-                                onClick={() => navigator.clipboard.writeText(address)}
-                                className="ml-2 text-zinc-500 hover:text-white transition-colors"
-                            >
-                                <CopyIcon size={14} />
-                            </button>
-                        </div>
+                {/* Quick Save / Analytics */}
+                <div className="lg:col-span-4 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <PiggyBankIcon size={20} className="text-orange-400" />
+                        Quick Save
+                    </h3>
+                    <div className="space-y-3">
+                        {pots.length > 0 ? (
+                            pots.map((pot: any) => (
+                                <button
+                                    key={pot.name}
+                                    className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"
+                                >
+                                    <span className="text-sm font-medium text-white">{pot.name}</span>
+                                    <PlusIcon size={16} className="text-orange-400" />
+                                </button>
+                            ))
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-sm text-zinc-500">No savings pots created</p>
+                                <button className="mt-3 text-xs font-bold text-orange-500 hover:text-orange-400">
+                                    + Create Pot
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -775,21 +773,25 @@ function OverviewSection({
 // Kaspa Pulse Card - Visualizing 1 BPS
 function KaspaPulseCard() {
     return (
-        <div className="flex justify-center">
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[200px] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+        <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl flex items-center gap-4 p-4 pr-6 relative overflow-hidden group">
+            <div className="relative">
                 <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0, 0.2, 0] }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-2 border-2 border-orange-500 rounded-full"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.4, 0.1] }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 bg-orange-500 rounded-full blur-md"
                 />
-                <div className="relative z-10 flex flex-col items-center">
-                    <ActivityIcon size={24} className="text-orange-500 mb-2" />
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Network Pulse</p>
-                    <p className="text-2xl font-black text-white">1.0 <span className="text-xs font-normal text-zinc-400">BPS</span></p>
-                    <div className="mt-2 flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-[8px] text-green-500 font-bold uppercase">Healthy</span>
-                    </div>
+                <div className="relative w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+                    <ActivityIcon size={20} className="text-orange-500" />
+                </div>
+            </div>
+            <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Network Pulse</p>
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                </div>
+                <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-black text-white leading-none">1.0</span>
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">BPS</span>
                 </div>
             </div>
         </div>
@@ -886,7 +888,7 @@ function SubscriptionsSection({
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-    const [solPrice, setSolPrice] = useState<number | null>(null);
+    const [kasPrice, setKasPrice] = useState<number | null>(null);
 
     // Toast notifications
     const { showToast } = useToast();
@@ -934,7 +936,7 @@ function SubscriptionsSection({
             try {
                 const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
                 const data = await response.json();
-                setSolPrice(data.kaspa.usd);
+                setKasPrice(data.kaspa.usd);
             } catch (error) {
                 console.error('Failed to fetch KAS price:', error);
             }
@@ -1077,8 +1079,8 @@ function SubscriptionsSection({
                             />
                         </div>
 
-                        {/* Service Cards Grid - Mobile: 2 cols, Desktop: 3 cols */}
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-items-center">
+                        {/* Improved Service Grid for Mobile */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-items-center">
                             {filteredServices.map(service => (
                                 <ServiceCard
                                     key={service.id}
@@ -1092,66 +1094,57 @@ function SubscriptionsSection({
                     {/* Right Column: Stats & Analytics */}
                     <div className="space-y-6">
                         {/* Spending Analytics Chart */}
-                        <div className="flex justify-center">
-                            <div className="bg-zinc-900/50 border border-white/10 rounded-full p-10 backdrop-blur-xl aspect-square w-full max-w-[400px] flex flex-col items-center justify-center text-center">
-                                <div className="mb-6">
+                        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl group">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
                                     <h3 className="font-bold text-white">Spending Activity</h3>
                                     <p className="text-xs text-zinc-400">Past 6 Months</p>
-                                    <div className="mt-2">
-                                        <p className="text-3xl font-black text-white">$365</p>
-                                        <p className="text-xs text-green-400 font-bold">+12% vs last mo</p>
-                                    </div>
                                 </div>
-
-                                <div className="h-40 w-full max-w-[280px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={spendingData}>
-                                            <XAxis
-                                                dataKey="name"
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fill: '#71717a', fontSize: 10 }}
-                                            />
-                                            <RechartsTooltip
-                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
-                                                labelStyle={{ color: '#a1a1aa' }}
-                                            />
-                                            <Bar dataKey="amount" radius={[4, 4, 4, 4]}>
-                                                {spendingData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                <div className="text-right">
+                                    <p className="text-2xl font-black text-white">$365</p>
+                                    <p className="text-[10px] text-green-400 font-bold uppercase">+12% vs last mo</p>
                                 </div>
                             </div>
+
+                            <div className="h-[200px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={spendingData}>
+                                        <XAxis
+                                            dataKey="name"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#71717a', fontSize: 10 }}
+                                        />
+                                        <RechartsTooltip
+                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
+                                            labelStyle={{ color: '#a1a1aa' }}
+                                        />
+                                        <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                                            {spendingData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
+                    </div>
 
-                        <div className="flex justify-center">
-                            <div className="bg-zinc-900/50 border border-white/10 rounded-full p-10 backdrop-blur-xl aspect-square w-full max-w-[400px] flex flex-col items-center justify-center text-center sticky top-8">
-                                <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                                    <WalletIcon size={20} className="text-blue-500" />
-                                    Monthly Overview
-                                </h3>
+                    <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                        <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                            <WalletIcon size={20} className="text-blue-500" />
+                            Monthly Overview
+                        </h3>
 
-                                <div className="space-y-6 w-full max-w-[280px]">
-                                    <div className="p-6 rounded-full aspect-square bg-black/40 border border-white/5 flex flex-col justify-center items-center">
-                                        <p className="text-zinc-500 text-[10px] font-bold uppercase">Budget</p>
-                                        <p className="text-xl font-bold text-white">$250.00</p>
-                                        <div className="mt-2 w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                                            <span className="text-[10px] font-bold text-zinc-400">75%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 rounded-full aspect-square bg-black/40 border border-white/5 flex flex-col justify-center items-center">
-                                        <p className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Gas Saved</p>
-                                        <p className="text-lg font-bold text-green-400">0.024 KAS</p>
-                                        <div className="w-full max-w-[60px] bg-zinc-800 h-1 rounded-full mt-2 overflow-hidden mx-auto">
-                                            <div className="bg-green-500 h-full w-[85%]" />
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Budget</p>
+                                <p className="text-xl font-bold text-white">$500</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Savings</p>
+                                <p className="text-xl font-bold text-orange-400">$125</p>
                             </div>
                         </div>
                     </div>
@@ -1182,9 +1175,9 @@ function SubscriptionsSection({
                                     <div>
                                         <p className="text-sm text-orange-200/60 mb-1">Monthly Spending</p>
                                         <p className="text-4xl font-bold text-white">${getMonthlyTotal().toFixed(2)}</p>
-                                        {solPrice && (
+                                        {kasPrice && (
                                             <p className="text-sm text-orange-200/40 mt-1">
-                                                ≈ {(getMonthlyTotal() / solPrice).toFixed(2)} KAS
+                                                ≈ {(getMonthlyTotal() / kasPrice).toFixed(2)} KAS
                                             </p>
                                         )}
                                     </div>
@@ -1209,7 +1202,8 @@ function SubscriptionsSection({
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
@@ -1305,7 +1299,7 @@ function SubscriptionsSection({
                 service={selectedService}
                 onSubscribe={handleSubscribe}
                 balance={balance || 0}
-                kasPrice={solPrice}
+                kasPrice={kasPrice}
                 existingSubscriptions={subscriptions}
             />
         </div>

@@ -23,8 +23,8 @@ export default function ActiveSubscriptionCard({ subscription, onUnsubscribe }: 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="relative bg-zinc-900/50 border border-white/10 rounded-full aspect-square w-full max-w-[280px] p-6 flex flex-col items-center justify-center text-center group overflow-hidden"
-                style={{ borderBottom: `4px solid ${subscription.color}` }}
+                className="relative bg-zinc-900/50 border border-white/10 rounded-2xl w-full p-6 flex flex-col items-center justify-center text-center group overflow-hidden min-h-[180px]"
+                style={{ borderTop: `4px solid ${subscription.color}` }}
             >
                 <div
                     className="text-2xl p-3 rounded-full mb-3 flex items-center justify-center"

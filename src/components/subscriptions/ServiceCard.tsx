@@ -35,7 +35,7 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                 whileHover={{ scale: 1.05, y: -5 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onClick}
-                className="relative bg-zinc-900/80 backdrop-blur-md rounded-full p-4 md:p-6 cursor-pointer group flex flex-col items-center justify-center text-center aspect-square w-full max-w-[280px] transition-all duration-300 overflow-hidden"
+                className="relative bg-zinc-900/80 backdrop-blur-md rounded-2xl p-6 cursor-pointer group flex flex-col items-center justify-center text-center w-full transition-all duration-300 overflow-hidden min-h-[220px]"
                 style={{
                     border: `2px solid ${service.color}40`,
                     boxShadow: `0 0 0px ${service.color}00`
@@ -43,7 +43,7 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
             >
                 {/* Color accent - Glow on hover */}
                 <div
-                    className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
                         boxShadow: `0 0 30px ${service.color}30, inset 0 0 20px ${service.color}10`,
                         border: `2px solid ${service.color}`
