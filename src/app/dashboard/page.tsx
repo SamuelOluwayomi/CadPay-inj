@@ -115,13 +115,13 @@ export default function Dashboard() {
             setShowOnboarding(false);
             if (signature) {
                 showToast(
-                    `Profile created on-chain — tx ${signature.slice(0, 8)}...`,
+                    `Profile created successfully ${signature.slice(0, 8)}...`,
                     'success'
                 );
                 // Also log a full link for manual inspection
                 console.log('Profile creation tx:', `https://explorer.kaspa.org/tx/${signature}?testnet=true`);
             } else {
-                showToast("Profile created on-chain!", "success");
+                showToast("Profile created successfully!", "success");
             }
 
             // Navigate to dashboard root to ensure user is on the dashboard view

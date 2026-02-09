@@ -5,15 +5,19 @@ import { LockKeyIcon, FingerprintIcon, ArrowLeftIcon, WalletIcon } from '@phosph
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import ConnectKasWare from '@/components/ConnectKasWare';
+import { WarningCircleIcon, LifebuoyIcon } from '@phosphor-icons/react';
 
 export default function SignIn() {
     const router = useRouter();
     const { signInWithPassword, signInWithBiometric, checkEmailExists, isLoading, error } = useAuth();
+    const { checkWalletExists } = useBiometricWallet();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [authMethod, setAuthMethod] = useState<'password' | 'biometric' | null>(null);
+    const [localWalletMissing, setLocalWalletMissing] = useState(false);
     const [checkingEmail, setCheckingEmail] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -35,9 +39,16 @@ export default function SignIn() {
             const result = await checkEmailExists(email);
             if (result.exists && result.authMethod) {
                 setAuthMethod(result.authMethod);
+
+                // If biometric, check if local wallet exists
+                if (result.authMethod === 'biometric') {
+                    const existsLocally = await checkWalletExists(email);
+                    setLocalWalletMissing(!existsLocally);
+                }
             } else {
                 setErrorMessage('No account found with this email');
                 setAuthMethod(null);
+                setLocalWalletMissing(false);
             }
             setCheckingEmail(false);
         }, 800); // 800ms debounce
@@ -174,12 +185,37 @@ export default function SignIn() {
                             )}
 
                             {/* Biometric Info */}
-                            {authMethod === 'biometric' && (
+                            {authMethod === 'biometric' && !localWalletMissing && (
                                 <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                                     <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
                                     <p className="text-xs text-blue-200/80 leading-relaxed">
                                         Click "Sign In" to authenticate with your device biometrics (FaceID, TouchID, etc.)
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Local Wallet Missing Warning */}
+                            {authMethod === 'biometric' && localWalletMissing && (
+                                <div className="flex flex-col gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex items-start gap-3">
+                                        <WarningCircleIcon size={24} className="text-orange-500 shrink-0" weight="bold" />
+                                        <div>
+                                            <p className="text-sm font-bold text-orange-400">Wallet Not Found</p>
+                                            <p className="text-xs text-orange-200/70 mt-1 leading-relaxed">
+                                                The biometric wallet for this email is not present on this device or session.
+                                                {window.location.protocol === 'http:' && ' Biometrics require HTTPS or localhost.'}
+                                                If you are in Incognito mode, your wallet may have been cleared.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-1">
+                                        <Link
+                                            href={`/recovery?email=${encodeURIComponent(email)}`}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-xs font-bold transition-all"
+                                        >
+                                            <LifebuoyIcon size={16} /> Use Recovery Kit
+                                        </Link>
+                                    </div>
                                 </div>
                             )}
 

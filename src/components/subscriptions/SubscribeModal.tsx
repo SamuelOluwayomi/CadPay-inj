@@ -122,8 +122,8 @@ export default function SubscribeModal({
                 unlockResult = await unlockWallet(email);
             }
 
-            if (!unlockResult) {
-                throw new Error('Failed to unlock wallet');
+            if (!unlockResult.success) {
+                throw new Error(unlockResult.error || 'Failed to unlock wallet');
             }
 
             // Step 2: Send KAS payment using KasWare

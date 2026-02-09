@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WalletIcon, ShieldCheckIcon, LightningIcon, ArrowLeftIcon, FingerprintIcon, LockKeyIcon, CheckCircleIcon } from '@phosphor-icons/react';
+import { WalletIcon, ShieldCheckIcon, LightningIcon, ArrowLeftIcon, FingerprintIcon, LockKeyIcon, CheckCircleIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { generateKaspaWallet } from '@/utils/kaspaWallet';
@@ -324,11 +324,23 @@ export default function CreateAccount() {
 
                             {/* Biometric Info */}
                             {useBiometrics && (
-                                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                    <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-blue-200/80 leading-relaxed">
-                                        We'll use your device's secure element (FaceID, TouchID) to create a passkey. No password required.
-                                    </p>
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                        <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-blue-200/80 leading-relaxed">
+                                            We'll use your device's secure element (FaceID, TouchID) to create a passkey. No password required.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                                        <WarningCircleIcon size={20} className="text-orange-400 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-orange-300">Important: Local Storage</p>
+                                            <p className="text-[10px] text-orange-200/70 leading-relaxed">
+                                                Biometric keys are stored <span className="text-orange-300 font-semibold">locally in this browser</span>.
+                                                If you use Incognito mode or clear your browser data, you will lose access and must use your Recovery Kit.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 

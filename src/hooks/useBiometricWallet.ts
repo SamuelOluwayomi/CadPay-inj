@@ -120,7 +120,7 @@ export function useBiometricWallet() {
      * @param username - User identifier
      * @returns Decrypted seed phrase
      */
-    const unlockWallet = async (username: string): Promise<string | null> => {
+    const unlockWallet = async (username: string): Promise<{ success: boolean; mnemonic?: string; error?: string }> => {
         setIsLoading(true);
         setError(null);
 
@@ -142,11 +142,11 @@ export function useBiometricWallet() {
                 decryptionKey
             );
 
-            return seedPhrase;
+            return { success: true, mnemonic: seedPhrase };
         } catch (err: any) {
             const errorMessage = err.message || "Failed to unlock wallet";
             setError(errorMessage);
-            return null;
+            return { success: false, error: errorMessage };
         } finally {
             setIsLoading(false);
         }
@@ -161,7 +161,7 @@ export function useBiometricWallet() {
     const unlockWalletWithPassword = async (
         username: string,
         password: string
-    ): Promise<string | null> => {
+    ): Promise<{ success: boolean; mnemonic?: string; error?: string }> => {
         setIsLoading(true);
         setError(null);
 
@@ -177,14 +177,14 @@ export function useBiometricWallet() {
             );
             const seedPhrase = await decryptWithPassword(encryptedData, password);
 
-            return seedPhrase;
+            return { success: true, mnemonic: seedPhrase };
         } catch (err: any) {
             const errorMessage =
                 err.message === "Incorrect password or corrupted data"
                     ? "Incorrect password"
                     : "Failed to unlock wallet";
             setError(errorMessage);
-            return null;
+            return { success: false, error: errorMessage };
         } finally {
             setIsLoading(false);
         }

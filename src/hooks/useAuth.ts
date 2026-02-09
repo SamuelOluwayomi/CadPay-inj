@@ -59,10 +59,10 @@ export function useAuth() {
                 .eq('email', email);
 
             // 5. Unlock wallet from IndexedDB using password
-            const mnemonic = await unlockWalletWithPassword(email, password);
-            if (!mnemonic) {
-                setError('Failed to unlock wallet');
-                return { success: false, error: 'Failed to unlock wallet' };
+            const unlockResult = await unlockWalletWithPassword(email, password);
+            if (!unlockResult.success || !unlockResult.mnemonic) {
+                setError(unlockResult.error || 'Failed to unlock wallet');
+                return { success: false, error: unlockResult.error || 'Failed to unlock wallet' };
             }
 
             // 6. Set active session
@@ -107,10 +107,10 @@ export function useAuth() {
             }
 
             // 3. Unlock wallet from IndexedDB using biometric
-            const mnemonic = await unlockWallet(email);
-            if (!mnemonic) {
-                setError('Biometric authentication failed');
-                return { success: false, error: 'Biometric authentication failed' };
+            const unlockResult = await unlockWallet(email);
+            if (!unlockResult.success || !unlockResult.mnemonic) {
+                setError(unlockResult.error || 'Biometric authentication failed');
+                return { success: false, error: unlockResult.error || 'Biometric authentication failed' };
             }
 
             // 4. Update last login
