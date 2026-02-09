@@ -16,7 +16,7 @@ interface SubscribeModalProps {
     isOpen: boolean;
     onClose: () => void;
     service: Service | null;
-    onSubscribe: (serviceId: string, plan: SubscriptionPlan, email: string, price: number) => void;
+    onSubscribe: (serviceId: string, plan: SubscriptionPlan, email: string, price: number, txId: string) => void;
     balance: number;
     kasPrice: number | null;
     existingSubscriptions: any[];
@@ -156,7 +156,7 @@ export default function SubscribeModal({
             });
 
             // Step 4: Add to local subscriptions
-            onSubscribe(service.id, selectedPlan!, email, priceKAS);
+            onSubscribe(service.id, selectedPlan!, email, priceKAS, txId);
 
             setStep('success');
         } catch (err: any) {

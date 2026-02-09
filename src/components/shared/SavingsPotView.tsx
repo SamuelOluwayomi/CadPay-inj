@@ -3,7 +3,6 @@
 import { useState } from 'react';
 // @ts-ignore
 import QRCode from 'react-qr-code';
-import { Transaction, SystemProgram, PublicKey, TransactionInstruction } from '@/lib/solana-stubs';
 import {
     ArrowUpIcon, ArrowDownIcon, LockIcon, LockOpenIcon,
     QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon

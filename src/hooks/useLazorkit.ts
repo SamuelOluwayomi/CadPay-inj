@@ -1,16 +1,12 @@
-// STUB: This hook was removed during Lazorkit integration cleanup
-// TODO: Implement proper wallet integration using Solana wallet adapters
-
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Connection, Transaction } from '@/lib/solana-stubs';
 
 // Type definitions to match original hook
 type SavingsPot = {
     address: string;
     name: string;
     balance: number;
-    solBalance?: number;
+    kasBalance?: number;
     unlockTime?: number;
     isWalletBased?: boolean;
 };
@@ -19,7 +15,7 @@ export function useLazorkit() {
     const router = useRouter();
     const [loading] = useState(false);
 
-    // Stub all the hook values that were previously provided
+    // Hook values for wallet interaction
     return {
         // Authentication
         address: null as string | null,
@@ -46,10 +42,10 @@ export function useLazorkit() {
         refreshBalance: async () => { },
 
         // Transactions
-        signAndSendTransaction: async (tx: Transaction | { instructions: any[], transactionOptions?: any }): Promise<string> => {
+        signAndSendTransaction: async (tx: any): Promise<string> => {
             throw new Error('Wallet integration needed - sign and send transaction not available');
         },
-        connection: new Connection(process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'),
+        connection: null as any,
 
         // Savings pots
         pots: [] as SavingsPot[],

@@ -80,10 +80,10 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [txSpeed.status]);
 
-    // Explicitly log wallet address to console (User Request)
+    // Unified wallet interaction logging
     useEffect(() => {
         if (address) {
-            console.log("SMART WALLET ADDRESS:", address);
+            console.log("Kaspa Wallet Connected:", address);
         }
     }, [address]);
 
@@ -131,12 +131,8 @@ export default function Dashboard() {
                 showToast("Profile created successfully!", "success");
             }
 
-            // Navigate to dashboard root to ensure user is on the dashboard view
-            try {
-                router.push('/dashboard');
-            } catch (err) {
-                // ignore navigation errors
-            }
+            // Finalize setup
+            router.push('/dashboard');
         } catch (e) {
             console.error("Onboarding failed", e);
             showToast("Failed to create profile. Try again.", "error");
@@ -245,7 +241,7 @@ export default function Dashboard() {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-500">Devnet</span>
+                                <span className="text-zinc-500">Testnet-10</span>
                                 <div className="flex items-center gap-1 text-orange-500">
                                     <div className="w-2 h-2 rounded-full bg-orange-500" />
                                     Active
@@ -338,9 +334,7 @@ export default function Dashboard() {
                             userName={userProfile.username}
                             balance={displayBalance}
                             address={walletAddress}
-                            usdcBalance={usdcBalance}   // <-- Real Balance
-                            refetchUsdc={refetchUsdc}   // <-- Refetch Function
-                            refreshBalance={refreshBalance} // <-- Refresh Native Balance
+                            refreshBalance={refreshBalance}
                             loading={loading}
                             copyToClipboard={copyToClipboard}
                             onOpenSend={() => setShowSendModal(true)}
@@ -352,7 +346,7 @@ export default function Dashboard() {
                         />
                     )}
 
-                    {activeSection === 'subscriptions' && <SubscriptionsSection usdcBalance={usdcBalance} refetchUsdc={refetchUsdc} txSpeed={txSpeed} setTxSpeed={setTxSpeed} />}
+                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} />}
 
                     {activeSection === 'wallet' && <WalletSection
                         balance={displayBalance}
@@ -478,12 +472,12 @@ function NavItem({ icon, label, active, onClick }: any) {
 
 // Overview Section
 function OverviewSection({
-    userName, balance, address, usdcBalance, refetchUsdc, loading,
+    userName, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
     fetchTransactions, txSpeed, setTxSpeed, pots
 }: {
-    userName: string, balance: string, address: string, usdcBalance: number,
-    refetchUsdc: () => void, loading: boolean, copyToClipboard: () => void,
+    userName: string, balance: string, address: string,
+    loading: boolean, copyToClipboard: () => void,
     onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
     fetchTransactions: () => void,
     txSpeed: TxSpeed,
@@ -569,24 +563,14 @@ function OverviewSection({
                 const newBal = currentBal + fundingAmount;
                 localStorage.setItem(`demo_balance_${address}`, newBal.toString());
 
-                // Trigger immediate balance update in UI
+                // Immediate UI updates
                 if (refreshBalance) refreshBalance();
 
-                // Hide speed overlay after a delay
-                setTimeout(() => {
-                    setTxSpeed({ start: null, end: null, status: 'idle' });
-                }, 4000);
-
-                // Background refreshes for indexer sync
+                // Background sync
                 setTimeout(() => {
                     if (refreshBalance) refreshBalance();
                     if (fetchTransactions) fetchTransactions();
                 }, 2000);
-
-                setTimeout(() => {
-                    if (refreshBalance) refreshBalance();
-                    if (fetchTransactions) fetchTransactions();
-                }, 5000);
             } else {
                 setTxSpeed({ start: null, end: null, status: 'idle' });
                 showToast(data.error || "Faucet failed", "error");
@@ -628,9 +612,6 @@ function OverviewSection({
 
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
-                                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Kaspa Mainnet</span>
-                            </div>
                             <div className="px-3 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
                                 <span className="text-[10px] font-bold text-[#70C7BA] uppercase tracking-widest">Private Vault</span>
                             </div>
@@ -877,10 +858,8 @@ function StatCard({ title, value, color }: { title: string; value: string; color
 
 // Subscriptions Section
 function SubscriptionsSection({
-    usdcBalance, refetchUsdc, txSpeed, setTxSpeed
+    txSpeed, setTxSpeed
 }: {
-    usdcBalance: number,
-    refetchUsdc: () => void,
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
 }) {
@@ -951,33 +930,29 @@ function SubscriptionsSection({
         setShowSubscribeModal(true);
     };
 
-    const handleSubscribe = async (serviceId: string, plan: SubscriptionPlan, email: string, price: number) => {
+    const handleSubscribe = async (serviceId: string, plan: SubscriptionPlan, email: string, price: number, txId: string) => {
         try {
             if (!address) throw new Error("Wallet not connected");
 
             setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
-            // STUB: Removed Solana subscription logic
-            showToast("Subscriptions coming soon on Kaspa!", "info");
-
-            // Allow demo subscription to proceed locally without blockchain tx
             const actualService = SERVICES.find(s => s.id === serviceId) || dynamicServices.find(s => s.id === serviceId);
 
             addSubscription({
                 serviceId,
                 serviceName: actualService ? actualService.name : serviceId,
                 plan: plan.name,
-                priceUSD: plan.priceUSD, // Use USD price for analytics
+                priceUSD: plan.priceUSD,
                 email,
                 color: actualService ? actualService.color : '#FF6B35',
                 icon: (actualService ? actualService.icon : StorefrontIcon) as any,
-                transactionSignature: "demo_sig_" + Date.now()
+                transactionSignature: txId
             });
 
             const endTime = Date.now();
             setTxSpeed((prev: TxSpeed) => ({ ...prev, end: endTime, status: 'completed' }));
 
-            // Show success toast
+            // Success feedback
             showToast(`Successfully subscribed to ${actualService?.name || serviceId}! 🎉`, 'success');
             setShowSubscribeModal(false);
 

@@ -29,11 +29,11 @@ export default function NavBar() {
 
                         {/* DESKTOP LINKS (Hidden on Mobile) */}
                         <div className="hidden md:flex items-center gap-8">
-                            <a href="https://github.com/Kaspathon" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium uppercase tracking-widest">
+                            <a href="https://github.com/Kaspathon" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
                                 Kaspathon
                             </a>
                             <NavLink href="/merchant-auth">Merchant Portal</NavLink>
-                            <a href="https://kaspa.org/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium uppercase tracking-widest">
+                            <a href="https://kaspa.org/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
                                 Kaspa
                             </a>
                         </div>
