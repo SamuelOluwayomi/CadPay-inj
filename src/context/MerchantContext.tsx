@@ -48,6 +48,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [services, setServices] = useState<MerchantService[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Derived Merchant State from On-Chain Profile or Demo Mode
     const merchant = React.useMemo(() => {
@@ -73,7 +74,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
             joinedAt: new Date(),
             password: ''
         };
-    }, [profile]);
+    }, [profile, refreshTrigger]);
 
     // Seed Services if none exist for this merchant
     useEffect(() => {
@@ -153,10 +154,10 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
 
             // Store in localStorage to persist demo login
             localStorage.setItem('demo_merchant', JSON.stringify(demoMerchant));
-
-            // Trigger a reload by setting a flag that useUserProfile can detect
             localStorage.setItem('demo_mode', 'true');
-            window.location.reload();
+
+            // Trigger re-render to pick up demo merchant
+            setRefreshTrigger(prev => prev + 1);
 
             return true;
         }
