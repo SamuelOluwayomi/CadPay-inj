@@ -21,8 +21,8 @@ export const useKasWare = () => {
 
     const fetchTransactions = useCallback(async (addr: string) => {
         try {
-            // Using Kaspa Explorer API (Testnet-10)
-            const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/full-transactions?limit=10`);
+            // Using Proxy API
+            const response = await fetch(`/api/kaspa/transactions?address=${addr}&limit=10`);
             if (!response.ok) throw new Error("Failed to fetch transactions");
             const data = await response.json();
 
@@ -72,8 +72,8 @@ export const useKasWare = () => {
                 const balanceData = await window.kasware.getBalance();
                 setBalance(balanceData.total / 100000000);
             } else {
-                // Prioritize real API for balance
-                const response = await fetch(`https://api-tn10.kaspa.org/addresses/${addr}/balance`);
+                // Prioritize proxy API for balance
+                const response = await fetch(`/api/kaspa/balance?address=${addr}`);
                 if (response.ok) {
                     const data = await response.json();
                     setBalance(data.balance / 100000000);
