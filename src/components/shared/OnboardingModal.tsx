@@ -176,13 +176,13 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                         </div>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setStep(1)}
+                                onClick={() => setStep(2)}
                                 className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
                             >
                                 Back
                             </button>
                             <button
-                                onClick={() => pin.length === 4 && pin === confirmPin && setStep(3)}
+                                onClick={() => pin.length === 4 && pin === confirmPin && setStep(4)}
                                 disabled={pin.length !== 4 || pin !== confirmPin}
                                 className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
                             >
@@ -192,8 +192,8 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                     </motion.div>
                 )}
 
-                {/* Step 3: Gender */}
-                {step === 3 && (
+                {/* Step 4: Gender */}
+                {step === 4 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                         <div>
                             <label className="block text-sm text-zinc-400 mb-4 font-medium">Select your gender</label>
@@ -231,13 +231,13 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                         </div>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setStep(2)}
+                                onClick={() => setStep(3)}
                                 className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
                             >
                                 Back
                             </button>
                             <button
-                                onClick={() => gender && setStep(4)}
+                                onClick={() => gender && setStep(5)}
                                 disabled={!gender}
                                 className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
                             >
@@ -247,8 +247,8 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                     </motion.div>
                 )}
 
-                {/* Step 4: Avatar */}
-                {step === 4 && (
+                {/* Step 5: Avatar */}
+                {step === 5 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                         <div>
                             <label className="block text-sm text-zinc-400 mb-4 font-medium">Choose your avatar</label>
@@ -269,7 +269,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, o
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button
-                                onClick={() => setStep(3)}
+                                onClick={() => setStep(4)}
                                 className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
                             >
                                 Back

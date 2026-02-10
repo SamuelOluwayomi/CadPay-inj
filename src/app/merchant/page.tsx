@@ -9,9 +9,10 @@ import {
 } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Added Router
+import { useRouter } from 'next/navigation';
 
-import { useMerchant } from '@/context/MerchantContext'; // Added Context
+import { useMerchant } from '@/context/MerchantContext';
+import { useKaspaData } from '@/hooks/useKaspaData';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { SERVICES } from '@/data/subscriptions';
@@ -22,23 +23,38 @@ const SkeletonLoader = ({ className }: { className?: string }) => (
 );
 
 export default function MerchantDashboard() {
-    const { merchant, createNewService, logoutMerchant, isLoading } = useMerchant();
+    const { merchant, createNewService, logoutMerchant, isLoading: isAuthLoading } = useMerchant();
     const router = useRouter();
 
     // Create Service Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isCreating, setIsCreating] = useState(false); // Added loading state for creation
+    const [isCreating, setIsCreating] = useState(false);
     const [newServiceName, setNewServiceName] = useState('');
 
-    // State for Metrics & Data
-    const [transactions, setTransactions] = useState<any[]>([]);
-    const [totalRevenue, setTotalRevenue] = useState(0);
-    const [txCount, setTxCount] = useState(0);
-    const [mrr, setMrr] = useState(0);
-    const [gasSaved, setGasSaved] = useState(0);
-    const [chartData, setChartData] = useState<any[]>([]);
-    // Renamed loading to isLoadingData to avoid conflict with context isLoading
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    // [NEW] Live Data Integration
+    const {
+        balance,
+        transactions,
+        stats,
+        isLoading: isDataLoading,
+        refetch
+    } = useKaspaData(merchant?.walletPublicKey || null);
+
+    // Derived Metrics from Hook
+    const totalRevenue = stats?.revenue || 0;
+    const txCount = stats?.txCount || 0; // This is count of incoming txs (customers)
+    const uniqueCustomers = stats?.uniqueCustomers || 0;
+    const mrr = stats?.mrr || 0;
+
+    // Calculate Gas Saved (Simulated based on Volume for "The Flex")
+    // Assuming 0.0001 KAS per tx vs standard network
+    const gasSaved = txCount * 0.0001;
+
+    // Chart Data - Single segment for now as we don't have product breakdown yet
+    const chartData = [
+        { name: 'General Revenue', value: totalRevenue || 100, color: '#F97316' }
+    ];
+
     const [showKey, setShowKey] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -52,12 +68,12 @@ export default function MerchantDashboard() {
     // Protect Route - redirect to signin if not logged in (only after loading completes)
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (!isLoading && !merchant) {
+            if (!isAuthLoading && !merchant) {
                 router.push('/merchant-auth');
             }
-        }, 100);
+        }, 1000); // Slight delay to prevent flicker
         return () => clearTimeout(timer);
-    }, [merchant, isLoading, router]);
+    }, [merchant, isAuthLoading, router]);
 
     // Handle sidebar default state based on screen size
     useEffect(() => {
@@ -69,36 +85,10 @@ export default function MerchantDashboard() {
             }
         };
 
-        // Set initial state
         handleResize();
-
-        // Listen for window resize
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    // Initial Data Fetch
-    useEffect(() => {
-        if (merchant) {
-            fetchHistory();
-        }
-    }, [merchant]);
-
-    const fetchHistory = useCallback(async () => {
-        setIsLoadingData(true);
-
-        // Simulating Network Delay for "Refresh" feel
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        setTransactions([]);
-        setTotalRevenue(0);
-        setTxCount(0);
-        setMrr(0);
-        setGasSaved(0);
-        setChartData([]);
-
-        setIsLoadingData(false);
-    }, [merchant]);
 
     const copyToClipboard = async (text: string, id: string) => {
         try {
@@ -113,7 +103,7 @@ export default function MerchantDashboard() {
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsCreating(true);
-        // Simulate network delay or await actual creation if async
+        // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         createNewService(newServiceName, newServicePrice, "Monthly Subscription", newServiceColor);
         setIsCreating(false);
@@ -122,7 +112,7 @@ export default function MerchantDashboard() {
         setNewServicePrice(19.99);
     };
 
-    if (isLoading) {
+    if (isAuthLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-black text-white">
                 <div className="flex flex-col items-center gap-4">
@@ -133,7 +123,7 @@ export default function MerchantDashboard() {
         );
     }
 
-    if (!merchant) return null; // Logic in Layout should handle redirect, but just in case
+    if (!merchant) return null;
 
     return (
         <div className="flex min-h-screen bg-black text-white font-sans selection:bg-orange-500/30 pt-16">
@@ -264,27 +254,27 @@ export default function MerchantDashboard() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                                 <MetricCard
                                     title="Total Revenue"
-                                    value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    value={`${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KAS`}
                                     trend="+0%"
                                     icon={<TrendUpIcon size={24} className="text-green-400" />}
                                     color="green"
-                                    loading={isLoadingData}
+                                    loading={isDataLoading}
                                 />
                                 <MetricCard
                                     title="Total Customers"
-                                    value={txCount.toLocaleString()}
-                                    trend="+0 new"
+                                    value={uniqueCustomers.toLocaleString()}
+                                    trend={`+${uniqueCustomers} new`}
                                     icon={<UsersIcon size={24} className="text-blue-400" />}
                                     color="blue"
-                                    loading={isLoadingData}
+                                    loading={isDataLoading}
                                 />
                                 <MetricCard
                                     title="Monthly Recurring (MRR)"
-                                    value={`$${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    value={`${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KAS`}
                                     trend="+0%"
                                     icon={<ReceiptIcon size={24} className="text-purple-400" />}
                                     color="purple"
-                                    loading={isLoadingData}
+                                    loading={isDataLoading}
                                 />
                                 <MetricCard
                                     title="Gas Subsidized (The Flex)"
@@ -293,7 +283,7 @@ export default function MerchantDashboard() {
                                     icon={<LightningIcon size={24} className="text-orange-400 fill-orange-400" />}
                                     color="orange"
                                     subtext="You saved users this much!"
-                                    loading={isLoadingData}
+                                    loading={isDataLoading}
                                 />
                             </div>
                         )}
@@ -308,7 +298,7 @@ export default function MerchantDashboard() {
                                     </div>
 
                                     <div className="h-80 w-full relative min-w-0">
-                                        {isLoadingData ? (
+                                        {isDataLoading && totalRevenue === 0 ? (
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
                                             </div>
@@ -317,19 +307,19 @@ export default function MerchantDashboard() {
                                                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                                     <PieChart>
                                                         <Pie
-                                                            data={chartData.length > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]}
+                                                            data={totalRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]}
                                                             innerRadius={60}
                                                             outerRadius={80}
                                                             paddingAngle={5}
                                                             dataKey="value"
                                                             stroke="none"
                                                         >
-                                                            {(chartData.length > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]).map((entry, index) => (
+                                                            {(totalRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]).map((entry, index) => (
                                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                                             ))}
                                                         </Pie>
                                                         <Tooltip
-                                                            formatter={(value: any) => `$${value?.toLocaleString()}`}
+                                                            formatter={(value: any) => `${value?.toLocaleString()} KAS`}
                                                             contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
                                                             itemStyle={{ color: '#fff' }}
                                                         />
@@ -340,8 +330,9 @@ export default function MerchantDashboard() {
                                                     <div className="text-center">
                                                         <span className="block text-zinc-500 text-xs">Total</span>
                                                         <span className="block text-xl font-bold text-white">
-                                                            ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                            {totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                         </span>
+                                                        <span className="block text-[10px] text-zinc-500">KAS</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -363,15 +354,15 @@ export default function MerchantDashboard() {
                                             <div className="flex items-center gap-2">
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live Feed</span>
+                                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live Live</span>
                                                 </span>
                                                 <button
-                                                    onClick={fetchHistory}
-                                                    disabled={isLoadingData}
+                                                    onClick={refetch}
+                                                    disabled={isDataLoading}
                                                     className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
                                                     title="Refresh Transactions"
                                                 >
-                                                    <ArrowsClockwiseIcon className={`w-4 h-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+                                                    <ArrowsClockwiseIcon className={`w-4 h-4 ${isDataLoading ? 'animate-spin' : ''}`} />
                                                 </button>
                                             </div>
                                         </div>
@@ -386,15 +377,14 @@ export default function MerchantDashboard() {
                                             <thead>
                                                 <tr className="text-xs text-zinc-500 uppercase tracking-wider border-b border-white/5">
                                                     <th className="pb-3 pl-2 font-medium">Status</th>
-                                                    <th className="pb-3 font-medium hidden lg:table-cell">Product</th>
-                                                    <th className="pb-3 font-medium hidden md:table-cell">Customer</th>
+                                                    <th className="pb-3 font-medium hidden lg:table-cell">Type</th>
+                                                    <th className="pb-3 font-medium hidden md:table-cell">Party</th>
                                                     <th className="pb-3 font-medium">TX ID</th>
-                                                    <th className="pb-3 text-right font-medium pr-2">Service</th>
-                                                    <th className="pb-3 text-right font-medium pr-2 hidden lg:table-cell">Gas Fee</th>
+                                                    <th className="pb-3 text-right font-medium pr-2">Amount</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="text-sm divide-y divide-white/5">
-                                                {isLoadingData ? (
+                                                {isDataLoading && transactions.length === 0 ? (
                                                     // Skeleton Loading Rows
                                                     Array.from({ length: 5 }).map((_, i) => (
                                                         <tr key={i}>
@@ -403,16 +393,15 @@ export default function MerchantDashboard() {
                                                             <td className="py-4 hidden md:table-cell"><SkeletonLoader className="h-4 w-32" /></td>
                                                             <td className="py-4 px-1"><SkeletonLoader className="h-4 w-20" /></td>
                                                             <td className="py-4 text-right pr-2"><SkeletonLoader className="h-4 w-12 ml-auto" /></td>
-                                                            <td className="py-4 text-right pr-2 hidden lg:table-cell"><SkeletonLoader className="h-4 w-12 ml-auto" /></td>
                                                         </tr>
                                                     ))
                                                 ) : transactions.length === 0 ? (
                                                     <tr>
                                                         <td colSpan={6} className="py-12 text-center text-zinc-700">
-                                                            No transactions yet. Create a product and share the link!
+                                                            No active transactions found on-chain.
                                                         </td>
                                                     </tr>
-                                                ) : transactions.map((tx, i) => (
+                                                ) : transactions.map((tx: any, i: number) => (
                                                     <motion.tr
                                                         key={tx.id}
                                                         initial={{ opacity: 0, x: -10 }}
@@ -427,10 +416,12 @@ export default function MerchantDashboard() {
                                                             </div>
                                                         </td>
                                                         <td className="py-3 hidden lg:table-cell">
-                                                            <span className="font-medium text-zinc-200">Subscription</span>
+                                                            <span className={`font-medium ${tx.isIncoming ? 'text-green-400' : 'text-orange-400'}`}>
+                                                                {tx.isIncoming ? 'Payment In' : 'Transfer Out'}
+                                                            </span>
                                                         </td>
                                                         <td className="py-3 font-mono text-xs text-zinc-400 hidden md:table-cell">
-                                                            {tx.customer}
+                                                            {tx.sender ? `${tx.sender.slice(0, 6)}...${tx.sender.slice(-6)}` : 'Unknown'}
                                                         </td>
                                                         <td className="py-3 px-1">
                                                             <div className="flex items-center gap-1 relative">
@@ -458,13 +449,8 @@ export default function MerchantDashboard() {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="py-3 pr-2 text-right font-bold text-white text-[10px] sm:text-xs">
-                                                            {tx.memo || 'Subscription'}
-                                                        </td>
-                                                        <td className="py-3 pr-2 text-right hidden lg:table-cell">
-                                                            <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20">
-                                                                0.00 SOL
-                                                            </span>
+                                                        <td className={`py-3 pr-2 text-right font-bold text-[10px] sm:text-xs ${tx.isIncoming ? 'text-green-400' : 'text-white'}`}>
+                                                            {tx.isIncoming ? '+' : '-'}{tx.amount.toFixed(2)} KAS
                                                         </td>
                                                     </motion.tr>
                                                 ))}
