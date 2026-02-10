@@ -22,6 +22,7 @@ import SubscribeModal from '@/components/subscriptions/SubscribeModal';
 import ActiveSubscriptionCard from '@/components/subscriptions/ActiveSubscriptionCard';
 import SecuritySettings from '@/components/security/SecuritySettings';
 import FullProfileEditModal from '@/components/shared/FullProfileEditModal';
+import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import OnboardingModal from '@/components/shared/OnboardingModal';
 import CopyButton from '@/components/shared/CopyButton';
 import { useMerchant } from '@/context/MerchantContext';
@@ -167,6 +168,19 @@ export default function Dashboard() {
         <div className="min-h-screen bg-[#1c1209] text-white font-sans relative overflow-hidden">
             {/* Orange Glow Background */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(234,88,12,0.1),transparent_50%)] z-0" />
+
+            {/* Particle Dust Animation */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <ParticlesBackground
+                    id="user-dashboard-particles"
+                    particleCount={150}
+                    particleSize={2}
+                    speed={0.5}
+                    linkDistance={100}
+                    linkOpacity={0.2}
+                    className="absolute inset-0"
+                />
+            </div>
 
             {/* Background Logo Field */}
             <LogoField count={6} className="fixed inset-0 z-0 opacity-30" />

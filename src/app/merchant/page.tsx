@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import { useRouter } from 'next/navigation';
 
 import { useMerchant } from '@/context/MerchantContext';
@@ -132,7 +133,7 @@ export default function MerchantDashboard() {
     if (!merchant) return null;
 
     return (
-        <div className="flex min-h-screen bg-black text-white font-sans selection:bg-orange-500/30 pt-16">
+        <div className="flex min-h-screen bg-black text-white font-sans selection:bg-orange-500/30 pt-5">
             {/* Mobile/Desktop Hamburger Menu Toggle */}
             {!sidebarOpen && (
                 <button
