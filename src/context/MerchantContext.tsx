@@ -49,17 +49,27 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
     const [services, setServices] = useState<MerchantService[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Derived Merchant State from On-Chain Profile
+    // Derived Merchant State from On-Chain Profile or Demo Mode
     const merchant = React.useMemo(() => {
+        // Check for demo mode first
+        const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+        if (isDemoMode) {
+            const demoMerchant = localStorage.getItem('demo_merchant');
+            if (demoMerchant) {
+                return JSON.parse(demoMerchant);
+            }
+        }
+
+        // Otherwise use on-chain profile
         if (!profile) return null;
         return {
             id: profile.authority,
             name: profile.username || 'Merchant',
-            email: 'onchain@cadpay.xyz', // Placeholder for layout compatibility
+            email: 'onchain@cadpay.xyz',
             walletPublicKey: profile.authority,
-            walletSecretKey: '', // Not needed for on-chain auth
+            walletSecretKey: '',
             joinedAt: new Date(),
-            password: '' // Not needed
+            password: ''
         };
     }, [profile]);
 
@@ -125,11 +135,39 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const loginMerchant = async () => {
+    const loginMerchant = async (email: string, password?: string) => {
+        // Check for demo admin account
+        if (email === 'demo@cadpay.xyz' && password === 'demo123') {
+            // Create a demo merchant profile locally
+            const demoMerchant = {
+                id: 'demo-admin',
+                name: 'Admin 01',
+                email: 'demo@cadpay.xyz',
+                walletPublicKey: 'kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay',
+                walletSecretKey: '',
+                joinedAt: new Date(),
+                password: 'demo123'
+            };
+
+            // Store in localStorage to persist demo login
+            localStorage.setItem('demo_merchant', JSON.stringify(demoMerchant));
+
+            // Trigger a reload by setting a flag that useUserProfile can detect
+            localStorage.setItem('demo_mode', 'true');
+            window.location.reload();
+
+            return true;
+        }
+
+        // For real merchant accounts, check if profile exists
         return !!merchant;
     };
 
     const logoutMerchant = () => {
+        localStorage.removeItem('demo_mode');
+        localStorage.removeItem('demo_merchant');
+        localStorage.removeItem('active_wallet_address');
+        window.location.href = '/';
     };
 
     const createNewService = (name: string, price: number, description: string, color: string) => {
