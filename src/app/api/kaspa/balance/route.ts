@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge'; // Use Edge for speed
+export const runtime = 'nodejs'; // Switch to Node.js runtime for better debugging
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -11,17 +11,21 @@ export async function GET(request: Request) {
     }
 
     try {
-        // The server fetches data (CORS doesn't apply here)
-        const response = await fetch(`https://api-tn10.kaspa.org/addresses/${address}/balance`);
+        const targetUrl = `https://api-tn10.kaspa.org/addresses/${address}/balance`;
+        console.log(`[Proxy] Fetching balance from: ${targetUrl}`);
+
+        const response = await fetch(targetUrl);
 
         if (!response.ok) {
-            throw new Error(`Kaspa API Error: ${response.statusText}`);
+            console.error(`[Proxy] Upstream Error: ${response.status} ${response.statusText}`);
+            throw new Error(`Kaspa API Error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
         return NextResponse.json(data);
 
     } catch (error: any) {
+        console.error('[Proxy] Internal Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

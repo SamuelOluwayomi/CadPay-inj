@@ -1,11 +1,10 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     WalletIcon, TrendUpIcon, UsersIcon, LightningIcon, CopyIcon, CheckIcon, StorefrontIcon,
     ReceiptIcon, ChartPieIcon, KeyIcon, ShieldCheckIcon, CaretRightIcon, ArrowLeftIcon,
-    EyeIcon, EyeSlashIcon, PlusIcon, XIcon, ListIcon, ArrowsClockwise as ArrowsClockwiseIcon
+    EyeIcon, EyeSlashIcon, PlusIcon, XIcon, ListIcon, ArrowsClockwise as ArrowsClockwiseIcon,
+    Warning as WarningIcon
 } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,6 +12,7 @@ import { useRouter } from 'next/navigation';
 
 import { useMerchant } from '@/context/MerchantContext';
 import { useKaspaData } from '@/hooks/useKaspaData';
+import { useToast } from '@/context/ToastContext';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { SERVICES } from '@/data/subscriptions';
@@ -25,20 +25,24 @@ const SkeletonLoader = ({ className }: { className?: string }) => (
 export default function MerchantDashboard() {
     const { merchant, createNewService, logoutMerchant, isLoading: isAuthLoading } = useMerchant();
     const router = useRouter();
+    const { showToast } = useToast();
 
     // Create Service Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newServiceName, setNewServiceName] = useState('');
 
-    // [NEW] Live Data Integration
+    // [NEW] Live Data Integration with API recovery callback
     const {
         balance,
         transactions,
         stats,
         isLoading: isDataLoading,
+        isUsingDemoData,
         refetch
-    } = useKaspaData(merchant?.walletPublicKey || null);
+    } = useKaspaData(merchant?.walletPublicKey || null, () => {
+        showToast("Kaspa API is back online! Switched to live data.", "success");
+    });
 
     // Derived Metrics from Hook
     const totalRevenue = stats?.revenue || 0;
@@ -236,6 +240,23 @@ export default function MerchantDashboard() {
 
             {/* MAIN CONTENT */}
             <main className={`flex-1 transition-all duration-300 p-4 sm:p-6 md:p-8 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
+                {/* Demo Mode Banner */}
+                {isUsingDemoData && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 backdrop-blur-xl"
+                    >
+                        <div className="flex items-center gap-3">
+                            <WarningIcon size={24} className="text-orange-500" weight="fill" />
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-orange-400">Demo Mode Active</p>
+                                <p className="text-xs text-zinc-400">Kaspa API is temporarily unavailable. Showing demo data. The system will automatically switch to live data when the API recovers.</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
                 {!merchant ? (
                     <div className="flex items-center justify-center h-screen">
                         <div className="text-zinc-500">Loading...</div>

@@ -111,7 +111,23 @@ export const useKaspaData = (address: string | null) => {
 
         } catch (err: any) {
             console.error("Kaspa Data Fetch Error:", err);
-            setError(err.message || "Failed to load data");
+
+            // Check if it's an API unavailability issue
+            if (err.message?.includes('Failed to fetch') || err.message?.includes('API Error')) {
+                setError("Kaspa API temporarily unavailable. Please try again later.");
+            } else {
+                setError(err.message || "Failed to load data");
+            }
+
+            // Set empty safe states instead of leaving old data
+            setBalance(0);
+            setTransactions([]);
+            setStats({
+                revenue: 0,
+                txCount: 0,
+                uniqueCustomers: 0,
+                mrr: 0
+            });
         } finally {
             setIsLoading(false);
         }
