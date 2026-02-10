@@ -5,31 +5,33 @@ import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import {
     ArrowUpIcon, ArrowDownIcon, LockIcon, LockOpenIcon,
-    QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon
+    QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon, ReceiptIcon
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CopyButton from './CopyButton';
 
 interface SavingsPotViewProps {
     pot: {
+        id: string;
         name: string;
         address: string;
         balance: number;
-        unlockTime: number;
+        unlock_time: number;
     };
     onWithdraw: (recipient: string, amount: number, note: string) => void;
     onRefresh: () => void;
+    onShowReceipts?: () => void;
 }
 
-export default function SavingsPotView({ pot, onWithdraw, onRefresh }: SavingsPotViewProps) {
+export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowReceipts }: SavingsPotViewProps) {
     const [showQR, setShowQR] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
     const [note, setNote] = useState('');
 
-    const isLocked = (Date.now() / 1000) < pot.unlockTime;
-    const unlockDate = new Date(pot.unlockTime * 1000);
+    const isLocked = (Date.now() / 1000) < pot.unlock_time;
+    const unlockDate = new Date(pot.unlock_time * 1000);
 
     const handleWithdraw = () => {
         if (!recipient || !amount) return;
@@ -53,7 +55,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh }: SavingsPo
                         )}
                     </h3>
                     <p className="text-sm text-zinc-400 mt-1">
-                        <span className="text-white font-bold">{pot.balance.toFixed(0)} USDC</span>
+                        <span className="text-white font-bold">{pot.balance.toFixed(0)} KAS</span>
                     </p>
                 </div>
 
@@ -76,6 +78,15 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh }: SavingsPo
                     >
                         <ArrowUpIcon size={20} weight="bold" />
                     </button>
+                    {onShowReceipts && (
+                        <button
+                            onClick={onShowReceipts}
+                            className="w-12 h-12 flex items-center justify-center bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-full transition-all"
+                            title="Receipts"
+                        >
+                            <ReceiptIcon size={20} weight="bold" />
+                        </button>
+                    )}
                 </div>
 
                 {isLocked && (

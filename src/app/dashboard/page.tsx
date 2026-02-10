@@ -28,8 +28,10 @@ import CopyButton from '@/components/shared/CopyButton';
 import { useMerchant } from '@/context/MerchantContext';
 import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
+import SavingsReceiptsModal from '@/components/shared/SavingsReceiptsModal';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
 import { useKasWare } from '@/hooks/useKasWare';
+import { useSavings } from '@/hooks/useSavings';
 import { useToast } from '@/context/ToastContext';
 import { useReceipts } from '@/hooks/useReceipts';
 
@@ -1509,27 +1511,22 @@ function DevKeysSection() {
 }
 
 // Savings Section
+// Savings Section
 function SavingsSection() {
-    // @ts-ignore
-    const { pots, createPot, withdrawFromPot, loading, fetchPots } = useLazorkit();
+    const { pots, isLoading, createPot, withdrawFromPot } = useSavings();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [selectedPot, setSelectedPot] = useState<any>(null);
+    const [showReceipts, setShowReceipts] = useState(false);
 
-    const handleCreatePot = async (name: string, durationMonths: number) => {
+    const handleCreatePot = (name: string, durationMonths: number) => {
         setIsCreating(true);
-        try {
-            // Calculate unlock time
-            const unlockDate = new Date();
-            unlockDate.setMonth(unlockDate.getMonth() + durationMonths);
-            const timestamp = Math.floor(unlockDate.getTime() / 1000);
-
-            await createPot(name, timestamp);
+        // Simulate API delay
+        setTimeout(() => {
+            createPot(name, durationMonths);
             setShowCreateModal(false);
-        } catch (e) {
-            console.error("Failed to create pot", e);
-        } finally {
             setIsCreating(false);
-        }
+        }, 1000);
     };
 
     return (
@@ -1565,12 +1562,16 @@ function SavingsSection() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {pots.map((pot: any) => (
+                    {pots.map((pot) => (
                         <SavingsPotView
-                            key={pot.name}
+                            key={pot.id}
                             pot={pot}
-                            onWithdraw={(recipient, amount, note) => withdrawFromPot(pot.address, recipient, amount, note)}
-                            onRefresh={fetchPots}
+                            onWithdraw={(recipient, amount, note) => withdrawFromPot(pot.id, amount)}
+                            onRefresh={() => { }}
+                            onShowReceipts={() => {
+                                setSelectedPot(pot);
+                                setShowReceipts(true);
+                            }}
                         />
                     ))}
                 </div>
@@ -1581,6 +1582,12 @@ function SavingsSection() {
                 isLoading={isCreating}
                 onClose={() => setShowCreateModal(false)}
                 onCreate={handleCreatePot}
+            />
+
+            <SavingsReceiptsModal
+                isOpen={showReceipts}
+                onClose={() => setShowReceipts(false)}
+                pot={selectedPot}
             />
         </div>
     );
