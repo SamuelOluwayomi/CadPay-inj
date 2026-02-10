@@ -51,12 +51,14 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
 
     // Derived Merchant State from On-Chain Profile or Demo Mode
     const merchant = React.useMemo(() => {
-        // Check for demo mode first
-        const isDemoMode = localStorage.getItem('demo_mode') === 'true';
-        if (isDemoMode) {
-            const demoMerchant = localStorage.getItem('demo_merchant');
-            if (demoMerchant) {
-                return JSON.parse(demoMerchant);
+        // Check for demo mode first (client-side only)
+        if (typeof window !== 'undefined') {
+            const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+            if (isDemoMode) {
+                const demoMerchant = localStorage.getItem('demo_merchant');
+                if (demoMerchant) {
+                    return JSON.parse(demoMerchant);
+                }
             }
         }
 
