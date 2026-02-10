@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {children}
 
             {/* Toast Container */}
-            <div className="fixed top-6 right-6 z-9999 space-y-3 pointer-events-none">
+            <div className="fixed top-6 inset-x-0 flex flex-col items-center md:items-end md:right-6 md:inset-x-auto z-9999 space-y-3 pointer-events-none px-4 md:px-0">
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <ToastItem

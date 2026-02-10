@@ -36,14 +36,16 @@ export const useKaspaData = (address: string | null) => {
 
         try {
             // 1. Fetch Balance
-            const balanceRes = await fetch(`https://api-tn10.kaspa.org/addresses/${address}/balance`);
+            // Proxy: /api/kaspa/proxy?endpoint=addresses/<addr>/balance
+            const balanceRes = await fetch(`/api/kaspa/proxy?endpoint=addresses/${address}/balance`);
             if (balanceRes.ok) {
                 const balanceData = await balanceRes.json();
                 setBalance(balanceData.balance / 100000000);
             }
 
             // 2. Fetch Transactions
-            const txRes = await fetch(`https://api-tn10.kaspa.org/addresses/${address}/full-transactions?limit=50`);
+            // Proxy: /api/kaspa/proxy?endpoint=addresses/<addr>/full-transactions&limit=50
+            const txRes = await fetch(`/api/kaspa/proxy?endpoint=addresses/${address}/full-transactions&limit=50`);
             if (!txRes.ok) throw new Error("Failed to fetch transactions");
 
             const txData = await txRes.json();
