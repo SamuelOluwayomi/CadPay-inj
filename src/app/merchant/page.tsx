@@ -170,8 +170,8 @@ export default function MerchantDashboard() {
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-8">
                                 <Link href="/" className="group flex items-center gap-3">
-                                    <div className="relative w-8 h-8 flex items-center justify-center bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
-                                        <LightningIcon size={20} weight="fill" className="text-white" />
+                                    <div className="w-8 h-8 bg-orange-500 text-black flex items-center justify-center rounded-lg font-black text-xl shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                                        C
                                     </div>
                                     <span className="text-xl font-black bg-white text-transparent bg-clip-text">
                                         CadPay
@@ -187,31 +187,46 @@ export default function MerchantDashboard() {
                                     icon={<StorefrontIcon size={20} />}
                                     label="Dashboard"
                                     active={activeSection === 'dashboard'}
-                                    onClick={() => { setActiveSection('dashboard'); setSidebarOpen(false); }}
+                                    onClick={() => {
+                                        setActiveSection('dashboard');
+                                        if (window.innerWidth < 768) setSidebarOpen(false);
+                                    }}
                                 />
                                 <NavItem
                                     icon={<ChartPieIcon size={20} />}
                                     label="Analytics"
                                     active={activeSection === 'analytics'}
-                                    onClick={() => { setActiveSection('analytics'); setSidebarOpen(false); }}
+                                    onClick={() => {
+                                        setActiveSection('analytics');
+                                        if (window.innerWidth < 768) setSidebarOpen(false);
+                                    }}
                                 />
                                 <NavItem
                                     icon={<UsersIcon size={20} />}
                                     label="Customers"
                                     active={activeSection === 'customers'}
-                                    onClick={() => { setActiveSection('customers'); setSidebarOpen(false); }}
+                                    onClick={() => {
+                                        setActiveSection('customers');
+                                        if (window.innerWidth < 768) setSidebarOpen(false);
+                                    }}
                                 />
                                 <NavItem
                                     icon={<ReceiptIcon size={20} />}
                                     label="Invoices"
                                     active={activeSection === 'invoices'}
-                                    onClick={() => { setActiveSection('invoices'); setSidebarOpen(false); }}
+                                    onClick={() => {
+                                        setActiveSection('invoices');
+                                        if (window.innerWidth < 768) setSidebarOpen(false);
+                                    }}
                                 />
                                 <NavItem
                                     icon={<KeyIcon size={20} />}
                                     label="Developer"
                                     active={activeSection === 'developer'}
-                                    onClick={() => { setActiveSection('developer'); setSidebarOpen(false); }}
+                                    onClick={() => {
+                                        setActiveSection('developer');
+                                        if (window.innerWidth < 768) setSidebarOpen(false);
+                                    }}
                                 />
                             </nav>
                         </div>
@@ -377,7 +392,7 @@ export default function MerchantDashboard() {
                                             <div className="flex items-center gap-2">
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live Live</span>
+                                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live data</span>
                                                 </span>
                                                 <button
                                                     onClick={refetch}
