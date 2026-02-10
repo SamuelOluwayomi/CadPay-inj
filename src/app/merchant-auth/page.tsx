@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { StorefrontIcon, UserCircleIcon, ArrowRightIcon, SpinnerIcon, LockKeyIcon, ArrowLeftIcon } from '@phosphor-icons/react';
+import { StorefrontIcon, UserCircleIcon, ArrowRightIcon, SpinnerIcon, LockKeyIcon, ArrowLeftIcon, InfoIcon } from '@phosphor-icons/react';
 import { useMerchant } from '@/context/MerchantContext';
 import Image from 'next/image';
 
 export default function MerchantAuthPage() {
-    const [isSignup, setIsSignup] = useState(false);
+    // Main Tab: "Admin Merchant" vs "Merchant Login/Sign Up"
+    const [mainTab, setMainTab] = useState<'admin' | 'merchant'>('admin');
+
+    // Subtab for Merchant: "signin" vs "register"
+    const [merchantSubTab, setMerchantSubTab] = useState<'signin' | 'register'>('signin');
+
+    // Form fields
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,23 +25,43 @@ export default function MerchantAuthPage() {
     const router = useRouter();
     const { createMerchant, loginMerchant } = useMerchant();
 
+    // Pre-fill demo credentials on mount
+    useEffect(() => {
+        if (mainTab === 'admin') {
+            setEmail('demo@cadpay.xyz');
+            setPassword('demo123');
+        } else {
+            // Clear when switching to merchant tab
+            if (email === 'demo@cadpay.xyz') {
+                setEmail('');
+                setPassword('');
+            }
+        }
+    }, [mainTab]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         try {
-            if (isSignup) {
-                // Register
-                await createMerchant(name, email);
-            } else {
-                // Login with password validation
+            if (mainTab === 'admin') {
+                // Admin login (demo account)
                 const success = await loginMerchant(email, password);
                 if (!success) {
-                    throw new Error("Invalid email or password.");
+                    throw new Error("Invalid credentials.");
+                }
+            } else {
+                // Real merchant account
+                if (merchantSubTab === 'register') {
+                    await createMerchant(name, email);
+                } else {
+                    const success = await loginMerchant(email, password);
+                    if (!success) {
+                        throw new Error("Invalid email or password.");
+                    }
                 }
             }
-            // Redirect
             router.push('/merchant');
         } catch (err: any) {
             setError(err.message || 'Authentication failed');
@@ -74,30 +100,66 @@ export default function MerchantAuthPage() {
                         Merchant Portal
                     </h1>
                     <p className="text-zinc-400">
-                        {isSignup ? "Create your business wallet instantly." : "Manage your subscriptions and revenue."}
+                        {mainTab === 'admin'
+                            ? "Manage your subscriptions and revenue."
+                            : merchantSubTab === 'register'
+                                ? "Create your business wallet instantly."
+                                : "Manage your subscriptions and revenue."}
                     </p>
                 </div>
 
                 <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl">
+                    {/* MAIN TABS: Admin Merchant vs Merchant Login/Sign Up */}
                     <div className="flex bg-black/40 p-1 rounded-xl mb-6">
                         <button
-                            onClick={() => setIsSignup(false)}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!isSignup ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
+                            onClick={() => setMainTab('admin')}
+                            className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${mainTab === 'admin' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
                                 }`}
                         >
-                            Log In
+                            ADMIN MERCHANT
                         </button>
                         <button
-                            onClick={() => setIsSignup(true)}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${isSignup ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
+                            onClick={() => setMainTab('merchant')}
+                            className={`flex-1 py-2 px-3 rounded-lg text-xs md:text-sm font-bold transition-all ${mainTab === 'merchant' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
                                 }`}
                         >
-                            Create Account
+                            MERCHANT LOGIN/SIGN UP
                         </button>
                     </div>
 
+                    {/* SUB-TABS for Merchant (Sign In / Register) */}
+                    {mainTab === 'merchant' && (
+                        <div className="flex bg-black/40 p-1 rounded-xl mb-6">
+                            <button
+                                onClick={() => setMerchantSubTab('signin')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${merchantSubTab === 'signin' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
+                                    }`}
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                onClick={() => setMerchantSubTab('register')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${merchantSubTab === 'register' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'
+                                    }`}
+                            >
+                                Register
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Admin Notice */}
+                    {mainTab === 'admin' && (
+                        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-start gap-2">
+                            <InfoIcon size={18} weight="fill" className="text-orange-500 mt-0.5 shrink-0" />
+                            <div className="text-xs text-zinc-300">
+                                <span className="font-bold text-orange-400">Admin Merchant Account</span>
+                                <br />No wallet signature required.
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {isSignup && (
+                        {mainTab === 'merchant' && merchantSubTab === 'register' && (
                             <div>
                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Business Name</label>
                                 <div className="relative">
@@ -107,7 +169,7 @@ export default function MerchantAuthPage() {
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Acme Corp"
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
-                                        required={isSignup}
+                                        required
                                     />
                                     <StorefrontIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                                 </div>
@@ -121,7 +183,7 @@ export default function MerchantAuthPage() {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="founder@startup.com"
+                                    placeholder={mainTab === 'admin' ? "demo@cadpay.xyz" : "founder@startup.com"}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                                     required
                                 />
@@ -159,7 +221,11 @@ export default function MerchantAuthPage() {
                                 <SpinnerIcon size={20} className="animate-spin" />
                             ) : (
                                 <>
-                                    {isSignup ? "Generate Wallet & Join" : "Access Dashboard"}
+                                    {mainTab === 'admin'
+                                        ? "Login to Demo"
+                                        : merchantSubTab === 'register'
+                                            ? "Generate Wallet & Join"
+                                            : "Access Dashboard"}
                                     <ArrowRightIcon size={18} weight="bold" />
                                 </>
                             )}
@@ -167,7 +233,7 @@ export default function MerchantAuthPage() {
                     </form>
                 </div>
 
-                {isSignup && (
+                {mainTab === 'merchant' && merchantSubTab === 'register' && (
                     <p className="text-center text-xs text-zinc-500 mt-6">
                         By joining, a new Kaspa wallet will be automatically created <br /> for your business to receive payments.
                     </p>
