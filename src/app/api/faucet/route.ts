@@ -19,7 +19,7 @@ let isWasmInitialized = false;
 export async function POST(request: Request) {
     let rpc: any = null;
     try {
-        const { address } = await request.json();
+        const { address, amount } = await request.json();
         const faucetKey = process.env.FAUCET_PRIVATE_KEY;
 
         if (!address) {
@@ -30,34 +30,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Faucet configuration error' }, { status: 500 });
         }
 
-        // --- THE FIX: Self-Fetch Strategy ---
-        // Fetch WASM from our own public folder via HTTP
+        // --- THE FIX: Self-Fetch Strategy --- (Omitted for brevity, assumed unchanged)
         if (!isWasmInitialized) {
+            // ... initialization logic ...
             const host = request.headers.get('host');
             const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
             const wasmUrl = `${protocol}://${host}/kaspa_wasm_bg.wasm`;
-
-            console.log(`🔄 Fetching WASM from: ${wasmUrl}`);
-
             const wasmResponse = await fetch(wasmUrl);
-            if (!wasmResponse.ok) {
-                throw new Error(`Failed to load WASM from public folder: ${wasmResponse.status} ${wasmResponse.statusText}`);
-            }
-
+            if (!wasmResponse.ok) throw new Error("WASM fetch failed");
             const wasmBuffer = await wasmResponse.arrayBuffer();
-            console.log(`📦 WASM loaded, size: ${wasmBuffer.byteLength} bytes`);
-
-            // Initialize the library with the downloaded buffer
             await kaspa.default(wasmBuffer);
             isWasmInitialized = true;
-            console.log(`✅ WASM initialized successfully`);
         }
-        // ------------------------------------
 
-        console.log(`💧 Faucet request for: ${address}`);
+        console.log(`💧 Faucet request for: ${address}, Amount: ${amount || 1000}`);
 
         // 3. Setup RPC
-        console.log(`🔗 Connecting to RPC...`);
         rpc = new kaspa.RpcClient({
             url: "wss://photon-10.kaspa.red/kaspa/testnet-10/wrpc/borsh",
             encoding: kaspa.Encoding.Borsh,
@@ -65,31 +53,25 @@ export async function POST(request: Request) {
         });
 
         await rpc.connect();
-        console.log(`✅ RPC connected`);
 
         // 4. Setup Faucet Wallet
         const privateKey = new kaspa.PrivateKey(faucetKey);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
-        console.log(`🔑 Faucet address: ${sourceAddress.toString()}`);
 
         // 5. Fetch UTXOs
-        console.log(`📡 Fetching UTXOs...`);
         const { entries } = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
 
         if (!entries || entries.length === 0) {
-            console.error("❌ Faucet wallet is empty");
             await rpc.disconnect();
-            return NextResponse.json({
-                error: "Faucet wallet is empty. Please refill.",
-                faucetAddress: sourceAddress.toString()
-            }, { status: 500 });
+            return NextResponse.json({ error: "Faucet wallet is empty." }, { status: 500 });
         }
 
-        console.log(`📦 Found ${entries.length} UTXOs`);
-
         // 6. Create Transaction
-        const amountSompi = 1000n * 100_000_000n; // 1000 KAS
-        console.log(`💸 Creating transaction for ${amountSompi} sompi...`);
+        // Use requested amount or default to 1000 KAS
+        const requestedAmount = amount ? BigInt(amount) : 1000n;
+        const amountSompi = requestedAmount * 100_000_000n;
+
+        console.log(`💸 Creating transaction for ${amountSompi} sompi (${requestedAmount} KAS)...`);
 
         const generator = new kaspa.Generator({
             outputs: [{
@@ -100,7 +82,7 @@ export async function POST(request: Request) {
             entries: entries,
             networkId: "testnet-10",
             feeRate: 1.0,
-            priorityFee: 0n // Explicitly set zero priority fee (sender pays standard fees)
+            priorityFee: 0n
         });
 
         // 7. Generate and Sign
@@ -131,7 +113,7 @@ export async function POST(request: Request) {
             success: true,
             txId: txId,
             message: "Funds sent successfully from Private Faucet!",
-            amount: 1000
+            amount: Number(requestedAmount)
         });
 
     } catch (error: any) {
