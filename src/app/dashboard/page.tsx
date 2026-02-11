@@ -24,7 +24,6 @@ import SecuritySettings from '@/components/security/SecuritySettings';
 import FullProfileEditModal from '@/components/shared/FullProfileEditModal';
 import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import OnboardingModal from '@/components/shared/OnboardingModal';
-import CopyButton from '@/components/shared/CopyButton';
 import { useMerchant } from '@/context/MerchantContext';
 import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
@@ -104,7 +103,8 @@ export default function Dashboard() {
             // Convert KAS to sompi
             const amountSompi = Math.floor(amount * 100_000_000);
 
-            if (window.kasware) {
+            // Check if KasWare is available
+            if (typeof window !== 'undefined' && window.kasware && typeof window.kasware.sendKaspa === 'function') {
                 // Use KasWare for real transaction
                 const txId = await window.kasware.sendKaspa(recipient, amountSompi);
 
@@ -126,13 +126,10 @@ export default function Dashboard() {
                     if (fetchTransactions) fetchTransactions();
                 }, 2000);
             } else {
-                // Fallback for demo mode
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
-                showToast("Demo mode: Transaction simulated", "success");
-
-                if (refreshBalance) refreshBalance();
-                if (fetchTransactions) fetchTransactions();
+                // KasWare not available
+                setTxSpeed({ start: null, end: null, status: 'idle' });
+                showToast("KasWare wallet extension not detected. Please install KasWare to send transactions.", "error");
+                console.error('KasWare not available:', { window: typeof window, kasware: typeof window?.kasware });
             }
         } catch (error: any) {
             setTxSpeed({ start: null, end: null, status: 'idle' });
@@ -1445,7 +1442,7 @@ function ReceiptsSection() {
 
                 {receipts.length > 0 && (
                     <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
-                        <p className="text-xs text-zinc-400 mb-1">Total Spent</p>
+                        <p className="text-xs text-zinc-400 mb-1">Total Amount</p>
                         <p className="text-2xl font-bold text-[#70C7BA]">{totalSpending.toFixed(2)} KAS</p>
                         <p className="text-xs text-zinc-500">≈ ${totalSpendingUSD.toFixed(2)} USD</p>
                     </div>
@@ -1560,10 +1557,29 @@ function DevKeysSection() {
 // Savings Section
 function SavingsSection() {
     const { pots, isLoading, createPot, withdrawFromPot } = useSavings();
+    const { address, refreshBalance, fetchTransactions } = useKasWare(); // Need address for receipts
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [selectedPot, setSelectedPot] = useState<any>(null);
     const [showReceipts, setShowReceipts] = useState(false);
+    const [isFunding, setIsFunding] = useState(false);
+    const [kasPrice, setKasPrice] = useState<number | null>(null);
+    const { showToast } = useToast();
+    const { createReceipt } = useReceipts(address);
+
+    // Fetch KAS price
+    useEffect(() => {
+        const fetchPrice = async () => {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const data = await response.json();
+                setKasPrice(data.kaspa.usd);
+            } catch (error) {
+                console.error('Failed to fetch KAS price:', error);
+            }
+        };
+        fetchPrice();
+    }, []);
 
     const handleCreatePot = (name: string, durationMonths: number) => {
         setIsCreating(true);
@@ -1573,6 +1589,50 @@ function SavingsSection() {
             setShowCreateModal(false);
             setIsCreating(false);
         }, 1000);
+    };
+
+    const handleFundPot = async (potAddress: string, potName: string) => {
+        setIsFunding(true);
+
+        try {
+            showToast(`Requesting funds for ${potName}...`, "pending");
+            const res = await fetch('/api/faucet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: potAddress })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                const fundingAmount = data.amount || 100;
+
+                // Create receipt for funding
+                await createReceipt({
+                    wallet_address: address || '', // Owner address
+                    service_name: 'Savings Pot',
+                    plan_name: `${potName} Funding`,
+                    amount_kas: fundingAmount,
+                    amount_usd: fundingAmount * (kasPrice || 0),
+                    status: 'completed',
+                    tx_signature: data.signature || `faucet_${Date.now()}`,
+                    merchant_wallet: potAddress // The pot received the funds
+                });
+
+                showToast(`Successfully funded ${potName} with +${fundingAmount} KAS`, "success");
+
+                // Background sync
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    window.location.reload();
+                }, 3000);
+            } else {
+                showToast(data.error || "Faucet failed", "error");
+            }
+        } catch (e) {
+            showToast("Faucet request failed", "error");
+        } finally {
+            setIsFunding(false);
+        }
     };
 
     return (
@@ -1618,6 +1678,7 @@ function SavingsSection() {
                                 setSelectedPot(pot);
                                 setShowReceipts(true);
                             }}
+                            onFund={() => handleFundPot(pot.address, pot.name)}
                         />
                     ))}
                 </div>

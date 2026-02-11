@@ -5,7 +5,7 @@ import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import {
     ArrowUpIcon, ArrowDownIcon, LockIcon, LockOpenIcon,
-    QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon, ReceiptIcon
+    QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon, ReceiptIcon, LightningIcon
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CopyButton from './CopyButton';
@@ -21,9 +21,10 @@ interface SavingsPotViewProps {
     onWithdraw: (recipient: string, amount: number, note: string) => void;
     onRefresh: () => void;
     onShowReceipts?: () => void;
+    onFund?: () => void;
 }
 
-export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowReceipts }: SavingsPotViewProps) {
+export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowReceipts, onFund }: SavingsPotViewProps) {
     const [showQR, setShowQR] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [recipient, setRecipient] = useState('');
@@ -125,11 +126,25 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                             <div className="bg-white p-4 rounded-2xl mb-4">
                                 <QRCode value={pot.address} size={160} level="H" />
                             </div>
-                            <div className="w-full flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 mb-2">
+                            <div className="w-full flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 mb-4">
                                 <span className="text-[10px] font-mono text-zinc-400 truncate flex-1 text-left">{pot.address}</span>
                                 <CopyButton text={pot.address} />
                             </div>
-                            <p className="text-[10px] text-zinc-500">Scan to send SOL or USDC to this pot</p>
+
+                            {onFund && (
+                                <button
+                                    onClick={() => {
+                                        onFund();
+                                        setShowQR(false);
+                                    }}
+                                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 mb-2"
+                                >
+                                    <LightningIcon size={18} weight="fill" />
+                                    Fund with Faucet (Demo)
+                                </button>
+                            )}
+
+                            <p className="text-[10px] text-zinc-500">Scan to send KAS to this pot</p>
                         </div>
                     )}
                 </AnimatePresence>

@@ -16,16 +16,16 @@ export const generateReceiptPDF = (receipt: Receipt) => {
 
     let yPos = 20;
 
-    // Header: CadPay Logo (visual representation) + Name
-    // Draw orange rectangle as logo
+    // Header: CadPay Logo (circular badge) + Name
+    // Draw orange circle as logo
     doc.setFillColor(orangeColor);
-    doc.rect(margin, yPos - 4, 8, 8, 'F'); // Small orange square as logo
+    doc.circle(margin + 4, yPos, 4, 'F'); // Orange circle logo
 
     // CadPay text next to logo
-    doc.setFontSize(32);
+    doc.setFontSize(28);
     doc.setTextColor(orangeColor);
     doc.setFont('helvetica', 'bold');
-    doc.text('CadPay', margin + 12, yPos);
+    doc.text('CadPay', margin + 12, yPos + 2);
 
     yPos += 8;
     doc.setFontSize(10);
@@ -114,12 +114,12 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     doc.text('Transaction ID', margin, yPos);
 
     yPos += 10;
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(grayColor);
 
     // Split transaction ID into multiple lines if too long
-    const txId = receipt.tx_signature;
+    const txId = receipt.tx_signature || 'N/A';
     const maxWidth = pageWidth - (2 * margin);
     const lines = doc.splitTextToSize(txId, maxWidth);
     doc.text(lines, margin, yPos);
@@ -133,11 +133,12 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     doc.text('Merchant Wallet', margin, yPos);
 
     yPos += 10;
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(grayColor);
 
-    const merchantLines = doc.splitTextToSize(receipt.merchant_wallet, maxWidth);
+    const merchantWallet = receipt.merchant_wallet || 'N/A';
+    const merchantLines = doc.splitTextToSize(merchantWallet, maxWidth);
     doc.text(merchantLines, margin, yPos);
 
     yPos += merchantLines.length * 5 + 10;
