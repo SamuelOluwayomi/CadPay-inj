@@ -11,7 +11,7 @@ import {
 interface UnifiedSendModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSend: (recipient: string, amount: number, isSavings: boolean, memo?: string) => Promise<void>;
+    onSend: (recipient: string, amount: number, isSavings: boolean) => Promise<void>;
     pots: any[];
     balance: number;
     // usdcBalance?: number; // Removed to force KAS usage
@@ -22,7 +22,6 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [recipient, setRecipient] = useState('');
     const [selectedPot, setSelectedPot] = useState<any>(null);
     const [amount, setAmount] = useState('');
-    const [memo, setMemo] = useState(''); // Add memo state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -49,14 +48,10 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
 
         setIsSubmitting(true);
         try {
-            // Pass memo only for savings deposits, trim to 20 chars
-            const trimmedMemo = mode === 'savings' && memo ? memo.trim().slice(0, 20) : undefined;
-            await onSend(targetRecipient, numAmount, mode === 'savings', trimmedMemo);
+            await onSend(targetRecipient, numAmount, mode === 'savings');
             onClose();
             // Reset state
-            setRecipient('');
             setAmount('');
-            setMemo('');
             setSelectedPot(null);
         } catch (e: any) {
             setError(e.message || 'Transaction failed');
@@ -181,29 +176,6 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         Balance: <span className="text-zinc-300 font-bold">{availableBalance.toFixed(2)} KAS</span>
                                     </p>
                                 </div>
-
-                                {/* Memo Input - Only for Savings Mode */}
-                                {mode === 'savings' && (
-                                    <div>
-                                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
-                                            Memo (Optional)
-                                            <span className="text-[10px] ml-2 text-zinc-600">Max 20 chars to minimize tx size</span>
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="e.g., Vacation fund"
-                                                maxLength={20}
-                                                className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all"
-                                                value={memo}
-                                                onChange={(e) => setMemo(e.target.value)}
-                                            />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-zinc-600 font-mono">
-                                                {memo.length}/20
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
 
                                 {error && (
                                     <motion.div

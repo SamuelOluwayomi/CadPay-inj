@@ -90,19 +90,54 @@ export default function Dashboard() {
         }
     }, [address]);
 
-    const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean, memo?: string) => {
+    const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean) => {
         if (!address) {
             showToast("Wallet not connected", "error");
             return;
         }
 
-        // Simulating a delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        showToast("Simulated transfer complete", "success");
+        try {
+            // Start speed tracking
+            setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
-        // Refresh balance and transactions after completion
-        if (refreshBalance) refreshBalance();
-        if (fetchTransactions) fetchTransactions();
+            // Convert KAS to sompi
+            const amountSompi = Math.floor(amount * 100_000_000);
+
+            if (window.kasware) {
+                // Use KasWare for real transaction
+                const txId = await window.kasware.sendKaspa(recipient, amountSompi);
+
+                if (!txId) {
+                    throw new Error('Transaction was rejected or failed');
+                }
+
+                // End speed tracking
+                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
+
+                showToast(
+                    isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
+                    "success"
+                );
+
+                // Refresh balance and transactions after completion
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    if (fetchTransactions) fetchTransactions();
+                }, 2000);
+            } else {
+                // Fallback for demo mode
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
+                showToast("Demo mode: Transaction simulated", "success");
+
+                if (refreshBalance) refreshBalance();
+                if (fetchTransactions) fetchTransactions();
+            }
+        } catch (error: any) {
+            setTxSpeed({ start: null, end: null, status: 'idle' });
+            showToast(error.message || "Transaction failed", "error");
+            console.error('Transaction error:', error);
+        }
     };
 
     // Use Real On-Chain Balance
