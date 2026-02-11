@@ -124,10 +124,11 @@ export default function SubscribeModal({
                     throw new Error('Invalid password');
                 }
 
-                unlockResult = await unlockWalletWithPassword(email, password);
+                // Use profile email for wallet unlock, not subscription email
+                unlockResult = await unlockWalletWithPassword(profile?.email || address!, password);
             } else {
-                // Biometric verification
-                unlockResult = await unlockWallet(email);
+                // Biometric verification - use profile email for wallet unlock
+                unlockResult = await unlockWallet(profile?.email || address!);
             }
 
             if (!unlockResult.success) {
@@ -273,8 +274,8 @@ export default function SubscribeModal({
                                                 setEmail(profile?.email || '');
                                             }}
                                             className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${emailType === 'profile'
-                                                    ? 'bg-orange-500/10 border-orange-500 text-white'
-                                                    : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                                                ? 'bg-orange-500/10 border-orange-500 text-white'
+                                                : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
                                                 }`}
                                         >
                                             <UserIcon size={18} weight={emailType === 'profile' ? "fill" : "regular"} />
@@ -283,8 +284,8 @@ export default function SubscribeModal({
                                         <button
                                             onClick={() => setEmailType('custom')}
                                             className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${emailType === 'custom'
-                                                    ? 'bg-orange-500/10 border-orange-500 text-white'
-                                                    : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                                                ? 'bg-orange-500/10 border-orange-500 text-white'
+                                                : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
                                                 }`}
                                         >
                                             <EnvelopeSimpleIcon size={18} weight={emailType === 'custom' ? "fill" : "regular"} />
