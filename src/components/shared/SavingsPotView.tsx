@@ -140,7 +140,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                     className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 mb-2"
                                 >
                                     <LightningIcon size={18} weight="fill" />
-                                    Fund with Faucet (Demo)
+                                    Fund with Faucet (Testnet)
                                 </button>
                             )}
 

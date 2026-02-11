@@ -126,9 +126,9 @@ export default function Dashboard() {
                     if (fetchTransactions) fetchTransactions();
                 }, 2000);
             } else {
-                // KasWare not available
+                // KasWare not available - No simulation allowed by user request
                 setTxSpeed({ start: null, end: null, status: 'idle' });
-                showToast("KasWare wallet extension not detected. Please install KasWare to send transactions.", "error");
+                showToast("KasWare wallet extension not detected. Please install KasWare or use the Faucet to fund pots.", "error");
                 console.error('KasWare not available:', { window: typeof window, kasware: typeof window?.kasware });
             }
         } catch (error: any) {
