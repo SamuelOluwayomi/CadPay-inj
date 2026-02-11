@@ -43,9 +43,7 @@ export default function MerchantDashboard() {
         isLoading: isDataLoading,
         isUsingDemoData,
         refetch
-    } = useKaspaData(merchant?.walletPublicKey || null, () => {
-        showToast("Kaspa API is back online! Switched to live data.", "success");
-    });
+    } = useKaspaData(merchant?.walletPublicKey || null);
 
     // Derived Metrics from Hook
     const totalRevenue = stats?.revenue || 0;

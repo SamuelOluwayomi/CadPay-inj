@@ -652,7 +652,7 @@ function OverviewSection({
                         ) : (
                             <LightningIcon size={18} className="text-orange-500" />
                         )}
-                        {isFunding ? "Funding..." : "Get Demo KAS"}
+                        {isFunding ? "Funding..." : "Get KAS"}
                     </button>
                     <KaspaPulseCard />
                 </div>
