@@ -407,7 +407,16 @@ export default function MerchantDashboard() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-zinc-500 font-mono">{merchant.walletPublicKey.slice(0, 4)}...{merchant.walletPublicKey.slice(-4)}</span>
-                                            <CopyIcon size={14} className="text-zinc-500 cursor-pointer hover:text-white" />
+                                            <button
+                                                onClick={() => copyToClipboard(merchant.walletPublicKey, 'merchant-wallet')}
+                                                className="text-zinc-500 cursor-pointer hover:text-white transition-colors"
+                                            >
+                                                {copiedId === 'merchant-wallet' ? (
+                                                    <CheckIcon size={14} className="text-green-400" />
+                                                ) : (
+                                                    <CopyIcon size={14} />
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
 

@@ -44,66 +44,72 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
 
     return (
         <div className="flex justify-center w-full">
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[320px] p-8 relative overflow-hidden group flex flex-col items-center justify-center text-center">
-                <div className="mb-4">
-                    <h3 className="text-xl font-bold text-white flex items-center justify-center gap-2">
-                        {pot.name}
-                        {isLocked ? (
-                            <LockIcon size={16} className="text-red-400" />
-                        ) : (
-                            <LockOpenIcon size={16} className="text-green-400" />
-                        )}
-                    </h3>
-                    <p className="text-sm text-zinc-400 mt-1">
-                        <span className="text-white font-bold">{pot.balance.toFixed(0)} KAS</span>
+            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-[400px] p-6 relative overflow-hidden group flex flex-col">
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                            {pot.name}
+                            {isLocked ? (
+                                <LockIcon size={20} className="text-red-400" />
+                            ) : (
+                                <LockOpenIcon size={20} className="text-green-400" />
+                            )}
+                        </h3>
+                        {/* QR Code Button moved to top right */}
+                        <button
+                            onClick={() => setShowQR(true)}
+                            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-500 hover:text-white transition-all"
+                            title="Show QR Code"
+                        >
+                            <QrCodeIcon size={20} />
+                        </button>
+                    </div>
+                    <p className="text-3xl font-black text-white">
+                        {pot.balance.toFixed(2)} KAS
                     </p>
+                    <p className="text-sm text-zinc-400 mt-1">Available Balance</p>
                 </div>
 
-                <div className="flex gap-3 mb-6">
+                {isLocked && (
+                    <div className="px-4 py-2 bg-zinc-800/30 rounded-xl border border-white/5 flex items-center gap-2 mb-4 w-fit">
+                        <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Locked</span>
+                        <div className="w-1 h-3 bg-zinc-700" />
+                        <span className="text-xs text-zinc-400 font-medium">{unlockDate.toLocaleDateString()}</span>
+                    </div>
+                )}
+
+                <div className="flex gap-3">
                     <button
                         onClick={() => setShowQR(true)}
-                        className="w-12 h-12 flex items-center justify-center bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-full transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-xl transition-all"
                         title="Receive"
                     >
                         <ArrowDownIcon size={20} weight="bold" />
+                        <span className="text-sm font-bold">Deposit</span>
                     </button>
                     <button
                         onClick={() => setShowWithdrawModal(true)}
                         disabled={isLocked}
-                        className={`w-12 h-12 flex items-center justify-center border rounded-full transition-all ${isLocked
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl transition-all ${isLocked
                             ? 'bg-zinc-800/50 border-white/5 text-zinc-500 cursor-not-allowed'
                             : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20'
                             }`}
                         title="Withdraw"
                     >
                         <ArrowUpIcon size={20} weight="bold" />
+                        <span className="text-sm font-bold">Withdraw</span>
                     </button>
                     {onShowReceipts && (
                         <button
                             onClick={onShowReceipts}
-                            className="w-12 h-12 flex items-center justify-center bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-full transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl transition-all"
                             title="Receipts"
                         >
                             <ReceiptIcon size={20} weight="bold" />
+                            <span className="text-sm font-bold">Receipts</span>
                         </button>
                     )}
                 </div>
-
-                {isLocked && (
-                    <div className="px-4 py-2 bg-zinc-800/30 rounded-full border border-white/5 flex items-center gap-2">
-                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">Locked</span>
-                        <div className="w-1 h-3 bg-zinc-700" />
-                        <span className="text-[9px] text-zinc-500 font-medium">{unlockDate.toLocaleDateString()}</span>
-                    </div>
-                )}
-
-                {/* QR Code Action (Floating) */}
-                <button
-                    onClick={() => setShowQR(true)}
-                    className="absolute top-8 right-8 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-500 hover:text-white transition-all z-10"
-                >
-                    <QrCodeIcon size={16} />
-                </button>
 
                 {/* QR Code Modal Overlay */}
                 <AnimatePresence>

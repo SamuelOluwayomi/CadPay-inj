@@ -96,9 +96,12 @@ export const useKaspaData = (address: string | null, onApiRecovered?: () => void
                 let sender = 'Unknown';
 
                 if (isIncoming) {
-                    amount = tx.outputs
-                        .filter((out: any) => out.script_public_key_address === address)
-                        .reduce((acc: number, out: any) => acc + (out.amount || 0), 0);
+                    // For incoming transactions, only count the FIRST output to this address
+                    // This avoids counting change that comes back to sender
+                    const myOutputs = tx.outputs.filter((out: any) => out.script_public_key_address === address);
+                    if (myOutputs.length > 0) {
+                        amount = myOutputs[0].amount || 0; // Take only the first output
+                    }
 
                     if (tx.inputs.length > 0) {
                         sender = tx.inputs[0].previous_outpoint_address;

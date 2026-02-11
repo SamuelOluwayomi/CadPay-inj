@@ -16,11 +16,16 @@ export const generateReceiptPDF = (receipt: Receipt) => {
 
     let yPos = 20;
 
-    // Header: CadPay Logo/Name
+    // Header: CadPay Logo (visual representation) + Name
+    // Draw orange rectangle as logo
+    doc.setFillColor(orangeColor);
+    doc.rect(margin, yPos - 4, 8, 8, 'F'); // Small orange square as logo
+
+    // CadPay text next to logo
     doc.setFontSize(32);
     doc.setTextColor(orangeColor);
     doc.setFont('helvetica', 'bold');
-    doc.text('CadPay', margin, yPos);
+    doc.text('CadPay', margin + 12, yPos);
 
     yPos += 8;
     doc.setFontSize(10);

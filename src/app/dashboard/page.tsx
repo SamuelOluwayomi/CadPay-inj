@@ -10,7 +10,8 @@ import {
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
     PaperPlaneTiltIcon, CheckCircleIcon,
-    DownloadIcon, LightningIcon, ActivityIcon, TimerIcon, MagnifyingGlassIcon
+    DownloadIcon, LightningIcon, ActivityIcon, TimerIcon, MagnifyingGlassIcon,
+    CheckIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -70,6 +71,7 @@ export default function Dashboard() {
 
     const [showProfileEdit, setShowProfileEdit] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [copiedAddress, setCopiedAddress] = useState(false);
     const [isOnboardingSubmitting, setIsOnboardingSubmitting] = useState(false);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
     const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
@@ -725,8 +727,19 @@ function OverviewSection({
                     <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-4">
                             <p className="text-sm text-zinc-400 font-medium font-mono truncate max-w-[150px]">{address}</p>
-                            <button onClick={() => navigator.clipboard.writeText(address)} className="text-zinc-500 hover:text-white transition-colors">
-                                <CopyIcon size={18} />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(address);
+                                    setCopiedAddress(true);
+                                    setTimeout(() => setCopiedAddress(false), 2000);
+                                }}
+                                className="text-zinc-500 hover:text-white transition-colors relative"
+                            >
+                                {copiedAddress ? (
+                                    <CheckIcon size={18} className="text-green-400" />
+                                ) : (
+                                    <CopyIcon size={18} />
+                                )}
                             </button>
                         </div>
                         <p className="text-xs text-zinc-500">Smart Wallet Address</p>
