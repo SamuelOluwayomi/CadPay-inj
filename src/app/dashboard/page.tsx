@@ -1422,86 +1422,75 @@ function ReceiptsSection() {
                     <p className="text-zinc-400">Your subscription payment receipts will appear here</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {receipts.map(receipt => (
                         <motion.div
                             key={receipt.id}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-full aspect-square w-full max-w-[280px] p-8 flex flex-col items-center justify-center text-center group hover:border-orange-500/30 transition-all relative overflow-hidden"
+                            className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl w-full p-6 flex flex-col group hover:border-orange-500/30 transition-all relative overflow-hidden"
                         >
-                            <div
-                                className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${receipt.status === 'completed'
-                                    ? 'bg-green-500/20 text-green-400'
-                                    : 'bg-red-500/20 text-red-400'
-                                    }`}
-                            >
-                                {receipt.status === 'completed' ? (
-                                    <CheckCircleIcon size={24} />
-                                ) : (
-                                    <XIcon size={24} />
-                                )}
+                            <div className="flex items-start justify-between mb-4">
+                                <div
+                                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${receipt.status === 'completed'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-red-500/20 text-red-400'
+                                        }`}
+                                >
+                                    {receipt.status === 'completed' ? (
+                                        <CheckCircleIcon size={24} />
+                                    ) : (
+                                        <XIcon size={24} />
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            window.open(
+                                                `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
+                                                '_blank'
+                                            );
+                                        }}
+                                        className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                                        title="View on Explorer"
+                                    >
+                                        <LinkIcon size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            // Generate PDF receipt using our utility
+                                            const { generateReceiptPDF } = require('@/utils/pdfGenerator');
+                                            generateReceiptPDF(receipt);
+                                        }}
+                                        className="p-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-white transition-colors"
+                                        title="Download PDF Receipt"
+                                    >
+                                        <DownloadIcon size={16} />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="space-y-1 mb-4">
-                                <h3 className="text-lg font-bold text-white truncate max-w-[200px]">{receipt.service_name}</h3>
-                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{receipt.plan_name} Plan</p>
+                            <div className="space-y-2 mb-4">
+                                <h3 className="text-xl font-bold text-white">{receipt.service_name}</h3>
+                                <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{receipt.plan_name} Plan</p>
                             </div>
 
                             <div className="mb-4">
-                                <p className="text-xl font-black text-white">
-                                    {receipt.amount_kas.toFixed(0)} KAS
+                                <p className="text-2xl font-black text-white">
+                                    {receipt.amount_kas.toFixed(2)} KAS
                                 </p>
-                                <p className="text-[10px] text-zinc-500">
-                                    {new Date(receipt.timestamp).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric'
-                                    })}
+                                <p className="text-sm text-zinc-400">
+                                    ≈ ${receipt.amount_usd.toFixed(2)} USD
                                 </p>
                             </div>
 
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-20">
-                                <button
-                                    onClick={() => {
-                                        window.open(
-                                            `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
-                                            '_blank'
-                                        );
-                                    }}
-                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-                                    title="View on Explorer"
-                                >
-                                    <LinkIcon size={20} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        // Generate downloadable receipt
-                                        const receiptText = `
-CadPay Subscription Receipt
-============================
-Service: ${receipt.service_name}
-Plan: ${receipt.plan_name}
-Amount: ${receipt.amount_kas.toFixed(2)} KAS (≈ $${receipt.amount_usd.toFixed(2)} USD)
-Transaction: ${receipt.tx_signature}
-Date: ${new Date(receipt.timestamp).toLocaleString()}
-Status: ${receipt.status}
-Merchant: ${receipt.merchant_wallet}
-============================
-                                        `.trim();
-
-                                        const blob = new Blob([receiptText], { type: 'text/plain' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `receipt-${receipt.service_name.toLowerCase()}-${receipt.id.slice(0, 8)}.txt`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                    className="p-3 bg-orange-500 hover:bg-orange-600 rounded-full text-white transition-colors"
-                                    title="Download Receipt"
-                                >
-                                    <DownloadIcon size={20} />
-                                </button>
+                            <div className="mt-auto pt-4 border-t border-white/10">
+                                <p className="text-xs text-zinc-500">
+                                    {new Date(receipt.timestamp).toLocaleString()}
+                                </p>
+                                <p className="text-[10px] text-zinc-600 font-mono truncate mt-1">
+                                    {receipt.tx_signature}
+                                </p>
                             </div>
                         </motion.div>
                     ))}
