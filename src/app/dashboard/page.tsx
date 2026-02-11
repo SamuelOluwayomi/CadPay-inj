@@ -71,7 +71,6 @@ export default function Dashboard() {
 
     const [showProfileEdit, setShowProfileEdit] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [copiedAddress, setCopiedAddress] = useState(false);
     const [isOnboardingSubmitting, setIsOnboardingSubmitting] = useState(false);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
     const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
@@ -730,16 +729,11 @@ function OverviewSection({
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(address);
-                                    setCopiedAddress(true);
-                                    setTimeout(() => setCopiedAddress(false), 2000);
+                                    showToast("Address copied!", "success");
                                 }}
-                                className="text-zinc-500 hover:text-white transition-colors relative"
+                                className="text-zinc-500 hover:text-white transition-colors"
                             >
-                                {copiedAddress ? (
-                                    <CheckIcon size={18} className="text-green-400" />
-                                ) : (
-                                    <CopyIcon size={18} />
-                                )}
+                                <CopyIcon size={18} />
                             </button>
                         </div>
                         <p className="text-xs text-zinc-500">Smart Wallet Address</p>
