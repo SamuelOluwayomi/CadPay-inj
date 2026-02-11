@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLazorkit } from '@/hooks/useLazorkit';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -47,7 +46,7 @@ export default function Dashboard() {
 
     const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
-    const { pots } = useLazorkit();
+    const { pots } = useSavings();
     const usdcBalance = 0;
 
     const logout = () => {
@@ -100,6 +99,10 @@ export default function Dashboard() {
         // Simulating a delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         showToast("Simulated transfer complete", "success");
+
+        // Refresh balance and transactions after completion
+        if (refreshBalance) refreshBalance();
+        if (fetchTransactions) fetchTransactions();
     };
 
     // Use Real On-Chain Balance
@@ -395,7 +398,7 @@ export default function Dashboard() {
                 balance={balance || 0}
             />
 
-            <SpeedConfirmationOverlay txSpeed={txSpeed} />
+            <SpeedConfirmationOverlay txSpeed={txSpeed} setTxSpeed={setTxSpeed} />
         </div>
     );
 }
@@ -750,7 +753,7 @@ function OverviewSection({
                         {pots.length > 0 ? (
                             pots.map((pot: any) => (
                                 <button
-                                    key={pot.name}
+                                    key={pot.id}
                                     className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"
                                 >
                                     <span className="text-sm font-medium text-white">{pot.name}</span>
@@ -801,7 +804,10 @@ function KaspaPulseCard() {
 }
 
 // Speed Confirmation Overlay - Subtle Corner Badge
-function SpeedConfirmationOverlay({ txSpeed }: { txSpeed: { start: number | null, end: number | null, status: 'idle' | 'running' | 'completed' } }) {
+function SpeedConfirmationOverlay({ txSpeed, setTxSpeed }: {
+    txSpeed: { start: number | null, end: number | null, status: 'idle' | 'running' | 'completed' },
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
+}) {
     const [elapsed, setElapsed] = useState(0);
 
     useEffect(() => {
@@ -817,6 +823,16 @@ function SpeedConfirmationOverlay({ txSpeed }: { txSpeed: { start: number | null
         }
         return () => clearInterval(interval);
     }, [txSpeed.status, txSpeed.start, txSpeed.end]);
+
+    // Auto-dismiss after 2 seconds when completed
+    useEffect(() => {
+        if (txSpeed.status === 'completed') {
+            const timeout = setTimeout(() => {
+                setTxSpeed({ start: null, end: null, status: 'idle' });
+            }, 2000);
+            return () => clearTimeout(timeout);
+        }
+    }, [txSpeed.status, setTxSpeed]);
 
     return (
         <AnimatePresence>
@@ -1510,7 +1526,6 @@ function DevKeysSection() {
     );
 }
 
-// Savings Section
 // Savings Section
 function SavingsSection() {
     const { pots, isLoading, createPot, withdrawFromPot } = useSavings();
