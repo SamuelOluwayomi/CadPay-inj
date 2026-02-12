@@ -117,7 +117,7 @@ export const useSavings = () => {
         }
     }, [userAddress]);
 
-    const depositToPot = useCallback(async (potId: string, amount: number) => {
+    const depositToPot = useCallback(async (potId: string, amount: number, txHash?: string) => {
         const pot = pots.find(p => p.id === potId);
         if (!pot) return;
 
@@ -140,7 +140,7 @@ export const useSavings = () => {
                     amount,
                     type: 'deposit',
                     currency: 'KAS',
-                    tx_hash: generateKaspaAddress().slice(0, 20) // Mock hash
+                    tx_hash: txHash || `mock_${generateKaspaAddress().slice(0, 16)}`
                 }]);
 
             if (txError) throw txError;

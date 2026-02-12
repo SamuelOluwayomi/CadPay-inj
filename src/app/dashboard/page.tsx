@@ -1666,7 +1666,8 @@ function DevKeysSection() {
 
 // Savings Section
 function SavingsSection() {
-    const { pots, isLoading, createPot, withdrawFromPot } = useSavings();
+    const { pots, isLoading, createPot, withdrawFromPot, depositToPot } = useSavings();
+    const { session } = useUserProfile();
     const { address, refreshBalance, fetchTransactions } = useKasWare(); // Need address for receipts
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -1709,6 +1710,46 @@ function SavingsSection() {
         const fundingAmount = amount || 1000;
 
         try {
+            // Priority: Custodial Transfer (Real funds from User Wallet to Pot Wallet)
+            if (session && amount) {
+                showToast(`Transferring ${fundingAmount} KAS from your wallet...`, "pending");
+
+                const res = await fetch('/api/wallet/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: session.user.id,
+                        toAddress: potAddress,
+                        amount: fundingAmount
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Transfer failed");
+                }
+
+
+                const targetPot = pots.find(p => p.address === potAddress);
+
+                if (targetPot) {
+                    await depositToPot(targetPot.id, fundingAmount, data.txId);
+                }
+
+                showToast(`Successfully transferred ${fundingAmount} KAS to ${potName}`, "success");
+
+                // Background sync
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    window.location.reload();
+                }, 2000);
+                return;
+            }
+
+            // Fallback for Demo / Non-Custodial (if implemented)
+            // Or if no amount (Funding from Faucet Button)
+
             showToast(amount ? `Transferring ${amount} KAS from balance...` : `Requesting funds for ${potName}...`, "pending");
 
             const res = await fetch('/api/faucet', {
@@ -1720,19 +1761,12 @@ function SavingsSection() {
 
             if (data.success) {
                 const confirmedAmount = data.amount || fundingAmount;
+                const txSignature = data.signature || `faucet_${Date.now()}`;
 
-                // Create receipt for funding
-                if (createReceipt) {
-                    await createReceipt({
-                        wallet_address: address || '', // Owner address
-                        service_name: 'Savings Pot',
-                        plan_name: amount ? 'Quick Transfer' : `${potName} Funding`,
-                        amount_kas: confirmedAmount,
-                        amount_usd: confirmedAmount * (kasPrice || 0),
-                        status: 'completed',
-                        tx_signature: data.signature || `faucet_${Date.now()}`,
-                        merchant_wallet: potAddress // The pot received the funds
-                    });
+                // Update DB for Faucet too
+                const targetPot = pots.find(p => p.address === potAddress);
+                if (targetPot) {
+                    await depositToPot(targetPot.id, confirmedAmount, txSignature);
                 }
 
                 showToast(amount ? `Transfer Successful! Sent ${amount} KAS` : `Successfully funded ${potName} with +${confirmedAmount} KAS`, "success");
@@ -1745,8 +1779,9 @@ function SavingsSection() {
             } else {
                 showToast(data.error || "Transfer failed", "error");
             }
-        } catch (e) {
-            showToast("Transfer failed", "error");
+        } catch (e: any) {
+            console.error("Fund pot error:", e);
+            showToast(e.message || "Transfer failed", "error");
         } finally {
             setIsFunding(false);
         }
