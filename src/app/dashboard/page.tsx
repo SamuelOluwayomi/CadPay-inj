@@ -1691,14 +1691,15 @@ function SavingsSection() {
         fetchPrice();
     }, []);
 
-    const handleCreatePot = (name: string, durationMonths: number) => {
+    const handleCreatePot = async (name: string, durationMonths: number) => {
         setIsCreating(true);
-        // Simulate API delay
-        setTimeout(() => {
-            createPot(name, durationMonths);
-            setShowCreateModal(false);
-            setIsCreating(false);
-        }, 1000);
+        // Simulate API delay (Mock visual feedback)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        await createPot(name, durationMonths);
+
+        setShowCreateModal(false);
+        setIsCreating(false);
     };
 
     const handleFundPot = async (potAddress: string, potName: string, amount?: number) => {

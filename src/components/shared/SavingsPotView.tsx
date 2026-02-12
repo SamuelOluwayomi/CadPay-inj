@@ -148,7 +148,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                     <p className="text-xs text-zinc-400 mb-4">
                                         Instantly transfer from your main balance to this savings pot.
                                     </p>
-                                    <div className="flex gap-2 items-center">
+                                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                                         <input
                                             type="number"
                                             placeholder="Amount"

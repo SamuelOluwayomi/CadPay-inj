@@ -33,13 +33,33 @@ export async function POST(request: Request) {
         }
 
         // --- THE FIX: Self-Fetch Strategy --- (Omitted for brevity, assumed unchanged)
+        // --- THE FIX: Self-Fetch Strategy --- (Omitted for brevity, assumed unchanged)
         if (!isWasmInitialized) {
             // New robustness: Load WASM from filesystem in production/Node environment
             // Avoids fetching from own deployed URL (which can fail due to cold starts/loops)
             const wasmPath = path.join(process.cwd(), 'public', 'kaspa_wasm_bg.wasm');
-            const wasmBuffer = fs.readFileSync(wasmPath);
-            await kaspa.default(wasmBuffer);
-            isWasmInitialized = true;
+            console.log(`[Faucet API] Loading WASM from: ${wasmPath}`);
+
+            if (!fs.existsSync(wasmPath)) {
+                console.error(`[Faucet API] WASM file NOT FOUND at: ${wasmPath}`);
+                return NextResponse.json({
+                    error: `Server Configuration Error: WASM file missing at ${wasmPath}`,
+                    details: "Please verify deployment includes public assets."
+                }, { status: 500 });
+            }
+
+            try {
+                const wasmBuffer = fs.readFileSync(wasmPath);
+                await kaspa.default(wasmBuffer);
+                isWasmInitialized = true;
+                console.log("[Faucet API] WASM Initialized Successfully");
+            } catch (wasmError: any) {
+                console.error("[Faucet API] Failed to initialize WASM:", wasmError);
+                return NextResponse.json({
+                    error: "Server Error: Failed to initialize Kaspa WASM",
+                    details: wasmError.message
+                }, { status: 500 });
+            }
         }
 
         console.log(`💧 Faucet request for: ${address}, Amount: ${amount || 1000}`);
