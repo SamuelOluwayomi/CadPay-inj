@@ -1744,40 +1744,8 @@ function SavingsSection() {
                     if (refreshBalance) refreshBalance();
                     window.location.reload();
                 }, 2000);
-                return;
-            }
-
-            // Fallback for Demo / Non-Custodial (if implemented)
-            // Or if no amount (Funding from Faucet Button)
-
-            showToast(amount ? `Transferring ${amount} KAS from balance...` : `Requesting funds for ${potName}...`, "pending");
-
-            const res = await fetch('/api/faucet', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address: potAddress, amount: fundingAmount })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                const confirmedAmount = data.amount || fundingAmount;
-                const txSignature = data.signature || `faucet_${Date.now()}`;
-
-                // Update DB for Faucet too
-                const targetPot = pots.find(p => p.address === potAddress);
-                if (targetPot) {
-                    await depositToPot(targetPot.id, confirmedAmount, txSignature);
-                }
-
-                showToast(amount ? `Transfer Successful! Sent ${amount} KAS` : `Successfully funded ${potName} with +${confirmedAmount} KAS`, "success");
-
-                // Background sync
-                setTimeout(() => {
-                    if (refreshBalance) refreshBalance();
-                    window.location.reload();
-                }, 3000);
             } else {
-                showToast(data.error || "Transfer failed", "error");
+                throw new Error("You must be logged in to use Quick Transfer");
             }
         } catch (e: any) {
             console.error("Fund pot error:", e);
