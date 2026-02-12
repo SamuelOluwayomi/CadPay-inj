@@ -156,55 +156,108 @@ export function useUserProfile() {
     }, [address, session, fetchProfile]);
 
     const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
-        // ... (Keep existing create logic mostly same, but need to handle both cases if possible)
-        // ... For now, assuming standard flow. If session exists, we should insert with ID.
-        // ... But the legacy code uses wallet_address as primary key implicitly?
-        // ... We will defer complex refactor of createProfile unless user asks.
-        // ... Just return null if no address/session?
+        setLoading(true);
+        setError(null);
 
-        // Simpler: Just rely on the backend / existing flow.
-        return null;
-    }, [address]);
+        try {
+            const newProfileData: any = {
+                username,
+                emoji,
+                gender,
+                pin,
+                email,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
 
-    // ... Stubbing updateProfile/createProfile to avoid breaking changes in this tool call
-    // ... I will restore them similarly or simplify them.
+            let query;
 
-    // RESTORING createProfile/updateProfile with minimal changes for compatibility
-    const createProfileSafe = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
-        // Only works for non-custodial or if we update logic. 
-        // For custodial, usually creating profile happens on Auth Signup.
-        // We'll leave it as is for now.
-        return null;
-    }, []);
+            if (session?.user?.id) {
+                // Custodial Mode: Upsert with ID
+                newProfileData.id = session.user.id;
+                query = supabase.from('profiles').upsert(newProfileData);
+            } else if (address) {
+                // Legacy / KasWare Mode: Insert with wallet_address
+                newProfileData.wallet_address = address;
+                query = supabase.from('profiles').insert([newProfileData]);
+            } else {
+                return null;
+            }
 
-    const updateProfileSafe = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
-        const updates: any = {
-            username, emoji, gender, pin, email, updated_at: new Date().toISOString()
-        };
+            const { data, error } = await query.select().single();
 
-        let query = supabase.from('profiles').update(updates);
+            if (error) throw error;
 
-        if (session?.user?.id) {
-            query = query.eq('id', session.user.id);
-        } else if (address) {
-            query = query.eq('wallet_address', address);
-        } else {
-            return null;
+            // Optimistic update
+            if (data) {
+                setProfile({
+                    username: data.username,
+                    email: data.email,
+                    emoji: data.emoji,
+                    gender: data.gender,
+                    pin: data.pin,
+                    authority: data.wallet_address,
+                    encrypted_private_key: data.encrypted_private_key
+                });
+            }
+
+            return data;
+        } catch (err: any) {
+            console.error('Error creating profile:', err);
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
         }
+    }, [address, session]);
 
-        const { data, error } = await query.select().single();
-        if (data) fetchProfile();
-        return data;
-    }, [address, session, fetchProfile]);
+    const updateProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
+        setLoading(true);
+        setError(null);
 
+        try {
+            const updates: any = {
+                username,
+                emoji,
+                gender,
+                pin,
+                email,
+                updated_at: new Date().toISOString()
+            };
+
+            let query = supabase.from('profiles').update(updates);
+
+            if (session?.user?.id) {
+                query = query.eq('id', session.user.id);
+            } else if (address) {
+                query = query.eq('wallet_address', address);
+            } else {
+                return null;
+            }
+
+            const { data, error } = await query.select().single();
+
+            if (error) throw error;
+
+            if (data) {
+                setProfile(prev => prev ? ({ ...prev, ...updates }) : null);
+            }
+            return data;
+        } catch (err: any) {
+            console.error('Error updating profile:', err);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [address, session]);
 
     return {
         profile,
         loading,
         error,
-        createProfile: createProfileSafe,
-        updateProfile: updateProfileSafe,
+        createProfile,
+        updateProfile,
         fetchProfile,
-        session // Export session
+        session
     };
 }
