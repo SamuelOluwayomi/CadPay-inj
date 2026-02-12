@@ -33,6 +33,7 @@ import { useKasWare } from '@/hooks/useKasWare';
 import { useSavings } from '@/hooks/useSavings';
 import { useToast } from '@/context/ToastContext';
 import { useReceipts } from '@/hooks/useReceipts';
+import { supabase } from '@/lib/supabase';
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'receipts' | 'dev-keys' | 'savings';
 
@@ -1705,20 +1706,29 @@ function SavingsSection({ session }: { session: any }) {
 
     const handleFundPot = async (potAddress: string, potName: string, amount?: number) => {
         setIsFunding(true);
-        // Default to a generous amount for demo/testnet if not specified, 
-        // OR use the requested amount for "Internal Transfer" feel.
         const fundingAmount = amount || 1000;
 
         try {
+            // Check if user is authenticated - query Supabase directly for reliability
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                throw new Error("You must be logged in to use Quick Transfer. Please log in first.");
+            }
+
+            if (!amount) {
+                throw new Error("Please enter an amount to transfer");
+            }
+
             // Priority: Custodial Transfer (Real funds from User Wallet to Pot Wallet)
-            if (session && amount) {
+            if (user && amount) {
                 showToast(`Transferring ${fundingAmount} KAS from your wallet...`, "pending");
 
                 const res = await fetch('/api/wallet/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: session.user.id,
+                        userId: user.id,
                         toAddress: potAddress,
                         amount: fundingAmount
                     })
