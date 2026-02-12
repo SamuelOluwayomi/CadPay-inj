@@ -57,7 +57,7 @@ export default function Dashboard() {
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
+    const { profile, loading: profileLoading, createProfile, updateProfile, session } = useUserProfile();
     const router = useRouter();
 
     const userProfile = {
@@ -106,7 +106,7 @@ export default function Dashboard() {
     }, [address]);
 
     const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean) => {
-        if (!address) {
+        if (!address && !session) { // Allow if session exists (Custodial) OR address (KasWare)
             showToast("Wallet not connected", "error");
             return;
         }
@@ -143,7 +143,58 @@ export default function Dashboard() {
             } else {
                 // KasWare not available
                 if (isSavings) {
-                    // AUTO-FALLBACK: Use Faucet for savings pots if wallet is missing
+                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in
+                    if (session) {
+                        showToast(`Initiating custodial transfer...`, "pending");
+                        try {
+                            const res = await fetch('/api/wallet/send', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session.access_token}`
+                                },
+                                body: JSON.stringify({ recipient, amount })
+                            });
+                            const data = await res.json();
+
+                            if (data.success) {
+                                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
+
+                                // Create receipt for funding
+                                if (createReceipt) {
+                                    await createReceipt({
+                                        wallet_address: profile?.authority || address || 'Custodial',
+                                        service_name: 'Savings Pot',
+                                        plan_name: 'Custodial Transfer',
+                                        amount_kas: amount,
+                                        amount_usd: amount * (kasPrice || 0),
+                                        status: 'completed',
+                                        tx_signature: data.txId,
+                                        merchant_wallet: recipient
+                                    });
+                                }
+
+                                showToast(`Custodial Transfer Successful! Sent ${amount} KAS`, "success");
+
+                                // Refresh balance and transactions after completion
+                                setTimeout(() => {
+                                    if (refreshBalance) refreshBalance();
+                                    if (fetchTransactions) fetchTransactions();
+                                    window.location.reload();
+                                }, 2000);
+                                return;
+                            } else {
+                                throw new Error(data.error || "Custodial transfer failed");
+                            }
+                        } catch (custodialError: any) {
+                            console.error("Custodial error:", custodialError);
+                            showToast(custodialError.message || "Custodial transfer failed", "error");
+                            setTxSpeed({ start: null, end: null, status: 'idle' });
+                            return;
+                        }
+                    }
+
+                    // AUTO-FALLBACK: Use Faucet for savings pots if wallet is missing AND not logged in
                     // This satisfies "Real Transaction" requirement via backend
                     showToast(`Wallet not detected. Using Faucet to fund pot...`, "pending");
 
