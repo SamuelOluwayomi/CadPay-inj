@@ -43,6 +43,7 @@ interface TxSpeed {
 }
 
 export default function Dashboard() {
+    const { session } = useUserProfile();
 
     const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
@@ -508,7 +509,7 @@ export default function Dashboard() {
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
                     {activeSection === 'receipts' && <ReceiptsSection />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
-                    {activeSection === 'savings' && <SavingsSection />}
+                    {activeSection === 'savings' && <SavingsSection session={session} />}
                 </div>
             </div>
 
@@ -1665,9 +1666,8 @@ function DevKeysSection() {
 }
 
 // Savings Section
-function SavingsSection() {
+function SavingsSection({ session }: { session: any }) {
     const { pots, isLoading, createPot, withdrawFromPot, depositToPot } = useSavings();
-    const { session } = useUserProfile();
     const { address, refreshBalance, fetchTransactions } = useKasWare(); // Need address for receipts
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
