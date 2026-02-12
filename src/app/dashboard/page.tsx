@@ -58,7 +58,7 @@ export default function Dashboard() {
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { profile, loading: profileLoading, createProfile, updateProfile, session } = useUserProfile();
+    const { profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
     const router = useRouter();
 
     const userProfile = {
