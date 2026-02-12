@@ -65,7 +65,18 @@ export function useAuth() {
                 return { success: false, error: unlockResult.error || 'Failed to unlock wallet' };
             }
 
-            // 6. Set active session
+            // 6. Create Supabase Auth session (NEW - enables custodial features)
+            const { error: authSignInError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (authSignInError) {
+                console.warn('Supabase Auth signin failed:', authSignInError);
+                // Don't fail the login, just log the error
+            }
+
+            // 7. Set active session
             localStorage.setItem('active_wallet_address', data.wallet_address);
             localStorage.setItem('auth_email', email);
 
@@ -119,7 +130,19 @@ export function useAuth() {
                 .update({ last_login: new Date().toISOString() })
                 .eq('email', email);
 
-            // 5. Set active session
+            // 5. Create Supabase Auth session (NEW - enables custodial features)
+            // For biometric users, use wallet address as password (deterministic)
+            const { error: authSignInError } = await supabase.auth.signInWithPassword({
+                email,
+                password: data.wallet_address
+            });
+
+            if (authSignInError) {
+                console.warn('Supabase Auth signin failed:', authSignInError);
+                // Don't fail the login, just log the error
+            }
+
+            // 6. Set active session
             localStorage.setItem('active_wallet_address', data.wallet_address);
             localStorage.setItem('auth_email', email);
 

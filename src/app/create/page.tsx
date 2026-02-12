@@ -88,7 +88,27 @@ export default function CreateAccount() {
                 : await createWalletWithPassword(email, kaspaWallet.mnemonic, password);
 
             if (result.success) {
-                // 1. Store credentials in Supabase
+                // 1. Create Supabase Auth Account (NEW - enables custodial features)
+                const authPassword = useBiometrics ? kaspaWallet.address : password;
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: authPassword,
+                    options: {
+                        data: {
+                            wallet_address: kaspaWallet.address,
+                            auth_method: useBiometrics ? 'biometric' : 'password'
+                        }
+                    }
+                });
+
+                if (authError) {
+                    console.error('Supabase Auth signup failed:', authError);
+                    setStatus('error');
+                    setErrorMessage('Failed to create authentication account: ' + authError.message);
+                    return;
+                }
+
+                // 2. Store credentials in user_credentials (for compatibility)
                 const { hashPassword } = await import('@/utils/passwordHash');
                 const passwordHash = useBiometrics ? null : await hashPassword(password);
 
