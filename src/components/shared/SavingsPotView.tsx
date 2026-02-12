@@ -148,18 +148,18 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                     <p className="text-xs text-zinc-400 mb-4">
                                         Instantly transfer from your main balance to this savings pot.
                                     </p>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 items-center">
                                         <input
                                             type="number"
-                                            placeholder="Amount (KAS)"
-                                            className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                                            placeholder="Amount"
+                                            className="w-full min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
                                         />
                                         <button
                                             onClick={handleQuickFund}
                                             disabled={!amount}
-                                            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold px-6 rounded-xl transition-colors"
+                                            className="shrink-0 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl transition-colors whitespace-nowrap"
                                         >
                                             Transfer
                                         </button>

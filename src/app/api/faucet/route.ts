@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 // 1. Use Node.js Runtime (Max size: 50MB) - Solves the "4.28MB" error
 export const runtime = 'nodejs';
@@ -32,13 +34,10 @@ export async function POST(request: Request) {
 
         // --- THE FIX: Self-Fetch Strategy --- (Omitted for brevity, assumed unchanged)
         if (!isWasmInitialized) {
-            // ... initialization logic ...
-            const host = request.headers.get('host');
-            const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-            const wasmUrl = `${protocol}://${host}/kaspa_wasm_bg.wasm`;
-            const wasmResponse = await fetch(wasmUrl);
-            if (!wasmResponse.ok) throw new Error("WASM fetch failed");
-            const wasmBuffer = await wasmResponse.arrayBuffer();
+            // New robustness: Load WASM from filesystem in production/Node environment
+            // Avoids fetching from own deployed URL (which can fail due to cold starts/loops)
+            const wasmPath = path.join(process.cwd(), 'public', 'kaspa_wasm_bg.wasm');
+            const wasmBuffer = fs.readFileSync(wasmPath);
             await kaspa.default(wasmBuffer);
             isWasmInitialized = true;
         }
