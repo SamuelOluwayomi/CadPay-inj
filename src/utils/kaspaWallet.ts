@@ -47,6 +47,7 @@ export interface KaspaWallet {
     mnemonic: string;
     address: string;
     publicKey: string;
+    privateKey?: string;
     seed?: string;
 }
 
@@ -85,10 +86,14 @@ export async function generateKaspaWallet(
 
         console.log('✅ Wallet generated:', address.toString());
 
+        // Get private key string
+        const privateKey = xprv.toString();
+
         return {
             mnemonic: mnemonicString,
             address: address.toString(),
             publicKey: publicKey.toString(),
+            privateKey: privateKey,
             seed: seed
         };
     } catch (error: any) {

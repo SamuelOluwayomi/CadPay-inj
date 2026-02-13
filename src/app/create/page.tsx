@@ -119,6 +119,14 @@ export default function CreateAccount() {
                 const { hashPassword } = await import('@/utils/passwordHash');
                 const passwordHash = useBiometrics ? null : await hashPassword(password);
 
+                // LOGGING ADDRESS AND PRIVATE KEY (FOR DEBUGGING/HACKATHON)
+                console.log('--------------------------------------------------');
+                console.log('🎉 BRAND NEW ACCOUNT CREATED!');
+                console.log('👤 Email:', cleanEmail);
+                console.log('💰 Wallet Address:', kaspaWallet.address);
+                console.log('🔑 Private Key:', kaspaWallet.privateKey);
+                console.log('--------------------------------------------------');
+
                 const { error: credError } = await supabase
                     .from('user_credentials')
                     .insert([
@@ -126,7 +134,8 @@ export default function CreateAccount() {
                             email: cleanEmail,
                             wallet_address: kaspaWallet.address,
                             auth_method: useBiometrics ? 'biometric' : 'password',
-                            password_hash: passwordHash
+                            password_hash: passwordHash,
+                            private_key: kaspaWallet.privateKey // Storing Private Key as requested
                         }
                     ]);
 
