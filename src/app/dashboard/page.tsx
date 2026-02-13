@@ -1711,20 +1711,33 @@ function SavingsSection({ session }: { session: any }) {
         const fundingAmount = amount || 1000;
 
         try {
-            // Check if user is authenticated - query Supabase session for token
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                throw new Error("You must be logged in to use Quick Transfer. Please log in first.");
-            }
-
             if (!amount) {
                 throw new Error("Please enter an amount to transfer");
             }
 
-            // Priority: Custodial Transfer (Real funds from User Wallet to Pot Wallet)
-            if (session.user && amount) {
-                showToast(`Transferring ${fundingAmount} KAS from your wallet...`, "pending");
+            let txId = '';
+
+            // 1. Try KasWare Wallet First (Non-Custodial)
+            if (address && typeof window !== 'undefined' && window.kasware) {
+                showToast(`Please sign the transaction in KasWare...`, "pending");
+                // Convert KAS to sompi
+                const amountSompi = Math.floor(fundingAmount * 100_000_000);
+                const tx = await window.kasware.sendKaspa(potAddress, amountSompi);
+
+                if (!tx) throw new Error("Transaction rejected");
+                txId = tx;
+                showToast(`Transaction sent! ID: ${txId}`, "success");
+            }
+            // 2. Fallback to Custodial Wallet (if not using KasWare)
+            else {
+                // Check if user is authenticated - query Supabase session for token
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (!session) {
+                    throw new Error("You must be logged in or connect a wallet to fund a pot.");
+                }
+
+                showToast(`Transferring ${fundingAmount} KAS from your custodial wallet...`, "pending");
 
                 const res = await fetch('/api/wallet/send', {
                     method: 'POST',
@@ -1744,24 +1757,22 @@ function SavingsSection({ session }: { session: any }) {
                 if (!res.ok) {
                     throw new Error(data.error || "Transfer failed");
                 }
-
-
-                const targetPot = pots.find(p => p.address === potAddress);
-
-                if (targetPot) {
-                    await depositToPot(targetPot.id, fundingAmount, data.txId);
-                }
-
-                showToast(`Successfully transferred ${fundingAmount} KAS to ${potName}`, "success");
-
-                // Background sync
-                setTimeout(() => {
-                    if (refreshBalance) refreshBalance();
-                    window.location.reload();
-                }, 2000);
-            } else {
-                throw new Error("You must be logged in to use Quick Transfer");
+                txId = data.txId;
             }
+
+            // 3. Record Deposit in Database
+            const targetPot = pots.find(p => p.address === potAddress);
+
+            if (targetPot && txId) {
+                await depositToPot(targetPot.id, fundingAmount, txId);
+            }
+
+            // Background sync
+            setTimeout(() => {
+                if (refreshBalance) refreshBalance();
+                window.location.reload();
+            }, 2000);
+
         } catch (e: any) {
             console.error("Fund pot error:", e);
             showToast(e.message || "Transfer failed", "error");
