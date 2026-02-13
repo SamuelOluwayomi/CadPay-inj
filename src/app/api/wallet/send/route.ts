@@ -86,6 +86,8 @@ export async function POST(request: Request) {
 
         // 7. Fetch UTXOs
         const { entries } = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
+        console.log(`🔍 Custodial Wallet Address: ${sourceAddress.toString()}`);
+        console.log(`💰 UTXOs Found: ${entries?.length || 0}`);
 
         if (!entries || entries.length === 0) {
             await rpc.disconnect();

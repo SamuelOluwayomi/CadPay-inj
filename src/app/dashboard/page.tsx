@@ -46,9 +46,10 @@ interface TxSpeed {
 export default function Dashboard() {
     const { session } = useUserProfile();
 
-    const { address, balance, isLoading: loading, connect, isConnected, disconnect, refreshBalance, transactions, fetchTransactions } = useKasWare();
+    const { address, balance: walletBalance, isLoading: loading, connect, isConnected, disconnect, refreshBalance: refreshWalletBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
     const { pots } = useSavings();
+    const [custodialBalance, setCustodialBalance] = useState<number>(0);
     const usdcBalance = 0;
 
     const logout = () => {
@@ -106,6 +107,30 @@ export default function Dashboard() {
             console.log("Kaspa Wallet Connected:", address);
         }
     }, [address]);
+
+    // Fetch Custodial Balance if not connected to KasWare
+    useEffect(() => {
+        if (!address && profile?.authority) {
+            fetch(`/api/kaspa/balance?address=${profile.authority}`)
+                .then(res => res.json())
+                .then(data => {
+                    setCustodialBalance(data.balance / 100000000);
+                })
+                .catch(err => console.error("Failed to fetch custodial balance:", err));
+        }
+    }, [address, profile?.authority]);
+
+    // Refresh function that handles both
+    const refreshBalance = () => {
+        if (address) {
+            refreshWalletBalance();
+        } else if (profile?.authority) {
+            fetch(`/api/kaspa/balance?address=${profile.authority}`)
+                .then(res => res.json())
+                .then(data => setCustodialBalance(data.balance / 100000000))
+                .catch(err => console.error("Failed to refresh custodial balance:", err));
+        }
+    };
 
     const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean) => {
         if (!address && !session) { // Allow if session exists (Custodial) OR address (KasWare)
@@ -307,12 +332,14 @@ export default function Dashboard() {
         }
     };
 
-    const walletAddress = address || "Loading...";
-    const displayBalance = balance !== null ? balance.toFixed(4) : "0.00";
+    // Fallback to profile.authority (Custodial Address) if KasWare is not connected
+    const walletAddress = address || profile?.authority || "Loading...";
+    const displayBalance = address ? (walletBalance !== null ? walletBalance.toFixed(4) : "0.00") : custodialBalance.toFixed(4);
 
     const copyToClipboard = () => {
-        if (address) {
-            navigator.clipboard.writeText(address);
+        if (walletAddress && walletAddress !== "Loading...") {
+            navigator.clipboard.writeText(walletAddress);
+            showToast("Address copied to clipboard!", "success");
         }
     };
 
@@ -542,7 +569,7 @@ export default function Dashboard() {
                 onClose={() => setShowSendModal(false)}
                 onSend={handleUnifiedSend}
                 pots={pots}
-                balance={balance || 0}
+                balance={address ? (walletBalance || 0) : custodialBalance}
             />
 
             <SpeedConfirmationOverlay txSpeed={txSpeed} setTxSpeed={setTxSpeed} />
