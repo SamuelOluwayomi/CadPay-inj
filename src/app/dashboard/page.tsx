@@ -1734,7 +1734,7 @@ function SavingsSection({ session }: { session: any }) {
                     },
                     body: JSON.stringify({
                         userId: session.user.id,
-                        toAddress: potAddress,
+                        recipient: potAddress,
                         amount: fundingAmount
                     })
                 });

@@ -4,7 +4,6 @@ import { useKasWare } from '@/hooks/useKasWare';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
-// ...
 
 export default function ConnectKasWare() {
     const { connect, isConnected, isLoading: isWalletLoading, error, isAvailable } = useKasWare();
