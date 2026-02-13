@@ -145,8 +145,8 @@ export default function Dashboard() {
             } else {
                 // KasWare not available
                 if (isSavings) {
-                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in AND has token
-                    if (session?.access_token) {
+                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in AND has token AND has encrypted key
+                    if (session?.access_token && profile?.encrypted_private_key) {
                         showToast(`Initiating custodial transfer...`, "pending");
                         try {
                             const res = await fetch('/api/wallet/send', {
@@ -1711,10 +1711,10 @@ function SavingsSection({ session }: { session: any }) {
         const fundingAmount = amount || 1000;
 
         try {
-            // Check if user is authenticated - query Supabase directly for reliability
-            const { data: { user } } = await supabase.auth.getUser();
+            // Check if user is authenticated - query Supabase session for token
+            const { data: { session } } = await supabase.auth.getSession();
 
-            if (!user) {
+            if (!session) {
                 throw new Error("You must be logged in to use Quick Transfer. Please log in first.");
             }
 
@@ -1723,14 +1723,17 @@ function SavingsSection({ session }: { session: any }) {
             }
 
             // Priority: Custodial Transfer (Real funds from User Wallet to Pot Wallet)
-            if (user && amount) {
+            if (session.user && amount) {
                 showToast(`Transferring ${fundingAmount} KAS from your wallet...`, "pending");
 
                 const res = await fetch('/api/wallet/send', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
                     body: JSON.stringify({
-                        userId: user.id,
+                        userId: session.user.id,
                         toAddress: potAddress,
                         amount: fundingAmount
                     })

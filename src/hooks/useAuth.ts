@@ -211,14 +211,75 @@ export function useAuth() {
 
     const clearError = () => setError(null);
 
+    /**
+     * Sign in with KasWare (Deterministic Auth)
+     */
+    const signInWithKasWare = async (walletAddress: string): Promise<SignInResult> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // 1. Generate Deterministic Credentials
+            const email = `${walletAddress}@kasware.cadpay.fi`;
+            const password = `cadpay-sig-${walletAddress}`;
+
+            // 2. Try Login First
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (signInError) {
+                // 3. If Login Fails, Try Signup (Auto-Register)
+                console.log("KasWare account not found, creating new...", signInError.message);
+
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            wallet_address: walletAddress,
+                            is_kasware: true
+                        }
+                    }
+                });
+
+                if (signUpError) {
+                    throw signUpError;
+                }
+
+                if (signUpData.user) {
+                    // Create Profile Entry Immediately to avoid race conditions
+                    // createProfile in useUserProfile will handle the rest via optimistic updates
+                    // but we ensure the DB row exists here if possible, or let the hook handle it.
+                    // For now, we rely on the session being established.
+                }
+            }
+
+            // 4. Set Active Session
+            localStorage.setItem('active_wallet_address', walletAddress);
+            localStorage.setItem('auth_email', email);
+
+            return { success: true, walletAddress };
+        } catch (err: any) {
+            console.error('KasWare sign in error:', err);
+            const errorMsg = err.message || 'KasWare sign in failed';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
+        isLoading,
+        error,
         signInWithPassword,
         signInWithBiometric,
+        signInWithKasWare, // Export new function
         signOut,
         checkEmailExists,
         getWalletAddress,
-        clearError,
-        isLoading,
-        error
+        clearError: () => setError(null)
     };
 }

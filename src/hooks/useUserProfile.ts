@@ -56,7 +56,7 @@ export function useUserProfile() {
                     .from('profiles')
                     .select('*')
                     .eq('wallet_address', address)
-                    .single();
+                    .maybeSingle();
                 data = result.data;
                 error = result.error;
             } else {

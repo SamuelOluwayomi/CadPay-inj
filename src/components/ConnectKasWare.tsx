@@ -1,23 +1,46 @@
 'use client';
 
 import { useKasWare } from '@/hooks/useKasWare';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
+// ...
+
 export default function ConnectKasWare() {
-    const { connect, isConnected, isLoading, error, isAvailable } = useKasWare();
+    const { connect, isConnected, isLoading: isWalletLoading, error, isAvailable } = useKasWare();
+    const { signInWithKasWare, isLoading: isAuthLoading } = useAuth(); // Use auth hook
     const router = useRouter();
+
+    const isLoading = isWalletLoading || isAuthLoading;
 
     const handleConnect = async () => {
         if (!isAvailable) {
             window.open('https://www.kasware.xyz/', '_blank');
             return;
         }
-        const addr = await connect();
-        if (addr) {
-            // Successfully connected!
-            console.log("Logged in as:", addr);
-            // Redirect to dashboard
-            router.push('/dashboard');
+
+        try {
+            // 1. Connect Wallet
+            const addr = await connect();
+
+            if (addr) {
+                // 2. Authenticate with CadPay (Supabase)
+                console.log("Connected to KasWare, authenticating session...");
+                const result = await signInWithKasWare(addr);
+
+                if (result.success) {
+                    console.log("Logged in and authenticated as:", addr);
+                    // Redirect to dashboard
+                    router.push('/dashboard');
+                } else {
+                    console.error("Authentication failed:", result.error);
+                    // You might want to show a toast or error here, but standard error display below catches it via `error` prop from hook if we expose it, 
+                    // but here we are using local state from useKasWare. 
+                    // Let's rely on useAuth error integration or just log for now as per MVP.
+                }
+            }
+        } catch (e) {
+            console.error("Connection flow failed:", e);
         }
     };
 
@@ -35,7 +58,7 @@ export default function ConnectKasWare() {
 
                 <div className="flex flex-col items-start">
                     <span className="font-bold text-white text-lg">
-                        {!isAvailable ? "Install KasWare" : isLoading ? "Connecting..." : isConnected ? "Connected" : "Connect KasWare"}
+                        {!isAvailable ? "Install KasWare" : isAuthLoading ? "Authenticating..." : isWalletLoading ? "Connecting..." : isConnected ? "Connected" : "Connect KasWare"}
                     </span>
                     <span className="text-xs text-zinc-400 group-hover:text-orange-400 transition-colors">
                         {isAvailable ? "Browser Extension Detected" : "Browser Extension Required"}
