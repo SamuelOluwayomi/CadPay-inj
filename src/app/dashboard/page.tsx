@@ -145,8 +145,8 @@ export default function Dashboard() {
             } else {
                 // KasWare not available
                 if (isSavings) {
-                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in
-                    if (session) {
+                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in AND has token
+                    if (session?.access_token) {
                         showToast(`Initiating custodial transfer...`, "pending");
                         try {
                             const res = await fetch('/api/wallet/send', {
@@ -254,16 +254,18 @@ export default function Dashboard() {
     const refetchUsdc = async () => { };
 
     useEffect(() => {
-        // If we're still loading either the wallet or the profile, do nothing.
-        // This prevents the modal from flashing before we know if a profile exists.
-        if (loading || profileLoading) return;
+        // Debounce the onboarding check to prevent flashing during loading states
+        const timer = setTimeout(() => {
+            // Only show onboarding if the wallet is connected BUT no profile was found.
+            // AND we are not currently loading.
+            if ((!loading && !profileLoading) && address && !profile) {
+                setShowOnboarding(true);
+            } else {
+                setShowOnboarding(false);
+            }
+        }, 500);
 
-        // Only show onboarding if the wallet is connected BUT no profile was found.
-        if (address && !profile) {
-            setShowOnboarding(true);
-        } else {
-            setShowOnboarding(false);
-        }
+        return () => clearTimeout(timer);
     }, [address, loading, profile, profileLoading]);
 
     // Onboarding handlers
