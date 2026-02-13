@@ -95,13 +95,12 @@ src/
 
 ### Database Schema
 
-**Tables:**
-- `profiles` - User profile data
-- `user_credentials` - Authentication credentials
-- `savings_pots` - User savings accounts
-- `savings_transactions` - Savings transaction history
-- `subscriptions` - User subscriptions
-- `merchant_receipts` - Payment receipts
+**[View Full Database Schema](DATABASE_SCHEMA.md)**
+- `profiles`
+- `user_credentials`
+- `savings_pots`
+- `savings_transactions`
+- `receipts`
 
 ---
 
