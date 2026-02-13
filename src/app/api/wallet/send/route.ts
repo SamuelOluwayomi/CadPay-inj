@@ -84,6 +84,10 @@ export async function POST(request: Request) {
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
+        console.log(`🚀 API STARTED for User: ${user.id}`);
+        console.log(`🔐 DB WALLET (Derived): ${sourceAddress.toString()}`);
+        console.log(`🎯 TARGET: ${recipient}`);
+
         // 7. Fetch UTXOs via REST API (Reliable)
         // RPC is often desynced on testnet, so we use REST for valid UTXO set.
         console.log(`🔍 FETCHING UTXOS (REST): ${sourceAddress.toString()}`);
@@ -92,10 +96,15 @@ export async function POST(request: Request) {
         try {
             const restRes = await fetch(`https://api-tn10.kaspa.org/addresses/${sourceAddress.toString()}/utxos`);
             if (!restRes.ok) {
+                console.error("API Error:", await restRes.text());
                 throw new Error(`REST API failed with status ${restRes.status}`);
             }
             const restUtxos = await restRes.json();
-            console.log(`💰 REST UTXOs Found: ${restUtxos.length}`);
+            console.log(`💰 UTXO COUNT: ${restUtxos.length}`);
+
+            if (restUtxos.length === 0) {
+                console.warn(`⚠️ Wallet ${sourceAddress.toString()} is empty!`);
+            }
 
             // Map REST format to WASM-compatible format
             entries = restUtxos.map((u: any) => ({
