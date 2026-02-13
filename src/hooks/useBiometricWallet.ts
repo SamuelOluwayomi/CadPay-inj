@@ -61,7 +61,7 @@ export function useBiometricWallet() {
             // Store in IndexedDB
             await storeSeed(username, encryptedSeed, credentialId);
 
-            return { success: true };
+            return { success: true, encryptionKey };
         } catch (err: any) {
             const errorMessage = err.message || "Failed to create wallet";
             setError(errorMessage);

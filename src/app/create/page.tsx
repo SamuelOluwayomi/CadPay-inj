@@ -127,6 +127,27 @@ export default function CreateAccount() {
                 console.log('🔑 Private Key:', kaspaWallet.privateKey);
                 console.log('--------------------------------------------------');
 
+                // ENCRYPT PRIVATE KEY
+                let encryptedPrivateKeyString = '';
+
+                try {
+                    if (useBiometrics && (result as any).encryptionKey) {
+                        // Biometric: Use the key returned from createWallet
+                        const { encryptSeed, serializeEncryptedSeed } = await import('@/utils/seedEncryption');
+                        // @ts-ignore - Check if privateKey exists
+                        const encData = await encryptSeed(kaspaWallet.privateKey || '', (result as any).encryptionKey);
+                        encryptedPrivateKeyString = JSON.stringify(serializeEncryptedSeed(encData));
+                    } else {
+                        // Password: Encrypt using the password
+                        const { encryptWithPassword, serializePasswordEncryptedSeed } = await import('@/utils/passwordEncryption');
+                        // @ts-ignore
+                        const encData = await encryptWithPassword(kaspaWallet.privateKey || '', password);
+                        encryptedPrivateKeyString = JSON.stringify(serializePasswordEncryptedSeed(encData));
+                    }
+                } catch (e) {
+                    console.error("Failed to encrypt private key for DB storage:", e);
+                }
+
                 const { error: credError } = await supabase
                     .from('user_credentials')
                     .insert([
@@ -135,7 +156,7 @@ export default function CreateAccount() {
                             wallet_address: kaspaWallet.address,
                             auth_method: useBiometrics ? 'biometric' : 'password',
                             password_hash: passwordHash,
-                            private_key: kaspaWallet.privateKey // Storing Private Key as requested
+                            encrypted_private_key: encryptedPrivateKeyString // Storing Encrypted Private Key
                         }
                     ]);
 
