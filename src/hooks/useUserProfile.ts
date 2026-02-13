@@ -90,13 +90,28 @@ export function useUserProfile() {
         }
     }, [address, session]);
 
-    // Create Custodial Wallet if missing
+    // Create Custodial Wallet if missing (Server-Side Generation only)
     const checkOrCreateWallet = useCallback(async () => {
-        if (!session?.access_token) return;
-        if (profile?.authority && profile?.encrypted_private_key) return; // Already has wallet
+        if (!session?.access_token || !session?.user?.id) return;
+
+        // 1. Double check DB state before acting
+        const { data: latestProfile } = await supabase
+            .from('profiles')
+            .select('wallet_address, encrypted_private_key')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (latestProfile?.wallet_address && latestProfile?.encrypted_private_key) {
+            console.log('✅ Synced with DB Wallet:', latestProfile.wallet_address);
+            // Ensure local state matches DB
+            if (profile?.authority !== latestProfile.wallet_address) {
+                fetchProfile();
+            }
+            return;
+        }
 
         try {
-            console.log('Creating custodial wallet...');
+            console.log('⚠️ No Custodial Wallet found. Requesting creation...');
             const res = await fetch('/api/wallet/create', {
                 method: 'POST',
                 headers: {
@@ -106,7 +121,7 @@ export function useUserProfile() {
             });
             const data = await res.json();
             if (data.success) {
-                console.log('Custodial wallet created:', data.address);
+                console.log('🎉 Custodial wallet created:', data.address);
                 fetchProfile(); // Refresh profile to get new wallet
             } else {
                 console.error('Failed to create wallet:', data.error);
