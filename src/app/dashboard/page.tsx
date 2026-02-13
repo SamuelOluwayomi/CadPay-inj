@@ -44,13 +44,20 @@ interface TxSpeed {
 }
 
 export default function Dashboard() {
-    const { session } = useUserProfile();
+    const { session, profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
 
     const { address, balance: walletBalance, isLoading: loading, connect, isConnected, disconnect, refreshBalance: refreshWalletBalance, transactions, fetchTransactions } = useKasWare();
     const { showToast } = useToast();
     const { pots } = useSavings();
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
     const usdcBalance = 0;
+
+    // PREVENT FLASH: If loading profile/auth, show nothing or loader
+    if (loading || profileLoading) {
+        return <div className="min-h-screen bg-[#1c1209] flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>;
+    }
 
     const logout = () => {
         disconnect();
@@ -60,7 +67,6 @@ export default function Dashboard() {
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
     const router = useRouter();
 
     // Auth Guard: Redirect to Home if not authenticated
@@ -290,18 +296,12 @@ export default function Dashboard() {
     const refetchUsdc = async () => { };
 
     useEffect(() => {
-        // Debounce the onboarding check to prevent flashing during loading states
-        const timer = setTimeout(() => {
-            // Only show onboarding if the wallet is connected BUT no profile was found.
-            // AND we are not currently loading.
-            if ((!loading && !profileLoading) && address && !profile) {
-                setShowOnboarding(true);
-            } else {
-                setShowOnboarding(false);
-            }
-        }, 500);
-
-        return () => clearTimeout(timer);
+        // Immediate check to prevent flash
+        if ((!loading && !profileLoading) && address && !profile) {
+            setShowOnboarding(true);
+        } else {
+            setShowOnboarding(false);
+        }
     }, [address, loading, profile, profileLoading]);
 
     // Onboarding handlers
