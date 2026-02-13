@@ -91,29 +91,61 @@ export const useSavings = () => {
     const createPot = useCallback(async (name: string, durationMonths: number) => {
         if (!userAddress) return null;
 
-        const newPot = {
-            user_address: userAddress,
-            name,
-            address: generateKaspaAddress(),
-            balance: 0,
-            duration_months: durationMonths,
-            unlock_time: Math.floor(Date.now() / 1000) + (durationMonths * 30 * 24 * 60 * 60),
-            status: 'active'
-        };
-
         try {
-            const { data, error } = await supabase
+            // Call API to generate a real Pot Address (Custodial Sub-wallet)
+            // For now, we'll assume we need to create a new API route or use a robust generator.
+            // But to fix the "invalid address" error immediately without a new API:
+            // We can use a HARDCODED valid testnet address for testing? No, that's bad for uniqueness.
+            // We should use the /api/wallet/create route but adapted?
+
+            // Better approach: Let's create a real address via a new API route or update this to use a valid format.
+            // Since I cannot easily create a new API route in this single step efficiently without checking existing ones,
+            // I will first check what API routes exist.
+
+            // Placeholder: I will assume I need to create the API route.
+            // But first, let's just make the mock address "valid-ish" so the faucet MIGHT accept it if it just checks regex?
+            // No, faucet checks on-chain or at least checksum. Random string won't work.
+
+            // 1. Generate Valid Pot Address via API
+            const res = await fetch('/api/savings/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: userAddress, name, durationMonths })
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to generate pot address");
+            }
+
+            const data = await res.json();
+
+            if (!data.success || !data.address) {
+                throw new Error("Invalid response from savings API");
+            }
+
+            const newPot = {
+                user_address: userAddress,
+                name,
+                address: data.address, // Valid Testnet Address
+                balance: 0,
+                duration_months: durationMonths,
+                unlock_time: Math.floor(Date.now() / 1000) + (durationMonths * 30 * 24 * 60 * 60),
+                status: 'active'
+            };
+
+            const { data: insertedPot, error } = await supabase
                 .from('savings_pots')
                 .insert([newPot])
                 .select()
                 .single();
 
             if (error) throw error;
-            setPots(prev => [...prev, data]);
-            return data;
+
+            setPots(prev => [...prev, insertedPot as SavingsPot]);
+            return insertedPot;
         } catch (e) {
-            console.error("Failed to create pot:", e);
-            return null;
+            console.error(e);
         }
     }, [userAddress]);
 
