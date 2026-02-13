@@ -65,7 +65,7 @@ export function useUserProfile() {
                 return;
             }
 
-            if (error && error.code !== 'PGRST116') {
+            if (error && error.code !== 'PGRST116' && error.code !== '406') {
                 console.warn('Supabase fetch error:', error);
             }
 
@@ -175,6 +175,8 @@ export function useUserProfile() {
             if (session?.user?.id) {
                 // Custodial Mode: Upsert with ID
                 newProfileData.id = session.user.id;
+                // critical: Ensure wallet address is linked even in custodial mode
+                if (address) newProfileData.wallet_address = address;
                 query = supabase.from('profiles').upsert(newProfileData);
             } else if (address) {
                 // Legacy / KasWare Mode: Insert with wallet_address
