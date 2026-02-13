@@ -1782,6 +1782,10 @@ function SavingsSection({ session }: { session: any }) {
                 const data = await res.json();
 
                 if (!res.ok) {
+                    if (data.senderAddress) {
+                        // User needs to see which wallet is empty!
+                        throw new Error(`${data.error} \nTarget Wallet: ${data.senderAddress}`);
+                    }
                     throw new Error(data.error || "Transfer failed");
                 }
                 txId = data.txId;

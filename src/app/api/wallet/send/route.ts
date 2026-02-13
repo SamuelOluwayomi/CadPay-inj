@@ -135,8 +135,8 @@ export async function POST(request: Request) {
         if (!entries || entries.length === 0) {
             await rpc.disconnect();
             return NextResponse.json({
-                error: 'Insufficient funds. Wallet appears empty via REST API.',
-                address: sourceAddress.toString()
+                error: 'Insufficient funds. Wallet appears empty.',
+                senderAddress: sourceAddress.toString()
             }, { status: 400 });
         }
 
