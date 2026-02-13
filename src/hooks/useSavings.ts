@@ -82,6 +82,9 @@ export const useSavings = () => {
 
                             return { ...pot, balance: liveBalance };
                         }
+                    } else {
+                        const err = await res.text();
+                        console.error(`Balance fetch failed for ${pot.address}: ${res.status}`, err);
                     }
                 } catch (err) {
                     console.error(`Failed to fetch live balance for pot ${pot.id}`, err);

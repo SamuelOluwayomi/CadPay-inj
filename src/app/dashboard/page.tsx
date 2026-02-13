@@ -1809,7 +1809,7 @@ function SavingsSection({ session }: { session: any }) {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 min-h-screen pb-24 md:pb-12 px-4 md:px-8 pt-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-bold tracking-tight">Savings Wallet 🐷</h1>

@@ -34,7 +34,7 @@ export default function RootLayout({
         <Providers>
           <ClickBirdEffect />
           <BackgroundLogos />
-          <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <div className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
             {children}
           </div>
         </Providers>
