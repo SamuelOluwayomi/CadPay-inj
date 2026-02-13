@@ -84,32 +84,49 @@ export async function POST(request: Request) {
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
-        // 7. Fetch UTXOs via RPC
-        console.log(`🔍 CHECKING SENDER (RPC): ${sourceAddress.toString()}`);
-        const { entries } = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
-        console.log(`💰 RPC UTXOs Found: ${entries?.length || 0}`);
+        // 7. Fetch UTXOs via REST API (Reliable)
+        // RPC is often desynced on testnet, so we use REST for valid UTXO set.
+        console.log(`🔍 FETCHING UTXOS (REST): ${sourceAddress.toString()}`);
+        let entries: any[] = [];
 
-        // 7b. Double Check via REST API (Debug)
         try {
             const restRes = await fetch(`https://api-tn10.kaspa.org/addresses/${sourceAddress.toString()}/utxos`);
-            if (restRes.ok) {
-                const restUtxos = await restRes.json();
-                console.log(`💰 REST API UTXOs Found: ${restUtxos.length}`);
-                if (restUtxos.length > 0 && (!entries || entries.length === 0)) {
-                    console.warn("⚠️ CRITICAL MISMATCH: REST API sees funds, but RPC does not! The RPC might be desynced.");
-                    // Fallback idea: We could construct the transaction using REST UTXOs, but for now just logging.
-                }
-            } else {
-                console.warn("REST API check failed:", restRes.status);
+            if (!restRes.ok) {
+                throw new Error(`REST API failed with status ${restRes.status}`);
             }
+            const restUtxos = await restRes.json();
+            console.log(`💰 REST UTXOs Found: ${restUtxos.length}`);
+
+            // Map REST format to WASM-compatible format
+            entries = restUtxos.map((u: any) => ({
+                address: sourceAddress,
+                outpoint: {
+                    transactionId: u.outpoint.transactionId,
+                    index: u.outpoint.index
+                },
+                utxoEntry: {
+                    amount: BigInt(u.utxoEntry.amount),
+                    scriptPublicKey: {
+                        scriptPublicKey: u.utxoEntry.scriptPublicKey.scriptPublicKey,
+                        version: 0
+                    },
+                    blockDaaScore: BigInt(u.utxoEntry.blockDaaScore),
+                    isCoinbase: u.utxoEntry.isCoinbase || false
+                }
+            }));
+
         } catch (e) {
-            console.error("REST API check error:", e);
+            console.error("REST UTXO Fetch Error:", e);
+            // Fallback to RPC if REST fails (unlikely to be better if synced, but worth a try?)
+            console.log("⚠️ Falling back to RPC for UTXOs...");
+            const rpcRes = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
+            entries = rpcRes.entries || [];
         }
 
         if (!entries || entries.length === 0) {
             await rpc.disconnect();
             return NextResponse.json({
-                error: 'Insufficient funds. Your custodial wallet is empty (0 UTXOs found via RPC).',
+                error: 'Insufficient funds. Wallet appears empty via REST API.',
                 address: sourceAddress.toString()
             }, { status: 400 });
         }

@@ -43,7 +43,7 @@ export const useSavings = () => {
     const [transactions, setTransactions] = useState<SavingsTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch pots from Supabase
+    // Fetch pots from Supabase and sync with on-chain balance
     const fetchPots = useCallback(async () => {
         if (!userAddress) {
             setPots([]);
@@ -52,14 +52,44 @@ export const useSavings = () => {
         }
 
         try {
-            const { data, error } = await supabase
+            // 1. Get Pots from DB
+            const { data: dbPots, error } = await supabase
                 .from('savings_pots')
                 .select('*')
                 .eq('user_address', userAddress)
                 .eq('status', 'active');
 
             if (error) throw error;
-            setPots(data || []);
+
+            const currentPots = dbPots || [];
+
+            // 2. Fetch Live Balances from Chain
+            const updatedPots = await Promise.all(currentPots.map(async (pot) => {
+                try {
+                    const res = await fetch(`https://api-tn10.kaspa.org/addresses/${pot.address}/balance`);
+                    if (res.ok) {
+                        const balanceData = await res.json();
+                        const liveBalance = balanceData.balance / 100000000; // Convert Sompi to KAS
+
+                        // If balance changed, update DB silently
+                        if (liveBalance !== pot.balance) {
+                            supabase.from('savings_pots')
+                                .update({ balance: liveBalance })
+                                .eq('id', pot.id)
+                                .then(({ error }) => {
+                                    if (error) console.error(`Failed to sync balance for pot ${pot.name}`, error);
+                                });
+
+                            return { ...pot, balance: liveBalance };
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to fetch live balance for pot ${pot.id}`, err);
+                }
+                return pot;
+            }));
+
+            setPots(updatedPots);
         } catch (e) {
             console.error("Failed to fetch pots:", e);
         } finally {
