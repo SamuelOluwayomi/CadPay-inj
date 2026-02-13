@@ -47,12 +47,14 @@ export async function POST(request: Request) {
             isWasmInitialized = true;
         }
 
-        // 3. Generate New Wallet
+        // 3. Generate New Wallet (Standardized)
         const randomSecret = crypto.randomBytes(32).toString('hex');
         const privateKey = new kaspa.PrivateKey(randomSecret);
         const publicKey = privateKey.toPublicKey();
         const address = publicKey.toAddress(kaspa.NetworkType.Testnet).toString();
         const privateKeyHex = privateKey.toString();
+
+        console.log(`🆕 Created Custodial Wallet: ${address}`);
 
         // 4. Encrypt Private Key
         const encryptedKey = encrypt(privateKeyHex);

@@ -82,40 +82,37 @@ export async function POST(request: Request) {
 
         // 6. Setup Wallet
         const privateKey = new kaspa.PrivateKey(privateKeyString);
+        let sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
-        // Try to find the correct network that matches the stored address
-        const networks = [
-            { type: kaspa.NetworkType.Testnet, name: 'Testnet' },
-            { type: kaspa.NetworkType.Mainnet, name: 'Mainnet' },
-            { type: kaspa.NetworkType.Devnet, name: 'Devnet' },
-            { type: kaspa.NetworkType.Simnet, name: 'Simnet' }
-        ];
+        // Sanity Check: Does the derived address match the DB?
+        if (profile.wallet_address && sourceAddress.toString() !== profile.wallet_address) {
+            console.warn(`⚠️ Primary derivation (Testnet) mismatch. Probing other networks...`);
 
-        let sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet); // Default
-        let matchedNetwork = 'Testnet (Default)';
-        let foundMatch = false;
+            // Fallback Probe (Just in case valid keys were made on other networks previously)
+            const networks = [
+                { type: kaspa.NetworkType.Mainnet, name: 'Mainnet' },
+                { type: kaspa.NetworkType.Devnet, name: 'Devnet' },
+                { type: kaspa.NetworkType.Simnet, name: 'Simnet' }
+            ];
 
-        console.log(`🕵️ KEY PROBE for stored address: ${profile.wallet_address}`);
-
-        for (const net of networks) {
-            const addr = privateKey.toAddress(net.type);
-            console.log(`   - ${net.name} checks out as: ${addr.toString()}`);
-            if (profile.wallet_address && addr.toString() === profile.wallet_address) {
-                sourceAddress = addr;
-                matchedNetwork = net.name;
-                foundMatch = true;
-                console.log(`   ✅ MATCH FOUND on ${net.name}!`);
-                break;
+            let found = false;
+            for (const net of networks) {
+                const addr = privateKey.toAddress(net.type);
+                if (addr.toString() === profile.wallet_address) {
+                    sourceAddress = addr;
+                    found = true;
+                    console.log(`✅ Recovered address on ${net.name}`);
+                    break;
+                }
             }
-        }
 
-        if (!foundMatch && profile.wallet_address) {
-            console.error(`🚨 NO MATCH FOUND! The stored address ${profile.wallet_address} cannot be derived from this private key on any network.`);
-            return NextResponse.json({
-                error: `Critical Key Mismatch. Stored: ${profile.wallet_address}, Derived (Testnet): ${sourceAddress.toString()}. Key cannot reproduce address.`,
-                senderAddress: sourceAddress.toString(),
-                storedAddress: profile.wallet_address
-            }, { status: 400 });
+            if (!found) {
+                console.error(`🚨 CRITICAL: Private Key does not unlock stored address ${profile.wallet_address}`);
+                return NextResponse.json({
+                    error: `Wallet Corruption: Private key does not match address ${profile.wallet_address}. Please reset your wallet.`,
+                    senderAddress: sourceAddress.toString()
+                }, { status: 400 });
+            }
         }
 
         console.log(`🚀 API STARTED for User: ${user.id}`);
