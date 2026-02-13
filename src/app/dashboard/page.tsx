@@ -63,6 +63,17 @@ export default function Dashboard() {
     const { profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
     const router = useRouter();
 
+    // Auth Guard: Redirect to Home if not authenticated
+    useEffect(() => {
+        // Wait for initial checks to complete
+        if (!loading && !profileLoading) {
+            // If no session (Custodial) AND no address (non-custodial/KasWare)
+            if (!session && !address) {
+                router.push('/');
+            }
+        }
+    }, [session, address, loading, profileLoading, router]);
+
     const userProfile = {
         username: profile?.username || 'User',
         gender: profile?.gender || 'other',
@@ -333,7 +344,15 @@ export default function Dashboard() {
     };
 
     // Fallback to profile.authority (Custodial Address) if KasWare is not connected
-    const walletAddress = address || profile?.authority || "Loading...";
+    const walletAddress = address || profile?.authority || "";
+    const isCustodial = !address && !!profile?.authority;
+
+    // Debug Active Mode
+    useEffect(() => {
+        if (address) console.log("🔵 Dashboard Mode: KasWare Connected", address);
+        else if (profile?.authority) console.log("🟠 Dashboard Mode: Custodial", profile.authority);
+    }, [address, profile]);
+
     const displayBalance = address ? (walletBalance !== null ? walletBalance.toFixed(4) : "0.00") : custodialBalance.toFixed(4);
 
     const copyToClipboard = () => {

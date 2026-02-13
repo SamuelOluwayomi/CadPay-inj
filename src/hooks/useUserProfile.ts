@@ -51,12 +51,15 @@ export function useUserProfile() {
                 data = result.data;
                 error = result.error;
             } else if (address) {
-                // Fetch by Wallet Address
+                // Fetch by Wallet Address (Non-Custodial / KasWare detected)
                 const result = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('wallet_address', address)
                     .maybeSingle();
+
+                // CRITICAL: If no profile found for this address, do NOT use it?
+                // Or allows transient usage?
                 data = result.data;
                 error = result.error;
             } else {

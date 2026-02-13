@@ -164,15 +164,15 @@ export const useKasWare = () => {
                 setIsLoading(true);
                 // console.log("🔍 Passive session check started...");
                 try {
-                    // 1. Check local storage for persistent wallets (e.g. biometric)
+                    // 1. Check local storage? NO.
+                    // We removed this because it was causing "Ghost Wallets" (stale addresses)
+                    // that persisted even when the backend had a different custodial wallet.
+                    // The source of truth should be window.kasware (if connected) or the DB (if custodial).
+
+                    /*
                     const localAddr = localStorage.getItem('active_wallet_address');
-                    if (localAddr) {
-                        console.log("✅ Found active session in local storage:", localAddr);
-                        setAddress(localAddr);
-                        setIsConnected(true);
-                        await fetchBalance(localAddr);
-                        return; // Prefer local if just set
-                    }
+                    if (localAddr) { ... }
+                    */
 
                     // 2. Check KasWare extension
                     if (window.kasware) {

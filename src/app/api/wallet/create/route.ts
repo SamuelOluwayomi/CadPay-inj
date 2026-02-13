@@ -74,6 +74,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to save wallet to profile' }, { status: 500 });
         }
 
+        // 5b. Sync to User Credentials (if applicable) for Auth Consistency
+        // Best effort sync - credentials usually rely on email lookup
+        const { error: credError } = await supabase
+            .from('user_credentials')
+            .update({ wallet_address: address })
+            .eq('user_id', user.id); // Assuming user_id column exists
+
+        if (credError) {
+            console.warn('Credential sync warning (ignorable if not using credentials table):', credError);
+        }
+
         return NextResponse.json({
             success: true,
             address: address,
