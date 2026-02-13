@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         // 2. Fetch User's Encrypted Key
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('encrypted_private_key')
+            .select('encrypted_private_key, wallet_address')
             .eq('id', user.id)
             .single();
 
@@ -82,10 +82,44 @@ export async function POST(request: Request) {
 
         // 6. Setup Wallet
         const privateKey = new kaspa.PrivateKey(privateKeyString);
-        const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
+
+        // Try to find the correct network that matches the stored address
+        const networks = [
+            { type: kaspa.NetworkType.Testnet, name: 'Testnet' },
+            { type: kaspa.NetworkType.Mainnet, name: 'Mainnet' },
+            { type: kaspa.NetworkType.Devnet, name: 'Devnet' },
+            { type: kaspa.NetworkType.Simnet, name: 'Simnet' }
+        ];
+
+        let sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet); // Default
+        let matchedNetwork = 'Testnet (Default)';
+        let foundMatch = false;
+
+        console.log(`🕵️ KEY PROBE for stored address: ${profile.wallet_address}`);
+
+        for (const net of networks) {
+            const addr = privateKey.toAddress(net.type);
+            console.log(`   - ${net.name} checks out as: ${addr.toString()}`);
+            if (profile.wallet_address && addr.toString() === profile.wallet_address) {
+                sourceAddress = addr;
+                matchedNetwork = net.name;
+                foundMatch = true;
+                console.log(`   ✅ MATCH FOUND on ${net.name}!`);
+                break;
+            }
+        }
+
+        if (!foundMatch && profile.wallet_address) {
+            console.error(`🚨 NO MATCH FOUND! The stored address ${profile.wallet_address} cannot be derived from this private key on any network.`);
+            return NextResponse.json({
+                error: `Critical Key Mismatch. Stored: ${profile.wallet_address}, Derived (Testnet): ${sourceAddress.toString()}. Key cannot reproduce address.`,
+                senderAddress: sourceAddress.toString(),
+                storedAddress: profile.wallet_address
+            }, { status: 400 });
+        }
 
         console.log(`🚀 API STARTED for User: ${user.id}`);
-        console.log(`🔐 DB WALLET (Derived): ${sourceAddress.toString()}`);
+        console.log(`🔐 DB WALLET (Resolved): ${sourceAddress.toString()}`);
         console.log(`🎯 TARGET: ${recipient}`);
 
         // 7. Fetch UTXOs via REST API (Reliable)
