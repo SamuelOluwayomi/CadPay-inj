@@ -84,14 +84,34 @@ export async function POST(request: Request) {
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
-        // 7. Fetch UTXOs
+        // 7. Fetch UTXOs via RPC
+        console.log(`🔍 CHECKING SENDER (RPC): ${sourceAddress.toString()}`);
         const { entries } = await rpc.getUtxosByAddresses([sourceAddress.toString()]);
-        console.log(`🔍 Custodial Wallet Address: ${sourceAddress.toString()}`);
-        console.log(`💰 UTXOs Found: ${entries?.length || 0}`);
+        console.log(`💰 RPC UTXOs Found: ${entries?.length || 0}`);
+
+        // 7b. Double Check via REST API (Debug)
+        try {
+            const restRes = await fetch(`https://api-tn10.kaspa.org/addresses/${sourceAddress.toString()}/utxos`);
+            if (restRes.ok) {
+                const restUtxos = await restRes.json();
+                console.log(`💰 REST API UTXOs Found: ${restUtxos.length}`);
+                if (restUtxos.length > 0 && (!entries || entries.length === 0)) {
+                    console.warn("⚠️ CRITICAL MISMATCH: REST API sees funds, but RPC does not! The RPC might be desynced.");
+                    // Fallback idea: We could construct the transaction using REST UTXOs, but for now just logging.
+                }
+            } else {
+                console.warn("REST API check failed:", restRes.status);
+            }
+        } catch (e) {
+            console.error("REST API check error:", e);
+        }
 
         if (!entries || entries.length === 0) {
             await rpc.disconnect();
-            return NextResponse.json({ error: 'Insufficient funds. Your custodial wallet is empty.' }, { status: 400 });
+            return NextResponse.json({
+                error: 'Insufficient funds. Your custodial wallet is empty (0 UTXOs found via RPC).',
+                address: sourceAddress.toString()
+            }, { status: 400 });
         }
 
         // 8. Create & Sign Transaction
