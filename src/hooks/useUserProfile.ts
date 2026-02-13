@@ -160,7 +160,16 @@ export function useUserProfile() {
         setError(null);
 
         try {
+            // 1. Ensure we have the latest authenticated user
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                throw new Error("You must be logged in to create a profile.");
+            }
+
             const newProfileData: any = {
+                id: user.id, // Mandatory: Links to auth.users
+                auth_user_id: user.id, // Redundant but requested in SQL schema
                 username,
                 emoji,
                 gender,
@@ -170,23 +179,17 @@ export function useUserProfile() {
                 updated_at: new Date().toISOString()
             };
 
-            let query;
-
-            if (session?.user?.id) {
-                // Custodial Mode: Upsert with ID
-                newProfileData.id = session.user.id;
-                // critical: Ensure wallet address is linked even in custodial mode
-                if (address) newProfileData.wallet_address = address;
-                query = supabase.from('profiles').upsert(newProfileData);
-            } else if (address) {
-                // Legacy / KasWare Mode: Insert with wallet_address
+            // Optional: Link wallet address if available
+            if (address) {
                 newProfileData.wallet_address = address;
-                query = supabase.from('profiles').insert([newProfileData]);
-            } else {
-                return null;
             }
 
-            const { data, error } = await query.select().single();
+            // Always upsert since ID is the primary key and matches auth ID
+            const { data, error } = await supabase
+                .from('profiles')
+                .upsert(newProfileData)
+                .select()
+                .single();
 
             if (error) throw error;
 
@@ -211,7 +214,7 @@ export function useUserProfile() {
         } finally {
             setLoading(false);
         }
-    }, [address, session]);
+    }, [address]);
 
     const updateProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
         setLoading(true);
