@@ -89,9 +89,14 @@ export default function CreateAccount() {
 
             if (result.success) {
                 // 1. Create Supabase Auth Account (NEW - enables custodial features)
-                const authPassword = useBiometrics ? kaspaWallet.address : password;
+                // For biometric users, generate a simplified password from wallet address
+                const authPassword = useBiometrics
+                    ? kaspaWallet.address.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) // Remove special chars
+                    : password;
+
+                console.log('Attempting Supabase signup with email:', email);
                 const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email,
+                    email: email.trim(),
                     password: authPassword,
                     options: {
                         data: {
@@ -116,7 +121,7 @@ export default function CreateAccount() {
                     .from('user_credentials')
                     .insert([
                         {
-                            email: email,
+                            email: email.trim(),
                             wallet_address: kaspaWallet.address,
                             auth_method: useBiometrics ? 'biometric' : 'password',
                             password_hash: passwordHash
@@ -132,7 +137,7 @@ export default function CreateAccount() {
 
                 // 2. Set Active Session (Local Storage)
                 localStorage.setItem('active_wallet_address', kaspaWallet.address);
-                localStorage.setItem('auth_email', email);
+                localStorage.setItem('auth_email', email.trim());
 
                 // 3. Auto-download recovery kit
                 downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic);

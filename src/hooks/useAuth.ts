@@ -131,10 +131,11 @@ export function useAuth() {
                 .eq('email', email);
 
             // 5. Create Supabase Auth session (NEW - enables custodial features)
-            // For biometric users, use wallet address as password (deterministic)
+            // For biometric users, use simplified wallet address as password (matching signup)
+            const authPassword = data.wallet_address.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
             const { error: authSignInError } = await supabase.auth.signInWithPassword({
                 email,
-                password: data.wallet_address
+                password: authPassword
             });
 
             if (authSignInError) {

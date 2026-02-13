@@ -162,7 +162,7 @@ export const useKasWare = () => {
         const passiveCheck = async () => {
             if (typeof window !== 'undefined') {
                 setIsLoading(true);
-                console.log("🔍 Passive session check started...");
+                // console.log("🔍 Passive session check started...");
                 try {
                     // 1. Check local storage for persistent wallets (e.g. biometric)
                     const localAddr = localStorage.getItem('active_wallet_address');
@@ -190,7 +190,7 @@ export const useKasWare = () => {
                         console.log("ℹ️ KasWare extension not found.");
                     }
                 } catch (e) {
-                    console.warn("⚠️ Passive KasWare check failed", e);
+                    console.log("ℹ️ Passive KasWare check failed (normal if not installed/connected)", e);
                 } finally {
                     setIsLoading(false);
                 }
