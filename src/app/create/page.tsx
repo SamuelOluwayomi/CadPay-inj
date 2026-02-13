@@ -94,9 +94,11 @@ export default function CreateAccount() {
                     ? kaspaWallet.address.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) // Remove special chars
                     : password;
 
-                console.log('Attempting Supabase signup with email:', email);
+                // Remove invisible characters and whitespace
+                const cleanEmail = email.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+                console.log('Attempting Supabase signup with email:', cleanEmail);
                 const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email.trim(),
+                    email: cleanEmail,
                     password: authPassword,
                     options: {
                         data: {
@@ -121,7 +123,7 @@ export default function CreateAccount() {
                     .from('user_credentials')
                     .insert([
                         {
-                            email: email.trim(),
+                            email: cleanEmail,
                             wallet_address: kaspaWallet.address,
                             auth_method: useBiometrics ? 'biometric' : 'password',
                             password_hash: passwordHash
@@ -137,7 +139,7 @@ export default function CreateAccount() {
 
                 // 2. Set Active Session (Local Storage)
                 localStorage.setItem('active_wallet_address', kaspaWallet.address);
-                localStorage.setItem('auth_email', email.trim());
+                localStorage.setItem('auth_email', cleanEmail);
 
                 // 3. Auto-download recovery kit
                 downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic);
