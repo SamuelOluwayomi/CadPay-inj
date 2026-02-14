@@ -45,36 +45,21 @@ export async function POST(request: Request) {
         }
 
         // 2. Fetch User's Encrypted Key
-        // Strategy: Try user_credentials (Primary for Payment) -> profiles (Fallback)
+        // Strategy: Profiles (Primary Source of Truth) -> user_credentials (Legacy/Fallback)
         let encryptedKey: string | null = null;
         let dbWalletAddress: string | null = null;
 
-        if (user.email) {
-            const { data: creds } = await supabase
-                .from('user_credentials')
-                .select('encrypted_private_key, wallet_address')
-                .eq('email', user.email)
-                .maybeSingle(); // distinct from .single() to avoid 406 if not found
+        // A. Primary: Profiles Table
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('encrypted_private_key, wallet_address')
+            .eq('id', user.id)
+            .single();
 
-            if (creds?.encrypted_private_key) {
-                encryptedKey = creds.encrypted_private_key;
-                dbWalletAddress = creds.wallet_address;
-                console.log('🔑 Using Private Key from User Credentials');
-            }
-        }
-
-        if (!encryptedKey) {
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('encrypted_private_key, wallet_address')
-                .eq('id', user.id)
-                .single();
-
-            if (profile?.encrypted_private_key) {
-                encryptedKey = profile.encrypted_private_key;
-                dbWalletAddress = profile.wallet_address;
-                console.log('👤 Using Private Key from Profile (Fallback)');
-            }
+        if (profile?.encrypted_private_key) {
+            encryptedKey = profile.encrypted_private_key;
+            dbWalletAddress = profile.wallet_address;
+            console.log('👤 Using Private Key from Profile');
         }
 
         if (!encryptedKey) {
