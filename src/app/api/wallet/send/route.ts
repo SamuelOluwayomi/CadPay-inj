@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import * as kaspa from '@kluster/kaspa-wasm-web';
 import { decrypt } from '@/utils/encryption';
-import fs from 'fs';
-import path from 'path';
 
-// Node.js runtime for WASM + fs
+// @ts-ignore
+const kaspa = require('@kaspa/core-lib');
+
+// Force Node.js runtime (WASM fails on Edge, and we are using core-lib which is node-based)
 export const runtime = 'nodejs';
 
-let isWasmInitialized = false;
-
 export async function POST(request: Request) {
-    let rpc: any = null;
+    console.log("🚀 [API] Transfer Request Started (using @kaspa/core-lib)");
+
     try {
-        // 1. Authenticate User
+        // 1. Authenticate User (Securely, using Headers)
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) {
             return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
@@ -32,23 +31,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // 2. Parse Input
         const { recipient, amount } = await request.json();
         if (!recipient || !amount) {
-            return NextResponse.json({ error: 'Missing recipient or amount' }, { status: 400 });
+            return NextResponse.json({ error: "Missing required fields: recipient or amount" }, { status: 400 });
         }
 
-        // 2. Fetch User's Encrypted Key
+        // 3. Fetch User's Encrypted Key
         const { data: profile } = await supabase
             .from('profiles')
-            .select('encrypted_private_key, wallet_address')
+            .select('wallet_address, encrypted_private_key')
             .eq('id', user.id)
             .single();
 
-        if (!profile?.encrypted_private_key) {
-            return NextResponse.json({ error: 'No wallet found for user.' }, { status: 404 });
-        }
+        if (!profile) return NextResponse.json({ error: "User profile not found in DB" }, { status: 404 });
+        if (!profile.encrypted_private_key) return NextResponse.json({ error: "User has no private key saved!" }, { status: 400 });
 
-        // 3. Decrypt Key
+        // 4. Decrypt Key
         let privateKeyString: string;
         try {
             privateKeyString = decrypt(profile.encrypted_private_key);
@@ -57,106 +56,73 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 4. Initialize WASM (Robust Loading)
-        if (!isWasmInitialized) {
-            const wasmPath = path.join(process.cwd(), 'public', 'kaspa_wasm_bg.wasm');
-            if (!fs.existsSync(wasmPath)) throw new Error("WASM file missing");
-            const wasmBuffer = fs.readFileSync(wasmPath);
-
-            if (typeof global !== 'undefined' && !(global as any).WebSocket) {
-                (global as any).WebSocket = class { };
-            }
-
-            // @ts-ignore
-            await kaspa.default(wasmBuffer);
-            isWasmInitialized = true;
-        }
-
-        // 5. Connect RPC
-        rpc = new kaspa.RpcClient({
-            url: "wss://photon-10.kaspa.red/kaspa/testnet-10/wrpc/borsh",
-            encoding: kaspa.Encoding.Borsh,
-            networkId: "testnet-10"
-        });
-        await rpc.connect();
-
-        // 6. Setup Wallet Keys
-        const privateKey = new kaspa.PrivateKey(privateKeyString);
-        const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
-
-        console.log(`🚀 Sending ${amount} KAS from ${sourceAddress.toString()} to ${recipient}`);
-        console.log(`🔑 Private Key Address Check: ${privateKey.toAddress("testnet-10").toString()}`); // Verify match
-
-        // 7. Fetch UTXOs via REST
-        const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${sourceAddress.toString()}/utxos`);
+        // 5. Fetch UTXOs
+        const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
         if (!utxoRes.ok) throw new Error("Failed to fetch UTXOs from REST API");
-
         const utxoData = await utxoRes.json();
 
         if (utxoData.length === 0) {
             return NextResponse.json({ error: "Insufficient funds (0 UTXOs)" }, { status: 400 });
         }
 
-        // 8. Map UTXOs for Generator
-        // FIX: scriptPublicKey must be the hex string, not the object.
-        const utxoEntries = utxoData.map((u: any) => ({
-            address: sourceAddress,
-            outpoint: {
-                transactionId: u.outpoint.transactionId,
-                index: u.outpoint.index
-            },
-            utxoEntry: {
-                amount: BigInt(u.utxoEntry.amount),
-                scriptPublicKey: u.utxoEntry.scriptPublicKey.scriptPublicKey, // <--- DIRECT HEX STRING
-                blockDaaScore: BigInt(u.utxoEntry.blockDaaScore),
-                isCoinbase: u.utxoEntry.isCoinbase || false
-            }
+        // 6. MAP UTXOs (Correctly for @kaspa/core-lib)
+        const utxos = utxoData.map((u: any) => ({
+            txId: u.outpoint.transactionId,
+            outputIndex: u.outpoint.index,
+            address: profile.wallet_address,
+            script: u.utxoEntry.scriptPublicKey.scriptPublicKey, // ✅ Essential for signing
+            satoshis: Number(u.utxoEntry.amount)
         }));
 
-        console.log(`📦 UTXO Entries Count: ${utxoEntries.length}`);
-        if (utxoEntries.length > 0) {
-            console.log(`🔍 First UTXO Script: ${utxoEntries[0].utxoEntry.scriptPublicKey}`);
+        // 7. Check Balance
+        const amountSompi = Math.floor(amount * 100000000);
+        const fee = 10000;
+        const totalInput = utxos.reduce((acc: number, curr: any) => acc + curr.satoshis, 0);
+
+        if (totalInput < amountSompi + fee) {
+            return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
         }
 
-        // 9. Generate & Sign Transaction
-        const amountSompi = BigInt(Math.floor(Number(amount) * 100_000_000));
+        // 8. Build Transaction (Using Transaction Class from @kaspa/core-lib)
+        const privateKey = new kaspa.PrivateKey(privateKeyString);
 
-        const generator = new kaspa.Generator({
-            outputs: [{
-                address: recipient,
-                amount: amountSompi
-            }],
-            changeAddress: sourceAddress.toString(),
-            utxoEntries: utxoEntries, // Use correct property name per JSDoc
-            networkId: "testnet-10",
-            feeRate: 1.0,
-            priorityFee: 0n
+        const tx = new kaspa.Transaction()
+            .from(utxos)
+            .to(recipient, amountSompi)
+            .setVersion(0) // Essential for Testnet-10
+            .change(profile.wallet_address)
+            .sign(privateKey);
+
+        // 9. Broadcast
+        // Use RPC if possible, but core-lib usually builds hex. We can broadcast via REST if we have the endpoint.
+        // The user's snippet used REST broadcast: https://api-tn10.kaspa.org/transactions
+
+        // We need to serialize the transaction. core-lib has .serialize() or .toString()
+        // The user's snippet used tx.serialize().
+
+        const broadcastRes = await fetch('https://api-tn10.kaspa.org/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transactionHex: tx.serialize() })
         });
 
-        const pendingTx = await generator.next();
-        if (!pendingTx) {
-            await rpc.disconnect();
-            return NextResponse.json({ error: 'Failed to generate transaction (insufficient funds?)' }, { status: 400 });
+        if (!broadcastRes.ok) {
+            const errText = await broadcastRes.text();
+            console.error("Broadcast failed:", errText);
+            throw new Error("Broadcast failed: " + errText);
         }
 
-        // Pass privateKey object directly, not string, to be safest.
-        await pendingTx.sign([privateKey]);
-        const txId = await pendingTx.submit(rpc);
-
-        console.log(`✅ Transaction Sent: ${txId}`);
-        await rpc.disconnect();
+        const result = await broadcastRes.json();
+        console.log(`🎉 [API] Success! TxID: ${result.transactionId}`);
 
         return NextResponse.json({
             success: true,
-            txId: txId,
+            txId: result.transactionId,
             message: 'Transaction sent successfully'
         });
 
     } catch (error: any) {
-        console.error("Send Error:", error);
-        if (rpc) {
-            try { await rpc.disconnect(); } catch { }
-        }
+        console.error("🔥 [API ERROR]:", error.message);
         return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
     }
 }
