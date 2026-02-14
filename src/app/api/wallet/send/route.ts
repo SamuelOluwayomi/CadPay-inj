@@ -3,7 +3,9 @@ process.env.ECCLIB_JS = '1';
 process.env.ECCSI_JS = '1';
 
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { decrypt } from '@/utils/encryption';
+
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
@@ -18,75 +20,121 @@ export async function POST(request: Request) {
     console.log("🚀 [API] Transfer Request Started");
 
     try {
-        const { userId, amount, toAddress } = await request.json();
-
-        // 1. Fetch DB Data
-        const { data: user } = await supabase
-            .from('profiles')
-            .select('wallet_address, encrypted_private_key')
-            .eq('id', userId)
-            .single();
-
-        if (!user?.encrypted_private_key) throw new Error("No private key found.");
-
-        // 2. Derive Address Object (Used for signing)
-        const privateKey = new kaspa.PrivateKey(user.encrypted_private_key);
-        const addressObj = privateKey.toAddress(kaspa.Networks.testnet);
-        const derivedAddressString = addressObj.toString();
-
-        console.log(`🔐 Derived Address String: ${derivedAddressString}`);
-        console.log(`🏦 DB Address String:      ${user.wallet_address}`);
-
-        // 3. ROBUST UTXO FETCHING (Fixes "map is not a function")
-        // We try the DB address first (it usually has the funds).
-        let targetAddress = user.wallet_address;
-        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${targetAddress}/utxos`);
-
-        // If DB address fails/empty, try derived address
-        if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
-            console.log("⚠️ DB address empty or invalid. Trying Derived address...");
-            targetAddress = derivedAddressString;
-            utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${targetAddress}/utxos`);
+        // 1. Authenticate User (Securely, using Headers)
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader) {
+            return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
         }
 
-        // Check if Request Failed completely
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                global: { headers: { Authorization: authHeader } }
+            }
+        );
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Parse and Sanitize Input
+        const { recipient, amount } = await request.json();
+
+        if (!recipient || typeof recipient !== 'string') {
+            return NextResponse.json({ error: "Invalid recipient address" }, { status: 400 });
+        }
+        if (!amount) {
+            return NextResponse.json({ error: "Missing amount" }, { status: 400 });
+        }
+
+        const cleanRecipient = recipient.trim();
+        console.log(`🎯 Sending to: ${cleanRecipient}`);
+
+        // 3. Fetch User's Encrypted Key
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address, encrypted_private_key')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile) return NextResponse.json({ error: "User profile not found in DB" }, { status: 404 });
+        if (!profile.encrypted_private_key) return NextResponse.json({ error: "User has no private key saved!" }, { status: 400 });
+
+        // 4. Decrypt Key
+        let privateKeyString: string;
+        try {
+            privateKeyString = decrypt(profile.encrypted_private_key);
+        } catch (e) {
+            console.error('Decryption failed:', e);
+            return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
+        }
+
+        // 5. Derive Sender Address Object
+        const privateKey = new kaspa.PrivateKey(privateKeyString);
+        const senderAddressObj = privateKey.toAddress(kaspa.Networks.testnet);
+        const senderAddressString = senderAddressObj.toString();
+        console.log(`🔐 Sender: ${senderAddressString}`);
+
+        // 6. Create DESTINATION Address Object (The Fix for "Non-base58" error)
+        // We explicitly tell the library: "Parse this string using Testnet rules"
+        // This stops it from falling back to Base58 (Bitcoin) mode.
+        const destinationAddressObj = new kaspa.Address(cleanRecipient, kaspa.Networks.testnet);
+
+        // 7. Get UTXOs (Try Derived first, then DB fallback)
+        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
+
+        // Fallback if empty
+        if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
+            console.log("⚠️ Derived address empty. Checking DB address...");
+            utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
+        }
+
         if (!utxoRes.ok) {
             throw new Error(`Kaspa API Failed: ${utxoRes.status} ${utxoRes.statusText}`);
         }
 
         const utxoData = await utxoRes.json();
 
-        // 4. Validate Data is an Array
         if (!Array.isArray(utxoData)) {
             console.error("❌ Kaspa API returned non-array:", utxoData);
             return NextResponse.json({ error: "Kaspa API Error: Unexpected response format" }, { status: 502 });
         }
 
         if (utxoData.length === 0) {
-            return NextResponse.json({ error: "Insufficient funds (0 UTXOs found)" }, { status: 400 });
+            return NextResponse.json({ error: "Insufficient funds (0 UTXOs)" }, { status: 400 });
         }
 
-        // 5. Map UTXOs (Now safe because we checked Array.isArray)
+        // 8. Map UTXOs
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: addressObj, // <--- PASSING THE OBJECT DIRECTLY (Bypasses checksum crash)
+            address: senderAddressObj, // Pass SENDER Object
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
 
         console.log(`⚙️ Building Transaction with ${utxos.length} UTXOs...`);
 
-        // 6. Build & Sign
+        // 9. Check Balance
         const amountSompi = Math.floor(amount * 100000000);
+        const fee = 10000;
+        const totalInput = utxos.reduce((acc: number, curr: any) => acc + curr.satoshis, 0);
+
+        if (totalInput < amountSompi + fee) {
+            return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
+        }
+
+        // 10. Build & Sign Transaction
         const tx = new kaspa.Transaction()
             .from(utxos)
-            .to(toAddress, amountSompi)
+            .to(destinationAddressObj, amountSompi) // <--- Pass DESTINATION Object
             .setVersion(0)
-            .change(addressObj)
+            .change(senderAddressObj) // <--- Pass SENDER Object
             .sign(privateKey);
 
-        // 7. Broadcast
+        // 11. Broadcast
         const broadcastRes = await fetch('https://api-tn10.kaspa.org/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -98,10 +146,15 @@ export async function POST(request: Request) {
         const result = await broadcastRes.json();
         console.log(`✅ Success! TxID: ${result.transactionId}`);
 
-        return NextResponse.json({ success: true, txId: result.transactionId });
+        return NextResponse.json({
+            success: true,
+            txId: result.transactionId,
+            message: 'Transaction sent successfully'
+        });
 
     } catch (error: any) {
         console.error("🔥 API Error:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error.stack) console.error(error.stack);
+        return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
     }
 }
