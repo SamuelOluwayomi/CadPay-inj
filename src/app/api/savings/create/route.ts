@@ -46,10 +46,37 @@ export async function POST(request: Request) {
         // 4. Encrypt Private Key (Required for withdrawal later)
         const encryptedKey = encrypt(privateKeyHex);
 
+        // 5. Verify Auth & Database Connection
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                global: { headers: { Authorization: authHeader || '' } }
+            }
+        );
+
+        // 6. Save to savings_pots table
+        // We store the encrypted private key so the pot can be swept/withdrawn later.
+        const { error: dbError } = await supabase
+            .from('savings_pots')
+            .insert({
+                user_address: userId, // Owner
+                name: name,
+                address: address, // Pot Address
+                encrypted_private_key: encryptedKey,
+                duration_months: durationMovies,
+                status: 'active'
+            });
+
+        if (dbError) {
+            console.error('Failed to save pot to DB:', dbError);
+            return NextResponse.json({ error: 'Database error' }, { status: 500 });
+        }
+
         return NextResponse.json({
             success: true,
             address: address,
-            encryptedKey: encryptedKey,
+            // encryptedKey: encryptedKey, // No need to return key if saved to DB
             message: 'Pot wallet created successfully'
         });
 

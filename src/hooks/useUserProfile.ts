@@ -19,26 +19,35 @@ export function useUserProfile() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [session, setSession] = useState<Session | null>(null);
+    const [sessionInitialized, setSessionInitialized] = useState(false);
 
     // Initial Session Check
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const initSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
-        });
+            setSessionInitialized(true);
+        };
+        initSession();
 
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
+            setSessionInitialized(true);
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
     const fetchProfile = useCallback(async () => {
+        // block until session check is done
+        if (!sessionInitialized) return;
+
         setLoading(true);
         try {
             let data, error;
+            // ... (rest of logic same)
 
             // Strategy: Prioritize Supabase Session (Custodial), Fallback to KasWare (Non-Custodial)
             if (session?.user) {
@@ -145,6 +154,8 @@ export function useUserProfile() {
 
     // Initial fetch and Real-time subscription
     useEffect(() => {
+        if (!sessionInitialized) return; // Wait for auth check
+
         fetchProfile();
 
         const channelId = session?.user?.id || address;
@@ -171,7 +182,7 @@ export function useUserProfile() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [address, session, fetchProfile]);
+    }, [address, session, fetchProfile, sessionInitialized]);
 
     const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
         setLoading(true);
