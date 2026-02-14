@@ -1,29 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // 1. Force Vercel to bundle the WASM file
-    experimental: {
-        serverComponentsExternalPackages: ['@kaspa/core-lib', 'secp256k1'],
-        outputFileTracingIncludes: {
-            '/api/**/*': ['./node_modules/**/*.wasm', './node_modules/**/*.proto'],
-        },
-    },
+    // ---------------------------------------------------------
+    // 🚨 FIX 1: EXTERNALIZE KASPA
+    // This tells Next.js: "Do not try to bundle this file. 
+    // Just let Node.js require it at runtime."
+    // This fixes "Module not found" and "WASM" errors.
+    // ---------------------------------------------------------
+    serverExternalPackages: ['kaspa'],
 
-    // 2. Configure Webpack to handle WASM
-    webpack: (config, { isServer }) => {
+    // ---------------------------------------------------------
+    // 🚨 FIX 2: WEBPACK WASM SUPPORT
+    // In case Webpack still tries to peek inside, we enable WASM.
+    // ---------------------------------------------------------
+    webpack: (config) => {
         config.experiments = {
             ...config.experiments,
             asyncWebAssembly: true,
             layers: true,
         };
 
-        // Fix for missing 'fs' in client-side bundles (just in case)
-        if (!isServer) {
-            config.resolve.fallback = { ...config.resolve.fallback, fs: false };
-        }
-
         return config;
     },
 };
 
 export default nextConfig;
-
