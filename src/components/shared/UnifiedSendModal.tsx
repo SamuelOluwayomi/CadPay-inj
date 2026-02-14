@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     XIcon, PaperPlaneTiltIcon, WalletIcon, PiggyBankIcon,
-    CaretRightIcon, WarningIcon, CheckCircleIcon, LockKeyIcon
+    CaretRightIcon, WarningIcon, CheckCircleIcon, LockKeyIcon, FingerprintIcon
 } from '@phosphor-icons/react';
-import { initKaspaWasm, signTransaction } from '@/lib/kaspa-wallet';
+import { initKaspaWasm, signTransaction, unlockAndSignWithBiometrics } from '@/lib/kaspa-wallet';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { supabase } from '@/lib/supabase';
 
@@ -29,19 +29,24 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
-    const { unlockWalletWithPassword } = useBiometricWallet();
+    const { unlockWalletWithPassword, unlockWallet, checkSupport } = useBiometricWallet();
 
-    // Get user email from Supabase session
+    // Get user email from Supabase session and check biometric support
     useEffect(() => {
-        async function getUserEmail() {
+        async function initialize() {
             const { data: { user } } = await supabase.auth.getUser();
             setUserEmail(user?.email || null);
+
+            // Check if biometrics are supported and wallet exists with biometric auth
+            const supportResult = await checkSupport();
+            setIsBiometricAvailable(supportResult.supported);
         }
         if (isOpen) {
-            getUserEmail();
+            initialize();
         }
-    }, [isOpen]);
+    }, [isOpen, checkSupport]);
 
     // Use KAS balance for validation
     const availableBalance = balance;
@@ -66,6 +71,66 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
 
         // Move to password step
         setStep('password');
+    };
+
+    const handleBiometricUnlockAndSign = async () => {
+        setError(null);
+        setStep('signing');
+        setIsSubmitting(true);
+
+        try {
+            const targetRecipient = mode === 'savings' ? selectedPot?.address : recipient;
+            const numAmount = parseFloat(amount);
+
+            if (!userEmail) {
+                throw new Error('User not authenticated');
+            }
+
+            // 1. Initialize WASM SDK
+            await initKaspaWasm();
+
+            // 2. Unlock with biometrics and sign transaction
+            const signedTxJson = await unlockAndSignWithBiometrics({
+                username: userEmail,
+                recipient: targetRecipient!,
+                amount: numAmount,
+                networkType: 'testnet-10'
+            });
+
+            // 3. Get auth token
+            const session = await (await fetch('/api/auth/session')).json();
+            if (!session?.access_token) {
+                throw new Error('Not authenticated');
+            }
+
+            // 4. Broadcast signed transaction via backend
+            const res = await fetch('/api/wallet/broadcast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ signedTransaction: signedTxJson })
+            });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Broadcast failed');
+            }
+
+            // Success! Call the original onSend callback for UI updates
+            await onSend(targetRecipient!, numAmount, mode === 'savings');
+
+            // Close modal
+            onClose();
+        } catch (err: any) {
+            console.error('Biometric unlock error:', err);
+            setError(err.message || 'Biometric authentication failed');
+            setStep('password');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleSignAndSend = async () => {
@@ -336,6 +401,29 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             Your password unlocks your wallet to sign this transaction locally. It never leaves your device.
                                         </p>
                                     </div>
+
+                                    {/* Biometric Unlock Option */}
+                                    {isBiometricAvailable && (
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-white/10"></div>
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="bg-zinc-950 px-2 text-zinc-600">Or</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isBiometricAvailable && (
+                                        <button
+                                            onClick={handleBiometricUnlockAndSign}
+                                            disabled={isSubmitting}
+                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-purple-500 to-blue-500 rounded-2xl font-bold hover:from-purple-600 hover:to-blue-600 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <FingerprintIcon size={20} weight="bold" />
+                                            Unlock with Biometrics
+                                        </button>
+                                    )}
 
                                     {error && (
                                         <motion.div
