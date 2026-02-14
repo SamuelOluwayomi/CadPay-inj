@@ -1,46 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Disable caching in development to prevent ERR_CACHE_OPERATION_NOT_SUPPORTED
+    // 1. Force Vercel to bundle the WASM file
     experimental: {
-        workerThreads: false,
-        cpus: 1
-    },
-    // Disable static page generation cache
-    generateBuildId: async () => {
-        return 'build-' + Date.now()
+        serverComponentsExternalPackages: ['@kaspa/core-lib', 'secp256k1'],
+        outputFileTracingIncludes: {
+            '/api/**/*': ['./node_modules/**/*.wasm', './node_modules/**/*.proto'],
+        },
     },
 
-    // Inject env vars to force Pure JS in @kaspa/core-lib
-    env: {
-        ECCLIB_JS: '1',
-        ECCSI_JS: '1',
-    },
-
-    // Webpack configuration to handle Kaspa WASM
+    // 2. Configure Webpack to handle WASM
     webpack: (config, { isServer }) => {
-        // Ignore require() calls in kaspa.js (WASM bindings)
-        config.module.rules.push({
-            test: /kaspa\.js$/,
-            parser: {
-                amd: false, // Disables AMD
-                commonjs: false, // Disables CommonJS (ignores 'require')
-            },
-        });
-
-        // 1. Force Webpack to handle WASM files
         config.experiments = {
             ...config.experiments,
             asyncWebAssembly: true,
             layers: true,
         };
 
-        // 2. Fix for "fs" module not found errors (common in crypto libs)
+        // Fix for missing 'fs' in client-side bundles (just in case)
         if (!isServer) {
-            config.resolve.fallback = {
-                ...config.resolve.fallback,
-                fs: false,
-                path: false,
-            };
+            config.resolve.fallback = { ...config.resolve.fallback, fs: false };
         }
 
         return config;

@@ -9,16 +9,9 @@ const kaspa = require('@kaspa/core-lib');
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Simple Transfer Started (Pure JS Mode)");
+    console.log("🚀 [API] Transfer Request Started (WASM Mode)");
 
-    // 0. Sanity Check: Is the library working?
-    try {
-        new kaspa.PrivateKey();
-        console.log("✅ Crypto Engine Loaded Successfully");
-    } catch (e) {
-        console.error("❌ Crypto Engine Failed to Load:", e);
-        return NextResponse.json({ error: "Crypto Engine Failed to Load. Please restart server." }, { status: 500 });
-    }
+    // Vercel WASM Fix: @kaspa/core-lib needs the .wasm file to be traced set in next.config.js
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -40,8 +33,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Parse Input
+        // 2. Parse Input (Secure)
         const { recipient, amount } = await request.json();
+        // Note: We use the authenticated user's ID from the session, not the body, for security.
+
         if (!recipient || !amount) {
             return NextResponse.json({ error: "Missing required fields: recipient or amount" }, { status: 400 });
         }
@@ -79,7 +74,7 @@ export async function POST(request: Request) {
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
             address: profile.wallet_address,
-            script: u.utxoEntry.scriptPublicKey.scriptPublicKey, // ✅ Essential for signing
+            script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
 
@@ -92,13 +87,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
         }
 
-        // 8. Build Transaction (Using Transaction Class from @kaspa/core-lib)
+        // 8. Build Transaction
+        // Note: The library will automatically load the WASM if configured correctly by Vercel
         const privateKey = new kaspa.PrivateKey(privateKeyString);
 
         const tx = new kaspa.Transaction()
             .from(utxos)
             .to(recipient, amountSompi)
-            .setVersion(0) // Essential for Testnet-10
+            .setVersion(0)
             .change(profile.wallet_address)
             .sign(privateKey);
 
@@ -122,6 +118,8 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error("🔥 [API ERROR]:", error.message);
+        // Extended logging for debugging serverless errors
+        console.error(JSON.stringify(error, Object.getOwnPropertyNames(error)));
         return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
     }
 }
