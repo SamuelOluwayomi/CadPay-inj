@@ -9,28 +9,37 @@ import { decrypt } from '@/utils/encryption';
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
-// ---------------------------------------------------------
-// 🚨 NETWORK RE-REGISTRATION PATCH
-// This fixes "Address has mismatched network type"
-// ---------------------------------------------------------
-if (kaspa.Networks.testnet) {
-    const testnet = kaspa.Networks.testnet;
-
-    // 1. Update the prefix
-    testnet.prefix = 'kaspatest';
-
-    // 2. FORCE UPDATE the internal maps by removing and re-adding
-    // This makes the library recognize 'kaspatest' strings as valid Testnet addresses.
-    kaspa.Networks.remove(testnet);
-    kaspa.Networks.add(testnet);
-
-    console.log("🔧 Network Re-Registration Complete: 'kaspatest' prefix is now indexed");
-}
-
 export const runtime = 'nodejs';
+
+// Runtime flag to ensure network patching happens only once
+let isNetworkPatched = false;
 
 export async function POST(request: Request) {
     console.log("🚀 [API] Transfer Request Started");
+
+    // ---------------------------------------------------------
+    // 🚨 NETWORK RE-REGISTRATION PATCH (Runtime Only)
+    // This fixes "Address has mismatched network type"
+    // ---------------------------------------------------------
+    if (!isNetworkPatched && kaspa.Networks.testnet) {
+        try {
+            const testnet = kaspa.Networks.testnet;
+            testnet.prefix = 'kaspatest';
+
+            // Re-register the network to update internal maps
+            kaspa.Networks.remove(testnet);
+            kaspa.Networks.add(testnet);
+
+            isNetworkPatched = true;
+            console.log("🔧 Network Re-Registration Complete: 'kaspatest' prefix is now indexed");
+        } catch (e) {
+            console.warn("⚠️ Network re-registration failed, proceeding with simple prefix update:", e);
+            // Fallback: just update the prefix
+            if (kaspa.Networks.testnet) {
+                kaspa.Networks.testnet.prefix = 'kaspatest';
+            }
+        }
+    }
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -91,7 +100,6 @@ export async function POST(request: Request) {
         console.log(`🔐 Sender: ${senderAddressString}`);
 
         // 6. Destination Address (Parse String)
-        // Now that we re-registered the network, this will succeed.
         const destinationAddressObj = new kaspa.Address(cleanRecipient, kaspa.Networks.testnet);
 
         // 7. Get UTXOs (Try Derived first, then DB fallback)
