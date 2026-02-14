@@ -44,7 +44,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('auth_method')
-                    .eq('email', user.email)
+                    .eq('auth_user_id', user.id)
                     .single();
 
                 // Show biometric button only if auth_method is 'biometric' AND device supports it
