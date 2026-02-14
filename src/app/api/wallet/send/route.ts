@@ -1,45 +1,26 @@
-// 1. FORCE PURE JS MODE
-process.env.ECCLIB_JS = '1';
-process.env.ECCSI_JS = '1';
-
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from '@/utils/encryption';
 
-// @ts-ignore
-const kaspa = require('@kaspa/core-lib');
-
-// ---------------------------------------------------------
-// 🚨 FINAL FIX: REGISTER CUSTOM NETWORK
-// We create a custom network rule that matches your addresses.
-// This tells the library: "If you see 'kaspatest:', it's valid."
-// ---------------------------------------------------------
-try {
-    // Only add if it doesn't exist to prevent "Network already exists" errors on reload
-    if (!kaspa.Networks.get('kaspa-hackathon')) {
-        kaspa.Networks.add({
-            name: 'kaspa-hackathon',
-            alias: 'kaspatest', // Uses this alias to match the string
-            prefix: 'kaspatest', // The prefix we want to support
-            // These hex values are standard placeholders to satisfy the constructor
-            pubkeyhash: 0x6f,
-            privatekey: 0xef,
-            scripthash: 0xc4,
-            xpubkey: 0x043587cf,
-            xprivkey: 0x04358394,
-        });
-        console.log("✅ Custom 'kaspatest' network registered");
-    }
-} catch (e) {
-    console.log("⚠️ Network registration note:", e);
-}
+// Import the native Kaspa WASM SDK
+const kaspa = require('kaspa');
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Transfer Request Started");
+    console.log("🚀 [API] Transfer Request Started (WASM SDK)");
 
     try {
+        // ---------------------------------------------------------
+        // 🚨 INITIALIZE WASM (Crucial Fix)
+        // This fixes "n.export_public_keys is not a function"
+        // We check if it's already running to avoid "already loaded" errors.
+        // ---------------------------------------------------------
+        if (!kaspa.PrivateKey) {
+            await kaspa.default();
+            console.log("✅ WASM SDK Initialized");
+        }
+
         // 1. Authenticate User (Securely, using Headers)
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) {
@@ -70,7 +51,6 @@ export async function POST(request: Request) {
         }
 
         const cleanRecipient = recipient.trim();
-        console.log(`🎯 Target: ${cleanRecipient}`);
 
         // 3. Fetch User's Encrypted Key
         const { data: profile } = await supabase
@@ -91,24 +71,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Sender Address
-        // We use "testnet" here because the private key was likely generated with the default testnet rules
+        // 5. Re-create the Private Key (Natively)
+        // The WASM SDK handles 'kaspatest' automatically. No prefix hacks needed.
         const privateKey = new kaspa.PrivateKey(privateKeyString);
-        const senderAddressObj = privateKey.toAddress("testnet");
+        const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
-        // Fix the string for the API call (Visual only)
-        const senderAddressString = senderAddressObj.toString().replace("bchtest:", "kaspatest:");
-        console.log(`🔐 Sender: ${senderAddressString}`);
+        console.log(`🔐 Sender: ${sourceAddress.toString()}`);
+        console.log(`🎯 Target: ${cleanRecipient}`);
 
-        // 6. Destination Address
-        // 🚨 FIX: We simply pass the address string.
-        // Because we registered the 'kaspatest' network above, the library should now
-        // auto-detect it as valid instead of throwing "Mismatched network".
-        const destinationAddressObj = new kaspa.Address(cleanRecipient);
+        // 6. Get UTXOs
+        const addressString = sourceAddress.toString();
+        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${addressString}/utxos`);
 
-        // 7. Get UTXOs
-        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
-
+        // Fallback to DB address
         if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
             console.log("⚠️ Derived address empty. Checking DB address...");
             utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
@@ -129,42 +104,53 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Insufficient funds (0 UTXOs)" }, { status: 400 });
         }
 
-        // 8. Map UTXOs
-        const utxos = utxoData.map((u: any) => ({
-            txId: u.outpoint.transactionId,
-            outputIndex: u.outpoint.index,
-            address: senderAddressObj, // Sign with the Sender Object
-            script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
-            satoshis: Number(u.utxoEntry.amount)
-        }));
+        // 7. Convert API UTXOs to WASM UtxoEntry format
+        const utxoEntries = utxoData.map((u: any) => {
+            return new kaspa.UtxoEntry(
+                new kaspa.Outpoint(u.outpoint.transactionId, u.outpoint.index),
+                new kaspa.UtxoEntryReference(
+                    BigInt(u.utxoEntry.amount),
+                    new kaspa.ScriptPublicKey(
+                        u.utxoEntry.scriptPublicKey.version,
+                        u.utxoEntry.scriptPublicKey.scriptPublicKey
+                    ),
+                    BigInt(u.utxoEntry.blockDaaScore),
+                    u.utxoEntry.isCoinbase
+                )
+            );
+        });
 
-        console.log(`⚙️ Building Transaction with ${utxos.length} UTXOs...`);
+        console.log(`⚙️ Building Transaction with ${utxoEntries.length} UTXOs...`);
 
-        // 9. Check Balance
-        const amountSompi = Math.floor(amount * 100000000);
-        const fee = 10000;
-        const totalInput = utxos.reduce((acc: number, curr: any) => acc + curr.satoshis, 0);
+        // 8. Build Transaction (The WASM Way)
+        const amountSompi = BigInt(Math.floor(amount * 100000000));
+        const networkId = new kaspa.NetworkId(kaspa.NetworkType.Testnet);
 
-        if (totalInput < amountSompi + fee) {
-            return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
-        }
+        const settings = new kaspa.GeneratorSettings(
+            utxoEntries,                                    // Inputs
+            { [cleanRecipient]: amountSompi },             // Outputs
+            sourceAddress,                                  // Change Address
+            kaspa.PriorityFee.include(0n)                  // Fee (Standard)
+        );
 
-        // 10. Build & Sign
-        const tx = new kaspa.Transaction()
-            .from(utxos)
-            .to(destinationAddressObj, amountSompi) // Pass the valid Destination Object
-            .setVersion(0)
-            .change(senderAddressObj)
-            .sign(privateKey);
+        const generator = new kaspa.Generator(settings);
 
-        // 11. Broadcast
+        // 9. Sign
+        const pendingTransaction = generator.generate_transaction();
+        await pendingTransaction.sign([privateKey]);
+        const tx = pendingTransaction.transaction;
+
+        // 10. Broadcast
+        const txJson = tx.to_json();
         const broadcastRes = await fetch('https://api-tn10.kaspa.org/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ transactionHex: tx.serialize() })
+            body: JSON.stringify({ transaction: txJson })
         });
 
-        if (!broadcastRes.ok) throw new Error(await broadcastRes.text());
+        if (!broadcastRes.ok) {
+            throw new Error(`Broadcast failed: ${await broadcastRes.text()}`);
+        }
 
         const result = await broadcastRes.json();
         console.log(`✅ Success! TxID: ${result.transactionId}`);
@@ -176,8 +162,8 @@ export async function POST(request: Request) {
         });
 
     } catch (error: any) {
-        console.error("🔥 API Error:", error.message);
+        console.error("🔥 API Error:", error.message || error);
         if (error.stack) console.error(error.stack);
-        return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
     }
 }
