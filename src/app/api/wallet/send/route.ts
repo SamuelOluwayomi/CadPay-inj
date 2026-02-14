@@ -1,3 +1,7 @@
+// 1. FORCE PURE JS MODE
+process.env.ECCLIB_JS = '1';
+process.env.ECCSI_JS = '1';
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from '@/utils/encryption';
@@ -9,9 +13,7 @@ const kaspa = require('@kaspa/core-lib');
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Transfer Request Started (WASM Mode)");
-
-    // Vercel WASM Fix: @kaspa/core-lib needs the .wasm file to be traced set in next.config.js
+    console.log("🚀 [API] Transfer Request Started");
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -60,8 +62,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Fetch UTXOs
-        const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
+        // 5. 🔍 CRITICAL CHECK: Does Key Match Address?
+        const privateKey = new kaspa.PrivateKey(privateKeyString);
+        const derivedAddress = privateKey.toAddress(kaspa.Networks.testnet).toString();
+
+        console.log(`🔐 Key derives to: ${derivedAddress}`);
+        console.log(`🏦 DB Address is:  ${profile.wallet_address}`);
+
+        if (derivedAddress !== profile.wallet_address) {
+            console.error("❌ CRITICAL: Database mismatch! Private Key does not belong to this Address.");
+            return NextResponse.json({
+                error: `Wallet Corruption detected. Your Private Key derives to ${derivedAddress} but your DB says ${profile.wallet_address}. You cannot spend these funds.`
+            }, { status: 400 });
+        }
+
+        // 6. Fetch UTXOs (Using the verified derived address)
+        const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${derivedAddress}/utxos`);
         if (!utxoRes.ok) throw new Error("Failed to fetch UTXOs from REST API");
         const utxoData = await utxoRes.json();
 
@@ -69,16 +85,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Insufficient funds (0 UTXOs)" }, { status: 400 });
         }
 
-        // 6. MAP UTXOs (Correctly for @kaspa/core-lib)
+        // 7. Map UTXOs
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: profile.wallet_address,
+            address: derivedAddress, // Use the verified address
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
 
-        // 7. Check Balance
+        // 8. Check Balance
         const amountSompi = Math.floor(amount * 100000000);
         const fee = 10000;
         const totalInput = utxos.reduce((acc: number, curr: any) => acc + curr.satoshis, 0);
@@ -87,18 +103,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
         }
 
-        // 8. Build Transaction
-        // Note: The library will automatically load the WASM if configured correctly by Vercel
-        const privateKey = new kaspa.PrivateKey(privateKeyString);
-
+        // 9. Build Transaction
         const tx = new kaspa.Transaction()
             .from(utxos)
             .to(recipient, amountSompi)
             .setVersion(0)
-            .change(profile.wallet_address)
+            .change(derivedAddress)
             .sign(privateKey);
 
-        // 9. Broadcast
+        // 10. Broadcast
         const broadcastRes = await fetch('https://api-tn10.kaspa.org/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -118,7 +131,7 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error("🔥 [API ERROR]:", error.message);
-        // Extended logging for debugging serverless errors
+        // Vercel logging helps debugging
         console.error(JSON.stringify(error, Object.getOwnPropertyNames(error)));
         return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
     }
