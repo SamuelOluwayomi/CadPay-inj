@@ -53,6 +53,13 @@ export default function Dashboard() {
     const usdcBalance = 0;
 
     // PREVENT FLASH: If loading profile/auth, show nothing or loader
+    // DEBUG LOGGING
+    useEffect(() => {
+        if (loading || profileLoading) {
+            console.log('⏳ Dashboard Loading State:', { kasWareLoading: loading, profileLoading });
+        }
+    }, [loading, profileLoading]);
+
     if (loading || profileLoading) {
         return <div className="min-h-screen bg-[#1c1209] flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />

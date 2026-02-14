@@ -20,6 +20,14 @@ export function useUserProfile() {
     const [error, setError] = useState<string | null>(null);
     const [session, setSession] = useState<Session | null>(null);
 
+    // SAFETY: Force loading to false after 5s to prevent infinite spinner
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Initial Session Check
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
