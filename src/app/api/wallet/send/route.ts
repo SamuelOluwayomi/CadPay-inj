@@ -8,10 +8,7 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
     // ---------------------------------------------------------
     // 🚨 MAGIC SWITCH: Force Pure JavaScript Mode
-    // This stops the "ENOENT: no such file" / WASM errors.
     // ---------------------------------------------------------
-    process.env.ECCLIB_JS = '1';
-    process.env.ECCSI_JS = '1';
 
     console.log("🚀 [API] Simple Transfer Started (Pure JS Mode)");
     console.log("🔧 Env Check - ECCLIB_JS:", process.env.ECCLIB_JS);
