@@ -2,20 +2,16 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from '@/utils/encryption';
 
-// Import the native Kaspa WASM SDK
-const kaspa = require('kaspa');
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Transfer Request Started (WASM SDK)");
+    console.log("🚀 [API] Transfer Request Started (Lazy Loaded)");
 
     try {
-        // ---------------------------------------------------------
-        // 🚨 INITIALIZE WASM (Crucial Fix)
-        // This fixes "n.export_public_keys is not a function"
-        // We check if it's already running to avoid "already loaded" errors.
-        // ---------------------------------------------------------
+        const kaspa = require('kaspa');
+
+        // Initialize WASM
         if (!kaspa.PrivateKey) {
             await kaspa.default();
             console.log("✅ WASM SDK Initialized");
@@ -71,8 +67,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Re-create the Private Key (Natively)
-        // The WASM SDK handles 'kaspatest' automatically. No prefix hacks needed.
+        // 5. Re-create the Private Key
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
@@ -122,10 +117,8 @@ export async function POST(request: Request) {
 
         console.log(`⚙️ Building Transaction with ${utxoEntries.length} UTXOs...`);
 
-        // 8. Build Transaction (The WASM Way)
+        // 8. Build Transaction
         const amountSompi = BigInt(Math.floor(amount * 100000000));
-        const networkId = new kaspa.NetworkId(kaspa.NetworkType.Testnet);
-
         const settings = new kaspa.GeneratorSettings(
             utxoEntries,                                    // Inputs
             { [cleanRecipient]: amountSompi },             // Outputs
