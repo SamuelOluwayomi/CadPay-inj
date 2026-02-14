@@ -10,6 +10,12 @@ const nextConfig = {
         return 'build-' + Date.now()
     },
 
+    // Inject env vars to force Pure JS in @kaspa/core-lib
+    env: {
+        ECCLIB_JS: '1',
+        ECCSI_JS: '1',
+    },
+
     // Webpack configuration to handle Kaspa WASM
     webpack: (config, { isServer }) => {
         // Ignore require() calls in kaspa.js (WASM bindings)
