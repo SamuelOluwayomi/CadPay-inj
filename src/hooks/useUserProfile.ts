@@ -93,85 +93,45 @@ export function useUserProfile() {
         }
     }, [address, session]);
 
-    // Create Custodial Wallet if missing (Server-Side Generation only)
-    const checkOrCreateWallet = useCallback(async () => {
-        if (!session?.access_token || !session?.user?.id) return;
-
-        // 1. Double check DB state before acting
-        const { data: latestProfile } = await supabase
-            .from('profiles')
-            .select('wallet_address, encrypted_private_key')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-        if (latestProfile?.wallet_address && latestProfile?.encrypted_private_key) {
-            console.log('✅ Synced with DB Wallet:', latestProfile.wallet_address);
-            // Ensure local state matches DB
-            if (profile?.authority !== latestProfile.wallet_address) {
-                fetchProfile();
-            }
-            return;
-        }
-
-        try {
-            console.log('⚠️ No Custodial Wallet found. Requesting creation...');
-            const res = await fetch('/api/wallet/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                }
-            });
-            const data = await res.json();
-            if (data.success) {
-                console.log('🎉 Custodial wallet created:', data.address);
-                fetchProfile(); // Refresh profile to get new wallet
-            } else {
-                console.error('Failed to create wallet:', data.error);
-                setError(data.error);
-            }
-        } catch (e: any) {
-            console.error('Wallet creation error:', e);
-            setError(e.message);
-        }
-    }, [session, profile, fetchProfile]);
-
     // Auto-create wallet when profile loads
     useEffect(() => {
-        if (session && profile && !profile.encrypted_private_key) {
-            checkOrCreateWallet();
-        }
-    }, [session, profile, checkOrCreateWallet]);
+        const initWallet = async () => {
+            if (session?.user?.id && profile && !profile.encrypted_private_key) {
+                // Avoid depending on 'checkOrCreateWallet' function identity
+                // Logic moved inside to break dependency chain
+                const { data: latestProfile } = await supabase
+                    .from('profiles')
+                    .select('wallet_address, encrypted_private_key')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
 
-    // Initial fetch and Real-time subscription
-    useEffect(() => {
-        fetchProfile();
-
-        const channelId = session?.user?.id || address;
-        if (!channelId) return;
-
-        const channel = supabase
-            .channel(`profile_changes_${channelId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'profiles',
-                    // Filter depends on what we have. Ideally ID if session, else wallet_address.
-                    filter: session?.user?.id ? `id=eq.${session.user.id}` : `wallet_address=eq.${address}`
-                },
-                (payload) => {
-                    console.log('Real-time profile update received!', payload);
-                    fetchProfile();
+                if (latestProfile?.wallet_address && latestProfile?.encrypted_private_key) {
+                    if (profile.authority !== latestProfile.wallet_address) {
+                        fetchProfile();
+                    }
+                    return;
                 }
-            )
-            .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
+                try {
+                    const res = await fetch('/api/wallet/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        fetchProfile();
+                    }
+                } catch (e) {
+                    console.error('Wallet creation error:', e);
+                }
+            }
         };
-    }, [address, session, fetchProfile]);
+
+        initWallet();
+    }, [session, profile?.encrypted_private_key, fetchProfile]); // Only depend on the specific field we check
 
     const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
         setLoading(true);
