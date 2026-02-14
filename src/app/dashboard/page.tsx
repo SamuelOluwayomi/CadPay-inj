@@ -710,7 +710,7 @@ function OverviewSection({
     userName: string, balance: string, address: string,
     loading: boolean, copyToClipboard: () => void,
     onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
-    fetchTransactions: () => void,
+    fetchTransactions: (addr?: string) => Promise<void> | void,
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
     pots: any[]
