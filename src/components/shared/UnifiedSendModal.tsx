@@ -9,6 +9,8 @@ import {
 import { initKaspaWasm, signTransaction } from '@/lib/kaspa-wallet';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { supabase } from '@/lib/supabase';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useKasWare } from '@/hooks/useKasWare';
 
 
 interface UnifiedSendModalProps {
@@ -32,6 +34,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
     const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet } = useBiometricWallet();
+    const { profile } = useUserProfile();
+    const { address } = useKasWare();
 
     // Get user email from Supabase session and check biometric support
     useEffect(() => {
@@ -100,8 +104,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             // 1. Initialize WASM SDK
             await initKaspaWasm();
 
-            // 2. Unlock with biometrics to get seed phrase
-            const unlockResult = await unlockWallet(userEmail);
+            // 2. Unlock with biometrics to get seed phrase (use profile email or wallet address)
+            const unlockResult = await unlockWallet(profile?.email || address || userEmail);
 
             if (!unlockResult.success || !unlockResult.mnemonic) {
                 throw new Error(unlockResult.error || 'Failed to unlock wallet with biometrics');
