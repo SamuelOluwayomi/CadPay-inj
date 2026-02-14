@@ -18,10 +18,15 @@ export async function initKaspaWasm(): Promise<void> {
 
     try {
         // Dynamic import of the WASM SDK
-        kaspaWasm = await import('@kluster/kaspa-wasm-web');
+        const wasmModule = await import('@kluster/kaspa-wasm-web');
 
-        // Initialize WASM module
-        await kaspaWasm.init();
+        // The default export is the init function
+        if (typeof wasmModule.default === 'function') {
+            await wasmModule.default();
+        }
+
+        // Store the module for later use
+        kaspaWasm = wasmModule;
 
         isInitialized = true;
         console.log('✅ Kaspa WASM SDK initialized');
@@ -190,13 +195,42 @@ export async function unlockAndSignTransaction(params: {
     amount: number;
     networkType?: 'mainnet' | 'testnet-10';
 }): Promise<string> {
-    const { createWalletWithPassword, unlockWalletWithPassword } = useBiometricWallet();
+    const { unlockWalletWithPassword } = useBiometricWallet();
 
     // Unlock wallet with password
     const result = await unlockWalletWithPassword(params.username, params.password);
 
     if (!result.success || !result.mnemonic) {
         throw new Error(result.error || 'Failed to unlock wallet');
+    }
+
+    // Sign transaction with unlocked seed phrase
+    return signTransaction({
+        seedPhrase: result.mnemonic,
+        recipient: params.recipient,
+        amount: params.amount,
+        networkType: params.networkType,
+    });
+}
+
+/**
+ * Unlock wallet and sign transaction with biometrics
+ * @param params - Transaction and authentication parameters
+ * @returns Signed transaction JSON string
+ */
+export async function unlockAndSignWithBiometrics(params: {
+    username: string;
+    recipient: string;
+    amount: number;
+    networkType?: 'mainnet' | 'testnet-10';
+}): Promise<string> {
+    const { unlockWallet } = useBiometricWallet();
+
+    // Unlock wallet with biometrics
+    const result = await unlockWallet(params.username);
+
+    if (!result.success || !result.mnemonic) {
+        throw new Error(result.error || 'Failed to unlock wallet with biometrics');
     }
 
     // Sign transaction with unlocked seed phrase

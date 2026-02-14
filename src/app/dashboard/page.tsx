@@ -1726,6 +1726,7 @@ function SavingsSection({ session }: { session: any }) {
                 throw new Error("Please use the 'Send Funds' modal to fund your savings pot securely with client-side signing.");
             }
         } catch (e: any) {
+            console.error("Fund pot error:", e);
             showToast(e.message || "Transfer failed", "error");
         } finally {
             setIsFunding(false);
