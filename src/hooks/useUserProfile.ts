@@ -56,7 +56,7 @@ export function useUserProfile() {
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
                 data = result.data;
                 error = result.error;
             } else if (address) {

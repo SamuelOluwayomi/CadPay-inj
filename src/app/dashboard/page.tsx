@@ -308,17 +308,38 @@ export default function Dashboard() {
     const handleOnboardingComplete = async (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => {
         setIsOnboardingSubmitting(true);
         try {
+            // 1. Ensure Wallet Exists (Custodial Only)
+            // If user is not connected via KasWare, we must generate a backend wallet first.
+            if (!address) {
+                console.log("🔐 Generating Custodial Wallet...");
+                const res = await fetch('/api/wallet/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session?.access_token}`
+                    }
+                });
+                const walletData = await res.json();
+
+                if (!res.ok || !walletData.success) {
+                    throw new Error(walletData.error || "Failed to generate wallet");
+                }
+                console.log("✅ Wallet generated:", walletData.address);
+            }
+
+            // 2. Save Profile Details (Upsert will merge with wallet data)
             const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email);
+
             setShowOnboarding(false);
             if (result) {
                 showToast("Profile created successfully!", "success");
             }
 
-            // Navigate to dashboard root
-            router.push('/dashboard');
-        } catch (e) {
+            // Force reload to ensure all states (wallet, profile, balance) are synced active
+            window.location.reload();
+        } catch (e: any) {
             console.error("Onboarding failed", e);
-            showToast("Failed to create profile. Try again.", "error");
+            showToast(e.message || "Failed to create profile. Try again.", "error");
         } finally {
             setIsOnboardingSubmitting(false);
         }
