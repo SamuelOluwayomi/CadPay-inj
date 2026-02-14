@@ -85,6 +85,7 @@ export async function POST(request: Request) {
         const sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
         console.log(`🚀 Sending ${amount} KAS from ${sourceAddress.toString()} to ${recipient}`);
+        console.log(`🔑 Private Key Address Check: ${privateKey.toAddress("testnet-10").toString()}`); // Verify match
 
         // 7. Fetch UTXOs via REST
         const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${sourceAddress.toString()}/utxos`);
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
 
         // 8. Map UTXOs for Generator
         // FIX: scriptPublicKey must be the hex string, not the object.
-        const entries = utxoData.map((u: any) => ({
+        const utxoEntries = utxoData.map((u: any) => ({
             address: sourceAddress,
             outpoint: {
                 transactionId: u.outpoint.transactionId,
@@ -112,6 +113,11 @@ export async function POST(request: Request) {
             }
         }));
 
+        console.log(`📦 UTXO Entries Count: ${utxoEntries.length}`);
+        if (utxoEntries.length > 0) {
+            console.log(`🔍 First UTXO Script: ${utxoEntries[0].utxoEntry.scriptPublicKey}`);
+        }
+
         // 9. Generate & Sign Transaction
         const amountSompi = BigInt(Math.floor(Number(amount) * 100_000_000));
 
@@ -121,7 +127,7 @@ export async function POST(request: Request) {
                 amount: amountSompi
             }],
             changeAddress: sourceAddress.toString(),
-            entries: entries,
+            utxoEntries: utxoEntries, // Use correct property name per JSDoc
             networkId: "testnet-10",
             feeRate: 1.0,
             priorityFee: 0n
@@ -133,7 +139,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to generate transaction (insufficient funds?)' }, { status: 400 });
         }
 
-        await pendingTx.sign([privateKey.toString()]);
+        // Pass privateKey object directly, not string, to be safest.
+        await pendingTx.sign([privateKey]);
         const txId = await pendingTx.submit(rpc);
 
         console.log(`✅ Transaction Sent: ${txId}`);
