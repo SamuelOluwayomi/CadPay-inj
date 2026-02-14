@@ -9,9 +9,22 @@ import { decrypt } from '@/utils/encryption';
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
-// PATCH: Ensure testnet prefix
+// ---------------------------------------------------------
+// 🚨 NETWORK RE-REGISTRATION PATCH
+// This fixes "Address has mismatched network type"
+// ---------------------------------------------------------
 if (kaspa.Networks.testnet) {
-    kaspa.Networks.testnet.prefix = 'kaspatest';
+    const testnet = kaspa.Networks.testnet;
+
+    // 1. Update the prefix
+    testnet.prefix = 'kaspatest';
+
+    // 2. FORCE UPDATE the internal maps by removing and re-adding
+    // This makes the library recognize 'kaspatest' strings as valid Testnet addresses.
+    kaspa.Networks.remove(testnet);
+    kaspa.Networks.add(testnet);
+
+    console.log("🔧 Network Re-Registration Complete: 'kaspatest' prefix is now indexed");
 }
 
 export const runtime = 'nodejs';
@@ -50,7 +63,7 @@ export async function POST(request: Request) {
         }
 
         const cleanRecipient = recipient.trim();
-        console.log(`🎯 Sending to: ${cleanRecipient}`);
+        console.log(`🎯 Target: ${cleanRecipient}`);
 
         // 3. Fetch User's Encrypted Key
         const { data: profile } = await supabase
@@ -71,21 +84,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Derive Sender Address Object
+        // 5. Sender Address (From Key)
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const senderAddressObj = privateKey.toAddress(kaspa.Networks.testnet);
         const senderAddressString = senderAddressObj.toString();
         console.log(`🔐 Sender: ${senderAddressString}`);
 
-        // 6. Create DESTINATION Address Object (The Fix for "Non-base58" error)
-        // We explicitly tell the library: "Parse this string using Testnet rules"
-        // This stops it from falling back to Base58 (Bitcoin) mode.
+        // 6. Destination Address (Parse String)
+        // Now that we re-registered the network, this will succeed.
         const destinationAddressObj = new kaspa.Address(cleanRecipient, kaspa.Networks.testnet);
 
         // 7. Get UTXOs (Try Derived first, then DB fallback)
         let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
 
-        // Fallback if empty
         if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
             console.log("⚠️ Derived address empty. Checking DB address...");
             utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
@@ -110,7 +121,7 @@ export async function POST(request: Request) {
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: senderAddressObj, // Pass SENDER Object
+            address: senderAddressObj,
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
@@ -126,12 +137,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Insufficient funds. Have: ${totalInput / 1e8} KAS, Need: ${(amountSompi + fee) / 1e8} KAS` }, { status: 400 });
         }
 
-        // 10. Build & Sign Transaction
+        // 10. Build & Sign
         const tx = new kaspa.Transaction()
             .from(utxos)
-            .to(destinationAddressObj, amountSompi) // <--- Pass DESTINATION Object
+            .to(destinationAddressObj, amountSompi)
             .setVersion(0)
-            .change(senderAddressObj) // <--- Pass SENDER Object
+            .change(senderAddressObj)
             .sign(privateKey);
 
         // 11. Broadcast
