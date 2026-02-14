@@ -115,12 +115,12 @@ export default function CreateAccount() {
                     return;
                 }
 
-                // 2. Store credentials in user_credentials (for compatibility)
+                // 2. Store credentials in profiles (for compatibility)
                 const { hashPassword } = await import('@/utils/passwordHash');
                 const passwordHash = useBiometrics ? null : await hashPassword(password);
 
                 const { error: credError } = await supabase
-                    .from('user_credentials')
+                    .from('profiles')
                     .insert([
                         {
                             email: cleanEmail,

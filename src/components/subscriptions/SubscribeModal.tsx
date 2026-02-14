@@ -110,7 +110,7 @@ export default function SubscribeModal({
 
                 // Verify password against stored hash
                 const { data: credData } = await supabase
-                    .from('user_credentials')
+                    .from('profiles')
                     .select('password_hash')
                     .eq('wallet_address', address)
                     .single();

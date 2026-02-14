@@ -26,7 +26,7 @@ Stores user profile information, linked to either a Supabase Auth User ID (for c
 
 ---
 
-### 2. `user_credentials`
+### 2. `profiles`
 Stores authentication metadata for non-custodial/biometric login flows. This allows users to "log in" using just their email and password/biometrics, which then unlocks their local wallet.
 
 | Column Name | Type | Description |
@@ -105,6 +105,6 @@ Tracks requests for faucet funds.
 
 ## Validations & Indexes
 
-- `user_credentials`: Indexed on `email` and `wallet_address`.
+- `profiles`: Indexed on `email` and `wallet_address`.
 - `savings_pots`: Indexed on `user_address`.
 - `savings_transactions`: Indexed on `pot_id`.

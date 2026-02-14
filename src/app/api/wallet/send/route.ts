@@ -45,7 +45,6 @@ export async function POST(request: Request) {
         }
 
         // 2. Fetch User's Encrypted Key
-        // Strategy: Profiles (Primary Source of Truth) -> user_credentials (Legacy/Fallback)
         let encryptedKey: string | null = null;
         let dbWalletAddress: string | null = null;
 

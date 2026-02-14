@@ -97,7 +97,7 @@ src/
 
 **[View Full Database Schema](DATABASE_SCHEMA.md)**
 - `profiles`
-- `user_credentials`
+- `profiles`
 - `savings_pots`
 - `savings_transactions`
 - `receipts`

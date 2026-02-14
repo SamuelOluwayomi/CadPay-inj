@@ -24,7 +24,7 @@ export function useAuth() {
         try {
             // 1. Fetch credentials from Supabase
             const { data, error: fetchError } = await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .select('wallet_address, password_hash, auth_method')
                 .eq('email', email)
                 .single();
@@ -54,7 +54,7 @@ export function useAuth() {
 
             // 4. Update last login
             await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .update({ last_login: new Date().toISOString() })
                 .eq('email', email);
 
@@ -101,7 +101,7 @@ export function useAuth() {
         try {
             // 1. Fetch credentials from Supabase
             const { data, error: fetchError } = await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .select('wallet_address, auth_method')
                 .eq('email', email)
                 .single();
@@ -126,7 +126,7 @@ export function useAuth() {
 
             // 4. Update last login
             await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .update({ last_login: new Date().toISOString() })
                 .eq('email', email);
 
@@ -173,7 +173,7 @@ export function useAuth() {
     const checkEmailExists = async (email: string): Promise<{ exists: boolean; authMethod?: 'password' | 'biometric' }> => {
         try {
             const { data, error } = await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .select('auth_method')
                 .eq('email', email)
                 .single();
@@ -194,7 +194,7 @@ export function useAuth() {
     const getWalletAddress = async (email: string): Promise<string | null> => {
         try {
             const { data, error } = await supabase
-                .from('user_credentials')
+                .from('profiles')
                 .select('wallet_address')
                 .eq('email', email)
                 .single();
