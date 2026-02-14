@@ -36,6 +36,18 @@ export function useBiometricWallet() {
     };
 
     /**
+     * Check if a biometric wallet exists for the given username
+     */
+    const hasBiometricWallet = async (username: string): Promise<boolean> => {
+        try {
+            const exists = await walletExists(username);
+            return exists;
+        } catch {
+            return false;
+        }
+    };
+
+    /**
      * Create a new wallet with biometric protection
      * @param username - User identifier
      * @param seedPhrase - Kaspa seed phrase to protect
@@ -220,6 +232,7 @@ export function useBiometricWallet() {
         isLoading,
         error,
         checkSupport,
+        hasBiometricWallet,
         createWallet,
         createWalletWithPassword,
         unlockWallet,

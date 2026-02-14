@@ -31,7 +31,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
-    const { unlockWalletWithPassword, unlockWallet, checkSupport } = useBiometricWallet();
+    const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet } = useBiometricWallet();
 
     // Get user email from Supabase session and check biometric support
     useEffect(() => {
@@ -39,9 +39,20 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             const { data: { user } } = await supabase.auth.getUser();
             setUserEmail(user?.email || null);
 
-            // Check if biometrics are supported and wallet exists with biometric auth
-            const supportResult = await checkSupport();
-            setIsBiometricAvailable(supportResult.supported);
+            // Check if this user has biometric auth enabled in database
+            if (user?.email) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('auth_method')
+                    .eq('email', user.email)
+                    .single();
+
+                // Show biometric button only if auth_method is 'biometric' AND device supports it
+                const supportResult = await checkSupport();
+                setIsBiometricAvailable(
+                    supportResult.supported && profile?.auth_method === 'biometric'
+                );
+            }
         }
         if (isOpen) {
             initialize();
