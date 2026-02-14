@@ -158,32 +158,17 @@ export const useSavings = () => {
 
             const data = await res.json();
 
-            if (!data.success || !data.address) {
+            if (!data.success || !data.pot) {
                 throw new Error("Invalid response from savings API");
             }
 
-            const newPot = {
-                user_address: effectiveAddress,
-                name,
-                address: data.address, // Valid Testnet Address
-                balance: 0,
-                duration_months: durationMonths,
-                unlock_time: Math.floor(Date.now() / 1000) + (durationMonths * 30 * 24 * 60 * 60),
-                status: 'active'
-            };
-
-            const { data: insertedPot, error } = await supabase
-                .from('savings_pots')
-                .insert([newPot])
-                .select()
-                .single();
-
-            if (error) throw error;
+            const insertedPot = data.pot;
 
             setPots(prev => [...prev, insertedPot as SavingsPot]);
             return insertedPot;
         } catch (e) {
             console.error(e);
+            return null;
         }
     }, [effectiveAddress]);
 
