@@ -119,41 +119,6 @@ export default function CreateAccount() {
                 const { hashPassword } = await import('@/utils/passwordHash');
                 const passwordHash = useBiometrics ? null : await hashPassword(password);
 
-                // LOGGING ADDRESS (No Private Key)
-                console.log('--------------------------------------------------');
-                console.log('🎉 BRAND NEW ACCOUNT CREATED!');
-                console.log('👤 Email:', cleanEmail);
-                console.log('💰 Wallet Address:', kaspaWallet.address);
-                console.log('--------------------------------------------------');
-
-                // 2. CUSTODIAL STORAGE: Send Private Key to API for secure encryption & storage
-                // This updates 'profiles' table immediately.
-                let encryptedPrivateKeyString = '';
-                try {
-                    const storeRes = await fetch('/api/wallet/store', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authData.session?.access_token}`
-                        },
-                        body: JSON.stringify({
-                            privateKey: kaspaWallet.privateKey,
-                            address: kaspaWallet.address,
-                            email: cleanEmail
-                        })
-                    });
-                    const storeData = await storeRes.json();
-                    if (storeData.success && storeData.encryptedKey) {
-                        encryptedPrivateKeyString = storeData.encryptedKey;
-                    } else {
-                        console.error('Failed to securely store wallet:', storeData.error);
-                    }
-                } catch (storeError) {
-                    console.error('API Call Failed:', storeError);
-                }
-
-                // 3. Store credentials in user_credentials (Legacy/Backup)
-                // We use the encrypted string returned from the API, or empty if failed
                 const { error: credError } = await supabase
                     .from('user_credentials')
                     .insert([
@@ -161,13 +126,9 @@ export default function CreateAccount() {
                             email: cleanEmail,
                             wallet_address: kaspaWallet.address,
                             auth_method: useBiometrics ? 'biometric' : 'password',
-                            password_hash: passwordHash,
-                            encrypted_private_key: encryptedPrivateKeyString
+                            password_hash: passwordHash
                         }
                     ]);
-
-                // Sync to profiles locally just in case (optional, API did it)
-                // if (authData.user) { ... } // API handled it.
 
                 if (credError) {
                     console.error('Failed to store credentials:', credError);
