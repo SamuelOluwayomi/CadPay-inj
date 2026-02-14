@@ -9,10 +9,7 @@ import { decrypt } from '@/utils/encryption';
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
-// ---------------------------------------------------------
-// 🚨 NETWORK PATCH: Force 'kaspatest' prefix
-// This fixes the "bchtest" vs "kaspatest" mismatch error.
-// ---------------------------------------------------------
+// PATCH: Ensure testnet prefix
 if (kaspa.Networks.testnet) {
     kaspa.Networks.testnet.prefix = 'kaspatest';
 }
@@ -21,7 +18,7 @@ if (kaspa.Networks.testnet) {
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Transfer Request Started (Network Patched)");
+    console.log("🚀 [API] Transfer Request Started");
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -45,6 +42,8 @@ export async function POST(request: Request) {
 
         // 2. Parse Input (Secure)
         const { recipient, amount } = await request.json();
+        // Note: We use the authenticated user's ID from the session, not the body, for security.
+
         if (!recipient || !amount) {
             return NextResponse.json({ error: "Missing required fields: recipient or amount" }, { status: 400 });
         }
@@ -68,34 +67,46 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Derive Address from Key (The "Truth" according to this library)
+        // 5. Derive Address Object (DO NOT convert to String)
         const privateKey = new kaspa.PrivateKey(privateKeyString);
-        const derivedAddress = privateKey.toAddress(kaspa.Networks.testnet).toString();
+        // This object is what we pass to the library functions to bypass string parsing
+        const addressObj = privateKey.toAddress(kaspa.Networks.testnet);
 
-        console.log(`🔐 Library expects address: ${derivedAddress}`);
-        console.log(`🏦 Database has address:   ${profile.wallet_address}`);
+        // We use the string only for fetching from API (which expects strings)
+        const addressString = addressObj.toString();
+        const dbAddressString = profile.wallet_address;
 
-        // 6. Fetch UTXOs (We can fetch using EITHER address, the API is smart enough)
-        // Using the DB address to fetch UTXOs as the explorer/API likely indexed it under that.
-        const utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
-        if (!utxoRes.ok) throw new Error("Failed to fetch UTXOs from REST API");
-        const utxoData = await utxoRes.json();
+        console.log(`🔐 Derived Address String: ${addressString}`);
+        console.log(`🏦 DB Address String:      ${dbAddressString}`);
 
-        if (utxoData.length === 0) {
+        // 6. Get UTXOs (Fetch using the STRING)
+        // We try fetching with the derived string first. If empty, try DB string as fallback.
+        // This handles cases where the indexer might be using one format and the library another.
+        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${addressString}/utxos`);
+        let utxoData = await utxoRes.json();
+
+        if (!utxoData || utxoData.length === 0) {
+            console.log("⚠️ Derived address empty. Trying DB address fallback...");
+            utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${dbAddressString}/utxos`);
+            utxoData = await utxoRes.json();
+        }
+
+        if (!utxoData || utxoData.length === 0) {
             return NextResponse.json({ error: "Insufficient funds (0 UTXOs)" }, { status: 400 });
         }
 
         // 7. Map UTXOs
-        // 🚨 THE FIX IS HERE: We pass 'derivedAddress' to the library.
-        // This tricks the library into thinking the address matches the key perfectly.
-        // Since the payloads are actually the same, the generated signature will be valid on-chain.
+        // 🚨 FIX: Pass 'addressObj' (Object), NOT string.
+        // This bypasses the "Invalid Checksum" parser crash when the string is re-parsed.
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: derivedAddress, // <--- USE DERIVED ADDRESS, NOT DB ADDRESS
+            address: addressObj, // <--- PASSING THE OBJECT DIRECTLY
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
+
+        console.log("⚙️ Building Transaction...");
 
         // 8. Check Balance
         const amountSompi = Math.floor(amount * 100000000);
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
             .from(utxos)
             .to(recipient, amountSompi)
             .setVersion(0)
-            .change(derivedAddress) // Change goes back to the "working" address format
+            .change(addressObj) // <--- PASS OBJECT HERE TOO
             .sign(privateKey);
 
         // 10. Broadcast
@@ -135,7 +146,7 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error("🔥 [API ERROR]:", error.message);
         // Extended logging for debugging serverless errors
-        console.error(JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        if (error.stack) console.error(error.stack);
         return NextResponse.json({ error: error.message || "Transaction failed" }, { status: 500 });
     }
 }
