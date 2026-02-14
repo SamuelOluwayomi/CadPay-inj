@@ -179,105 +179,14 @@ export default function Dashboard() {
                     if (fetchTransactions) fetchTransactions();
                 }, 2000);
             } else {
-                // KasWare not available
-                if (isSavings) {
-                    // CUSTODIAL TRANSFER: Use api/wallet/send if logged in AND has token AND has encrypted key
-                    if (session?.access_token && profile?.encrypted_private_key) {
-                        showToast(`Initiating custodial transfer...`, "pending");
-                        try {
-                            const res = await fetch('/api/wallet/send', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`
-                                },
-                                body: JSON.stringify({ recipient, amount })
-                            });
-                            const data = await res.json();
-
-                            if (data.success) {
-                                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
-
-                                // Create receipt for funding
-                                if (createReceipt) {
-                                    await createReceipt({
-                                        wallet_address: profile?.authority || address || 'Custodial',
-                                        service_name: 'Savings Pot',
-                                        plan_name: 'Custodial Transfer',
-                                        amount_kas: amount,
-                                        amount_usd: amount * (kasPrice || 0),
-                                        status: 'completed',
-                                        tx_signature: data.txId,
-                                        merchant_wallet: recipient
-                                    });
-                                }
-
-                                showToast(`Custodial Transfer Successful! Sent ${amount} KAS`, "success");
-
-                                // Refresh balance and transactions after completion
-                                setTimeout(() => {
-                                    if (refreshBalance) refreshBalance();
-                                    if (fetchTransactions) fetchTransactions();
-                                    window.location.reload();
-                                }, 2000);
-                                return;
-                            } else {
-                                throw new Error(data.error || "Custodial transfer failed");
-                            }
-                        } catch (custodialError: any) {
-                            console.error("Custodial error:", custodialError);
-                            showToast(custodialError.message || "Custodial transfer failed", "error");
-                            setTxSpeed({ start: null, end: null, status: 'idle' });
-                            return;
-                        }
-                    }
-
-                    // AUTO-FALLBACK: Use Faucet for savings pots if wallet is missing AND not logged in
-                    // This satisfies "Real Transaction" requirement via backend
-                    showToast(`Wallet not detected. Using Faucet to fund pot...`, "pending");
-
-                    const res = await fetch('/api/faucet', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ address: recipient })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
-                        const fundingAmount = data.amount || 1000;
-
-                        // Create receipt for funding
-                        if (createReceipt) {
-                            await createReceipt({
-                                wallet_address: address || '',
-                                service_name: 'Savings Pot',
-                                plan_name: 'Faucet Funding (Auto)',
-                                amount_kas: fundingAmount,
-                                amount_usd: fundingAmount * (kasPrice || 0),
-                                status: 'completed',
-                                tx_signature: data.signature,
-                                merchant_wallet: recipient
-                            });
-                        }
-
-                        showToast(`Successfully funded with ${fundingAmount} KAS via Faucet!`, "success");
-
-                        // Refresh balance and transactions after completion
-                        setTimeout(() => {
-                            if (refreshBalance) refreshBalance();
-                            if (fetchTransactions) fetchTransactions();
-                            window.location.reload();
-                        }, 2000);
-                        return;
-                    } else {
-                        showToast(data.error || "Faucet failed", "error");
-                    }
-                }
-
+                // KasWare not available - UnifiedSendModal will handle client-side signing
+                // Just show an error message prompting them to use the modal
+                showToast(
+                    "Please use the Send Funds modal to complete this transaction securely.",
+                    "error"
+                );
                 setTxSpeed({ start: null, end: null, status: 'idle' });
-                showToast("KasWare wallet extension not detected. Please install KasWare or use the Faucet to fund pots.", "error");
-                console.error('KasWare not available:', { window: typeof window, kasware: typeof window?.kasware });
+                return;
             }
         } catch (error: any) {
             setTxSpeed({ start: null, end: null, status: 'idle' });
@@ -1811,57 +1720,12 @@ function SavingsSection({ session }: { session: any }) {
                 txId = tx;
                 showToast(`Transaction sent! ID: ${txId}`, "success");
             }
-            // 2. Fallback to Custodial Wallet (if not using KasWare)
+            // 2. Fallback to Client-Side Signing (Use UnifiedSendModal)
             else {
-                // Check if user is authenticated - query Supabase session for token
-                const { data: { session } } = await supabase.auth.getSession();
-
-                if (!session) {
-                    throw new Error("You must be logged in or connect a wallet to fund a pot.");
-                }
-
-                showToast(`Transferring ${fundingAmount} KAS from your custodial wallet...`, "pending");
-
-                const res = await fetch('/api/wallet/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        userId: session.user.id,
-                        recipient: potAddress,
-                        amount: fundingAmount
-                    })
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    if (data.senderAddress) {
-                        // User needs to see which wallet is empty!
-                        throw new Error(`${data.error} \nTarget Wallet: ${data.senderAddress}`);
-                    }
-                    throw new Error(data.error || "Transfer failed");
-                }
-                txId = data.txId;
+                // Direct users to use the Send Funds modal for secure client-side signing
+                throw new Error("Please use the 'Send Funds' modal to fund your savings pot securely with client-side signing.");
             }
-
-            // 3. Record Deposit in Database
-            const targetPot = pots.find(p => p.address === potAddress);
-
-            if (targetPot && txId) {
-                await depositToPot(targetPot.id, fundingAmount, txId);
-            }
-
-            // Background sync
-            setTimeout(() => {
-                if (refreshBalance) refreshBalance();
-                window.location.reload();
-            }, 2000);
-
         } catch (e: any) {
-            console.error("Fund pot error:", e);
             showToast(e.message || "Transfer failed", "error");
         } finally {
             setIsFunding(false);
