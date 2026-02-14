@@ -750,7 +750,7 @@ function OverviewSection({
     // Initial fetch for transactions
     useEffect(() => {
         if (address && fetchTransactions) {
-            fetchTransactions();
+            fetchTransactions(address);
         }
     }, [address, fetchTransactions]);
 
@@ -1771,13 +1771,24 @@ function SavingsSection({ session }: { session: any }) {
 
     const handleCreatePot = async (name: string, durationMonths: number) => {
         setIsCreating(true);
-        // Simulate API delay (Mock visual feedback)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            // Simulate API delay (Mock visual feedback)
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-        await createPot(name, durationMonths);
+            const result = await createPot(name, durationMonths);
 
-        setShowCreateModal(false);
-        setIsCreating(false);
+            if (result) {
+                showToast("Savings Pot Created! 🐷", "success");
+                setShowCreateModal(false);
+            } else {
+                throw new Error("Failed to create pot");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to create savings pot", "error");
+        } finally {
+            setIsCreating(false);
+        }
     };
 
     const handleFundPot = async (potAddress: string, potName: string, amount?: number) => {

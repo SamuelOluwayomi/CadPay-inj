@@ -242,6 +242,10 @@ export const useKasWare = () => {
         connect,
         disconnect,
         refreshBalance,
-        fetchTransactions: () => address && fetchTransactions(address)
+        fetchTransactions: (addr?: string) => {
+            const target = addr || address;
+            if (target) return fetchTransactions(target);
+            return Promise.resolve();
+        }
     };
 };

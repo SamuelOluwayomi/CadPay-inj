@@ -35,17 +35,22 @@ const generateKaspaAddress = () => {
     return result;
 };
 
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useKasWare } from './useKasWare';
 
 export const useSavings = () => {
     const { address: userAddress } = useKasWare();
+    const { profile } = useUserProfile();
+    // Prioritize connected wallet, fallback to custodial profile authority
+    const effectiveAddress = userAddress || profile?.authority;
+
     const [pots, setPots] = useState<SavingsPot[]>([]);
     const [transactions, setTransactions] = useState<SavingsTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Fetch pots from Supabase and sync with on-chain balance
     const fetchPots = useCallback(async () => {
-        if (!userAddress) {
+        if (!effectiveAddress) {
             setPots([]);
             setIsLoading(false);
             return;
@@ -56,7 +61,7 @@ export const useSavings = () => {
             const { data: dbPots, error } = await supabase
                 .from('savings_pots')
                 .select('*')
-                .eq('user_address', userAddress)
+                .eq('user_address', effectiveAddress)
                 .eq('status', 'active');
 
             if (error) throw error;
@@ -98,7 +103,7 @@ export const useSavings = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [userAddress]);
+    }, [effectiveAddress]);
 
     // Fetch transactions for a specific pot
     const fetchTransactions = useCallback(async (potId: string) => {
@@ -122,7 +127,7 @@ export const useSavings = () => {
     }, [fetchPots]);
 
     const createPot = useCallback(async (name: string, durationMonths: number) => {
-        if (!userAddress) return null;
+        if (!effectiveAddress) return null;
 
         try {
             // Call API to generate a real Pot Address (Custodial Sub-wallet)
@@ -143,7 +148,7 @@ export const useSavings = () => {
             const res = await fetch('/api/savings/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: userAddress, name, durationMonths })
+                body: JSON.stringify({ userId: effectiveAddress, name, durationMonths })
             });
 
             if (!res.ok) {
@@ -158,7 +163,7 @@ export const useSavings = () => {
             }
 
             const newPot = {
-                user_address: userAddress,
+                user_address: effectiveAddress,
                 name,
                 address: data.address, // Valid Testnet Address
                 balance: 0,
@@ -180,7 +185,7 @@ export const useSavings = () => {
         } catch (e) {
             console.error(e);
         }
-    }, [userAddress]);
+    }, [effectiveAddress]);
 
     const depositToPot = useCallback(async (potId: string, amount: number, txHash?: string) => {
         const pot = pots.find(p => p.id === potId);

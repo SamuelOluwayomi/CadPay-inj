@@ -75,19 +75,12 @@ export default function CreateAccount() {
         setStatus('generating');
 
         try {
-            // GENERATE DUMMY VALUES FOR AUTH (Wallet will be created by Backend later)
-            // const kaspaWallet = await generateKaspaWallet('testnet-10'); // REMOVED Client-Side Gen
-
             setStatus('creating');
 
             // Create wallet with chosen authentication method
-            // For biometric: we rely on Supabase Auth + device passkeys (handled by useBiometricWallet? No, that was wrapper)
-            // useBiometricWallet seems to create a local wallet. We are bypassing that for Custodial?
-            // "let's not use the user_credentials for now... store to profiles"
-
             // 1. Create Supabase Auth Account
             const authPassword = useBiometrics
-                ? crypto.randomUUID() // Random password for biometric users (they use Passkeys/MagicLink ideally, or we rely on this dummy)
+                ? crypto.randomUUID()
                 : password;
 
             // Remove invisible characters and whitespace
@@ -139,18 +132,15 @@ export default function CreateAccount() {
             }
 
             // 2. Set Active Session (Local Storage)
-            // localStorage.setItem('active_wallet_address', kaspaWallet.address); // REMOVED
             localStorage.setItem('auth_email', cleanEmail);
 
             // 3. Auto-download recovery kit
-            // downloadRecoveryKit(kaspaWallet.address, kaspaWallet.mnemonic); // REMOVED - Custodial Mode
-
             setStatus('success');
 
             // 4. Redirect to Dashboard after short delay
             setTimeout(() => {
                 router.push('/dashboard');
-            }, 1500);
+            }, 1200);
 
             // REMOVED ORPHANED BLOCK
         } catch (error: any) {

@@ -20,7 +20,7 @@ let isWasmInitialized = false;
 
 export async function POST(request: Request) {
     try {
-        const { userId, name, durationMovies } = await request.json(); // user_address might be passed, but we verify via token
+        const { userId, name, durationMonths } = await request.json(); // user_address might be passed, but we verify via token
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) {
         }
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
                 name: name,
                 address: address, // Pot Address
                 encrypted_private_key: encryptedKey,
-                duration_months: durationMovies,
+                duration_months: durationMonths,
                 status: 'active'
             });
 
