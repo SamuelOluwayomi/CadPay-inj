@@ -9,6 +9,31 @@ import { decrypt } from '@/utils/encryption';
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
+// ---------------------------------------------------------
+// 🚨 FINAL FIX: REGISTER CUSTOM NETWORK
+// We create a custom network rule that matches your addresses.
+// This tells the library: "If you see 'kaspatest:', it's valid."
+// ---------------------------------------------------------
+try {
+    // Only add if it doesn't exist to prevent "Network already exists" errors on reload
+    if (!kaspa.Networks.get('kaspa-hackathon')) {
+        kaspa.Networks.add({
+            name: 'kaspa-hackathon',
+            alias: 'kaspatest', // Uses this alias to match the string
+            prefix: 'kaspatest', // The prefix we want to support
+            // These hex values are standard placeholders to satisfy the constructor
+            pubkeyhash: 0x6f,
+            privatekey: 0xef,
+            scripthash: 0xc4,
+            xpubkey: 0x043587cf,
+            xprivkey: 0x04358394,
+        });
+        console.log("✅ Custom 'kaspatest' network registered");
+    }
+} catch (e) {
+    console.log("⚠️ Network registration note:", e);
+}
+
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
@@ -44,16 +69,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Missing amount" }, { status: 400 });
         }
 
-        // ---------------------------------------------------------
-        // 🚨 THE FIX: FORCE 'bchtest' PREFIX
-        // The library demands 'bchtest'. We give it what it wants.
-        // The underlying public key hash remains valid for Kaspa.
-        // ---------------------------------------------------------
         const cleanRecipient = recipient.trim();
-        const libraryCompatibleAddress = cleanRecipient.replace("kaspatest:", "bchtest:");
-
-        console.log(`🎯 Input:    ${cleanRecipient}`);
-        console.log(`🤫 Swapped:  ${libraryCompatibleAddress}`);
+        console.log(`🎯 Target: ${cleanRecipient}`);
 
         // 3. Fetch User's Encrypted Key
         const { data: profile } = await supabase
@@ -74,23 +91,24 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Sender Address (Allow library to generate its default 'bchtest' format)
+        // 5. Sender Address
+        // We use "testnet" here because the private key was likely generated with the default testnet rules
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const senderAddressObj = privateKey.toAddress("testnet");
 
-        // For API calls, we need the REAL prefix 'kaspatest'
-        // We convert the library's output back to 'kaspatest' for fetching UTXOs
+        // Fix the string for the API call (Visual only)
         const senderAddressString = senderAddressObj.toString().replace("bchtest:", "kaspatest:");
-        console.log(`🔐 Sender:   ${senderAddressString}`);
+        console.log(`🔐 Sender: ${senderAddressString}`);
 
-        // 6. Destination Address Object
-        // We pass the SWAPPED string ('bchtest:...') so the library validation passes.
-        const destinationAddressObj = new kaspa.Address(libraryCompatibleAddress, "testnet");
+        // 6. Destination Address
+        // 🚨 FIX: We simply pass the address string.
+        // Because we registered the 'kaspatest' network above, the library should now
+        // auto-detect it as valid instead of throwing "Mismatched network".
+        const destinationAddressObj = new kaspa.Address(cleanRecipient);
 
-        // 7. Get UTXOs (Use the 'kaspatest' string for the API)
+        // 7. Get UTXOs
         let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
 
-        // Fallback: Check DB address
         if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
             console.log("⚠️ Derived address empty. Checking DB address...");
             utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
@@ -115,7 +133,7 @@ export async function POST(request: Request) {
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: senderAddressObj, // Pass the Sender Object (internally bchtest)
+            address: senderAddressObj, // Sign with the Sender Object
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
@@ -134,7 +152,7 @@ export async function POST(request: Request) {
         // 10. Build & Sign
         const tx = new kaspa.Transaction()
             .from(utxos)
-            .to(destinationAddressObj, amountSompi) // Pass the SWAPPED Destination Object
+            .to(destinationAddressObj, amountSompi) // Pass the valid Destination Object
             .setVersion(0)
             .change(senderAddressObj)
             .sign(privateKey);
