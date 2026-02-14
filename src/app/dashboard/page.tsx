@@ -584,7 +584,7 @@ export default function Dashboard() {
                         address={walletAddress} copyToClipboard={copyToClipboard} />}
                     {activeSection === 'security' && <SecuritySettings />}
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
-                    {activeSection === 'receipts' && <ReceiptsSection />}
+                    {activeSection === 'receipts' && <ReceiptsSection address={walletAddress} />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
                     {activeSection === 'savings' && <SavingsSection session={session} />}
                 </div>
@@ -787,7 +787,6 @@ function OverviewSection({
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
-
                 // --- OPTIMISTIC UI ---
                 // We update the local storage and trigger a refresh immediately
                 const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
@@ -1616,8 +1615,7 @@ function PaymentLinkSection() {
 }
 
 // Receipts Section - Display Subscription Payment History
-function ReceiptsSection() {
-    const { address } = useKasWare();
+function ReceiptsSection({ address }: { address: string }) {
     const { receipts, loading, totalSpending, totalSpendingUSD } = useReceipts(address);
 
     return (
