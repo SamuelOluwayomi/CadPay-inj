@@ -292,14 +292,21 @@ export default function Dashboard() {
     useEffect(() => {
         // Debounce the onboarding check to prevent flashing during loading states
         const timer = setTimeout(() => {
-            // Only show onboarding if the wallet is connected BUT no profile was found.
-            // AND we are not currently loading.
-            if ((!loading && !profileLoading) && address && !profile) {
+            if (loading || profileLoading) return;
+
+            // Trigger Onboarding if:
+            // 1. Profile exists but is incomplete (No Username) -> Covers Custodial (created by API) & KasWare
+            // 2. OR KasWare is connected but no profile exists yet
+            if (profile && !profile.username) {
+                console.log("⚠️ Profile incomplete (no username), triggering Onboarding...");
+                setShowOnboarding(true);
+            } else if (address && !profile) {
+                console.log("⚠️ KasWare connected but no profile, triggering Onboarding...");
                 setShowOnboarding(true);
             } else {
                 setShowOnboarding(false);
             }
-        }, 500);
+        }, 800);
 
         return () => clearTimeout(timer);
     }, [address, loading, profile, profileLoading]);
