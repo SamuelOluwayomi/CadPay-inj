@@ -21,12 +21,20 @@ const nextConfig = {
             },
         });
 
-        // Handle WASM files
+        // 1. Force Webpack to handle WASM files
         config.experiments = {
             ...config.experiments,
             asyncWebAssembly: true,
             layers: true,
         };
+
+        // 2. Fix for "fs" module not found errors (common in crypto libs)
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs: false,
+            };
+        }
 
         return config;
     },

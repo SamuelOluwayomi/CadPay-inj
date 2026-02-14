@@ -1,3 +1,10 @@
+// ---------------------------------------------------------
+// 🚨 MAGIC SWITCH: Force Pure JavaScript Mode
+// This stops the "ENOENT: no such file" / WASM errors.
+// ---------------------------------------------------------
+process.env.ECCLIB_JS = '1';
+process.env.ECCSI_JS = '1';
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from '@/utils/encryption';
@@ -5,11 +12,11 @@ import { decrypt } from '@/utils/encryption';
 // @ts-ignore
 const kaspa = require('@kaspa/core-lib');
 
-// Force Node.js runtime (WASM fails on Edge, and we are using core-lib which is node-based)
+// Force Node.js runtime (Standard Server)
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    console.log("🚀 [API] Transfer Request Started (using @kaspa/core-lib)");
+    console.log("🚀 [API] Simple Transfer Started (Pure JS Mode)");
 
     try {
         // 1. Authenticate User (Securely, using Headers)
