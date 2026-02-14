@@ -2,20 +2,23 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from '@/utils/encryption';
 
+// @ts-ignore
+const kaspa = require('@kaspa/core-lib');
+
 // Force Node.js runtime (Standard Server)
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-    // ---------------------------------------------------------
-    // 🚨 MAGIC SWITCH: Force Pure JavaScript Mode
-    // ---------------------------------------------------------
-
     console.log("🚀 [API] Simple Transfer Started (Pure JS Mode)");
-    console.log("🔧 Env Check - ECCLIB_JS:", process.env.ECCLIB_JS);
 
-    // @ts-ignore
-    const kaspa = require('@kaspa/core-lib');
-    console.log("✅ @kaspa/core-lib loaded successfully");
+    // 0. Sanity Check: Is the library working?
+    try {
+        new kaspa.PrivateKey();
+        console.log("✅ Crypto Engine Loaded Successfully");
+    } catch (e) {
+        console.error("❌ Crypto Engine Failed to Load:", e);
+        return NextResponse.json({ error: "Crypto Engine Failed to Load. Please restart server." }, { status: 500 });
+    }
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -100,12 +103,6 @@ export async function POST(request: Request) {
             .sign(privateKey);
 
         // 9. Broadcast
-        // Use RPC if possible, but core-lib usually builds hex. We can broadcast via REST if we have the endpoint.
-        // The user's snippet used REST broadcast: https://api-tn10.kaspa.org/transactions
-
-        // We need to serialize the transaction. core-lib has .serialize() or .toString()
-        // The user's snippet used tx.serialize().
-
         const broadcastRes = await fetch('https://api-tn10.kaspa.org/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
