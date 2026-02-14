@@ -11,35 +11,8 @@ const kaspa = require('@kaspa/core-lib');
 
 export const runtime = 'nodejs';
 
-// Runtime flag to ensure network patching happens only once
-let isNetworkPatched = false;
-
 export async function POST(request: Request) {
     console.log("🚀 [API] Transfer Request Started");
-
-    // ---------------------------------------------------------
-    // 🚨 NETWORK RE-REGISTRATION PATCH (Runtime Only)
-    // This fixes "Address has mismatched network type"
-    // ---------------------------------------------------------
-    if (!isNetworkPatched && kaspa.Networks.testnet) {
-        try {
-            const testnet = kaspa.Networks.testnet;
-            testnet.prefix = 'kaspatest';
-
-            // Re-register the network to update internal maps
-            kaspa.Networks.remove(testnet);
-            kaspa.Networks.add(testnet);
-
-            isNetworkPatched = true;
-            console.log("🔧 Network Re-Registration Complete: 'kaspatest' prefix is now indexed");
-        } catch (e) {
-            console.warn("⚠️ Network re-registration failed, proceeding with simple prefix update:", e);
-            // Fallback: just update the prefix
-            if (kaspa.Networks.testnet) {
-                kaspa.Networks.testnet.prefix = 'kaspatest';
-            }
-        }
-    }
 
     try {
         // 1. Authenticate User (Securely, using Headers)
@@ -93,18 +66,40 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Sender Address (From Key)
+        // 5. Derive Sender Address
+        // 🚨 FIX: Pass the STRING "testnet" instead of the object.
         const privateKey = new kaspa.PrivateKey(privateKeyString);
-        const senderAddressObj = privateKey.toAddress(kaspa.Networks.testnet);
-        const senderAddressString = senderAddressObj.toString();
-        console.log(`🔐 Sender: ${senderAddressString}`);
+        const senderAddressObj = privateKey.toAddress("testnet");
 
-        // 6. Destination Address (Parse String)
-        const destinationAddressObj = new kaspa.Address(cleanRecipient, kaspa.Networks.testnet);
+        // Manual Prefix Patch: The library might output "bchtest:...", so we fix it visually for logs/APIs
+        // But we keep the OBJECT for signing.
+        const rawSenderAddress = senderAddressObj.toString();
+        const fixedSenderAddress = rawSenderAddress.replace('bchtest:', 'kaspatest:');
 
-        // 7. Get UTXOs (Try Derived first, then DB fallback)
-        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
+        console.log(`🔐 Sender (Raw):   ${rawSenderAddress}`);
+        console.log(`🔐 Sender (Fixed): ${fixedSenderAddress}`);
 
+        // 6. Create Destination Address
+        // 🚨 FIX: If the input has "kaspatest:", we swap it to "bchtest:" so the library parses it
+        let destinationAddressObj;
+        try {
+            // Try parsing with prefix swap
+            destinationAddressObj = new kaspa.Address(cleanRecipient.replace('kaspatest:', 'bchtest:'), "testnet");
+        } catch (e) {
+            // Fallback: Try parsing exactly as is
+            try {
+                destinationAddressObj = new kaspa.Address(cleanRecipient, "testnet");
+            } catch (e2) {
+                console.error("Failed to parse destination address:", e2);
+                return NextResponse.json({ error: "Invalid recipient address format" }, { status: 400 });
+            }
+        }
+
+        // 7. Get UTXOs (Use the address API recognizes)
+        // The API needs 'kaspatest:', so we use the fixed string.
+        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${fixedSenderAddress}/utxos`);
+
+        // Fallback: Check DB address if derived failed
         if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
             console.log("⚠️ Derived address empty. Checking DB address...");
             utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
@@ -129,7 +124,7 @@ export async function POST(request: Request) {
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: senderAddressObj,
+            address: senderAddressObj, // Pass the Sender Object (bchtest or whatever it is internally)
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
