@@ -109,11 +109,7 @@ export async function POST(request: Request) {
             body: JSON.stringify({ transactionHex: tx.serialize() })
         });
 
-        if (!broadcastRes.ok) {
-            const errText = await broadcastRes.text();
-            console.error("Broadcast failed:", errText);
-            throw new Error("Broadcast failed: " + errText);
-        }
+        if (!broadcastRes.ok) throw new Error(await broadcastRes.text());
 
         const result = await broadcastRes.json();
         console.log(`🎉 [API] Success! TxID: ${result.transactionId}`);
