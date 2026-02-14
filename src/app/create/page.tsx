@@ -119,22 +119,26 @@ export default function CreateAccount() {
                 const { hashPassword } = await import('@/utils/passwordHash');
                 const passwordHash = useBiometrics ? null : await hashPassword(password);
 
-                const { error: credError } = await supabase
-                    .from('profiles')
-                    .insert([
-                        {
-                            email: cleanEmail,
-                            wallet_address: kaspaWallet.address,
-                            auth_method: useBiometrics ? 'biometric' : 'password',
-                            password_hash: passwordHash
-                        }
-                    ]);
+                if (authData.user) {
+                    const { error: credError } = await supabase
+                        .from('profiles')
+                        .insert([
+                            {
+                                id: authData.user.id, // REQUIRED: Link to Auth ID
+                                email: cleanEmail,
+                                wallet_address: kaspaWallet.address,
+                                auth_method: useBiometrics ? 'biometric' : 'password',
+                                password_hash: passwordHash,
+                                updated_at: new Date().toISOString()
+                            }
+                        ]);
 
-                if (credError) {
-                    console.error('Failed to store credentials:', credError);
-                    setStatus('error');
-                    setErrorMessage('Failed to save account credentials');
-                    return;
+                    if (credError) {
+                        console.error('Failed to store credentials:', credError);
+                        setStatus('error');
+                        setErrorMessage('Failed to save account credentials');
+                        return;
+                    }
                 }
 
                 // 2. Set Active Session (Local Storage)
