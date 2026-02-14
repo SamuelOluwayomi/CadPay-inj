@@ -6,7 +6,7 @@ import {
     XIcon, PaperPlaneTiltIcon, WalletIcon, PiggyBankIcon,
     CaretRightIcon, WarningIcon, CheckCircleIcon, LockKeyIcon, FingerprintIcon
 } from '@phosphor-icons/react';
-import { initKaspaWasm, signTransaction, unlockAndSignWithBiometrics } from '@/lib/kaspa-wallet';
+import { initKaspaWasm, signTransaction } from '@/lib/kaspa-wallet';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { supabase } from '@/lib/supabase';
 
@@ -89,9 +89,16 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             // 1. Initialize WASM SDK
             await initKaspaWasm();
 
-            // 2. Unlock with biometrics and sign transaction
-            const signedTxJson = await unlockAndSignWithBiometrics({
-                username: userEmail,
+            // 2. Unlock with biometrics to get seed phrase
+            const unlockResult = await unlockWallet(userEmail);
+
+            if (!unlockResult.success || !unlockResult.mnemonic) {
+                throw new Error(unlockResult.error || 'Failed to unlock wallet with biometrics');
+            }
+
+            // 3. Sign transaction client-side
+            const signedTxJson = await signTransaction({
+                seedPhrase: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount,
                 networkType: 'testnet-10'
@@ -418,7 +425,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleBiometricUnlockAndSign}
                                             disabled={isSubmitting}
-                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-purple-500 to-blue-500 rounded-2xl font-bold hover:from-purple-600 hover:to-blue-600 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-orange-500 to-orange-400 rounded-2xl font-bold hover:from-orange-300 hover:to-orange-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <FingerprintIcon size={20} weight="bold" />
                                             Unlock with Biometrics
