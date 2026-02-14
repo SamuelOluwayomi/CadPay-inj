@@ -1,0 +1,255 @@
+/**
+ * Client-side Kaspa wallet library
+ * Handles WASM SDK initialization, transaction signing, and key management
+ */
+
+import { useBiometricWallet } from '@/hooks/useBiometricWallet';
+
+// Lazy load the WASM SDK
+let kaspaWasm: any = null;
+let isInitialized = false;
+
+/**
+ * Initialize the Kaspa WASM SDK (browser only)
+ * This must be called before any other wallet operations
+ */
+export async function initKaspaWasm(): Promise<void> {
+    if (isInitialized) return;
+
+    try {
+        // Dynamic import of the WASM SDK
+        kaspaWasm = await import('@kluster/kaspa-wasm-web');
+
+        // Initialize WASM module
+        await kaspaWasm.init();
+
+        isInitialized = true;
+        console.log('✅ Kaspa WASM SDK initialized');
+    } catch (error) {
+        console.error('Failed to initialize Kaspa WASM SDK:', error);
+        throw new Error('Failed to initialize wallet. Please refresh and try again.');
+    }
+}
+
+/**
+ * Get the initialized WASM SDK instance
+ * Throws if not initialized
+ */
+function getKaspaWasm() {
+    if (!isInitialized || !kaspaWasm) {
+        throw new Error('Kaspa WASM not initialized. Call initKaspaWasm() first.');
+    }
+    return kaspaWasm;
+}
+
+/**
+ * Derive a private key from seed phrase
+ * @param seedPhrase - 12 or 24 word seed phrase
+ * @returns Private key instance
+ */
+export function derivePrivateKeyFromSeed(seedPhrase: string): any {
+    const kaspa = getKaspaWasm();
+
+    try {
+        // Create mnemonic from seed phrase
+        const mnemonic = new kaspa.Mnemonic(seedPhrase);
+
+        // Derive private key at standard path (m/44'/972/0'/0/0)
+        const xprv = mnemonic.toXPrivateKey();
+        const privateKey = xprv.deriveChild(44 | 0x80000000)
+            .deriveChild(972 | 0x80000000)
+            .deriveChild(0 | 0x80000000)
+            .deriveChild(0)
+            .deriveChild(0)
+            .toPrivateKey();
+
+        return privateKey;
+    } catch (error) {
+        console.error('Failed to derive private key:', error);
+        throw new Error('Invalid seed phrase');
+    }
+}
+
+/**
+ * Get wallet address from private key
+ * @param privateKey - Private key instance
+ * @param networkType - 'mainnet' or 'testnet-10'
+ * @returns Kaspa address string
+ */
+export function getAddressFromPrivateKey(privateKey: any, networkType: 'mainnet' | 'testnet-10' = 'testnet-10'): string {
+    const kaspa = getKaspaWasm();
+
+    try {
+        const network = networkType === 'mainnet'
+            ? kaspa.NetworkType.Mainnet
+            : kaspa.NetworkType.Testnet;
+
+        const address = privateKey.toPublicKey().toAddress(network);
+        return address.toString();
+    } catch (error) {
+        console.error('Failed to derive address:', error);
+        throw new Error('Failed to generate wallet address');
+    }
+}
+
+/**
+ * Build and sign a transaction
+ * @param params - Transaction parameters
+ * @returns Signed transaction ready for broadcast
+ */
+export async function signTransaction(params: {
+    seedPhrase: string;
+    recipient: string;
+    amount: number; // in KAS
+    networkType?: 'mainnet' | 'testnet-10';
+}): Promise<string> {
+    const kaspa = getKaspaWasm();
+    const { seedPhrase, recipient, amount, networkType = 'testnet-10' } = params;
+
+    try {
+        // 1. Derive private key from seed
+        const privateKey = derivePrivateKeyFromSeed(seedPhrase);
+        const sourceAddress = getAddressFromPrivateKey(privateKey, networkType);
+
+        console.log(`🔐 Signing transaction from: ${sourceAddress}`);
+        console.log(`🎯 Sending to: ${recipient}`);
+        console.log(`💰 Amount: ${amount} KAS`);
+
+        // 2. Fetch UTXOs from API
+        const apiUrl = networkType === 'mainnet'
+            ? 'https://api.kaspa.org'
+            : 'https://api-tn10.kaspa.org';
+
+        const utxoRes = await fetch(`${apiUrl}/addresses/${sourceAddress}/utxos`);
+
+        if (!utxoRes.ok) {
+            throw new Error(`Failed to fetch UTXOs: ${utxoRes.statusText}`);
+        }
+
+        const utxoData = await utxoRes.json();
+
+        if (!Array.isArray(utxoData) || utxoData.length === 0) {
+            throw new Error('Insufficient funds (no UTXOs found)');
+        }
+
+        // 3. Convert API UTXOs to WASM format
+        const utxoEntries = utxoData.map((u: any) => {
+            return new kaspa.UtxoEntry(
+                new kaspa.Outpoint(u.outpoint.transactionId, u.outpoint.index),
+                new kaspa.UtxoEntryReference(
+                    BigInt(u.utxoEntry.amount),
+                    new kaspa.ScriptPublicKey(
+                        u.utxoEntry.scriptPublicKey.version,
+                        u.utxoEntry.scriptPublicKey.scriptPublicKey
+                    ),
+                    BigInt(u.utxoEntry.blockDaaScore),
+                    u.utxoEntry.isCoinbase
+                )
+            );
+        });
+
+        console.log(`⚙️ Building transaction with ${utxoEntries.length} UTXOs...`);
+
+        // 4. Build transaction
+        const amountSompi = BigInt(Math.floor(amount * 100000000));
+        const settings = new kaspa.GeneratorSettings(
+            utxoEntries,
+            { [recipient]: amountSompi },
+            new kaspa.Address(sourceAddress),
+            kaspa.PriorityFee.include(0n)
+        );
+
+        const generator = new kaspa.Generator(settings);
+
+        // 5. Sign transaction
+        const pendingTx = generator.generate_transaction();
+        await pendingTx.sign([privateKey]);
+        const signedTx = pendingTx.transaction;
+
+        // 6. Serialize for broadcast
+        const txJson = signedTx.to_json();
+
+        console.log('✅ Transaction signed successfully');
+
+        return JSON.stringify(txJson);
+    } catch (error: any) {
+        console.error('Transaction signing failed:', error);
+        throw new Error(error.message || 'Failed to sign transaction');
+    }
+}
+
+/**
+ * Unlock wallet and sign transaction with password
+ * @param params - Transaction and authentication parameters
+ * @returns Signed transaction JSON string
+ */
+export async function unlockAndSignTransaction(params: {
+    username: string;
+    password: string;
+    recipient: string;
+    amount: number;
+    networkType?: 'mainnet' | 'testnet-10';
+}): Promise<string> {
+    const { createWalletWithPassword, unlockWalletWithPassword } = useBiometricWallet();
+
+    // Unlock wallet with password
+    const result = await unlockWalletWithPassword(params.username, params.password);
+
+    if (!result.success || !result.mnemonic) {
+        throw new Error(result.error || 'Failed to unlock wallet');
+    }
+
+    // Sign transaction with unlocked seed phrase
+    return signTransaction({
+        seedPhrase: result.mnemonic,
+        recipient: params.recipient,
+        amount: params.amount,
+        networkType: params.networkType,
+    });
+}
+
+/**
+ * Create a new wallet in browser storage
+ * @param params - Wallet creation parameters  
+ * @returns Success status
+ */
+export async function createWallet(params: {
+    username: string;
+    seedPhrase: string;
+    password: string;
+}): Promise<{ success: boolean; address?: string; error?: string }> {
+    const { createWalletWithPassword } = useBiometricWallet();
+
+    try {
+        // Initialize WASM if needed
+        await initKaspaWasm();
+
+        // Verify seed phrase is valid by deriving address
+        const privateKey = derivePrivateKeyFromSeed(params.seedPhrase);
+        const address = getAddressFromPrivateKey(privateKey, 'testnet-10');
+
+        // Store encrypted seed in IndexedDB
+        const result = await createWalletWithPassword(
+            params.username,
+            params.seedPhrase,
+            params.password
+        );
+
+        if (!result.success) {
+            return { success: false, error: result.error };
+        }
+
+        return { success: true, address };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Failed to create wallet' };
+    }
+}
+
+/**
+ * Get wallet address without unlocking
+ * (Derives from unlocked seed phrase)
+ */
+export function getWalletAddress(seedPhrase: string, networkType: 'mainnet' | 'testnet-10' = 'testnet-10'): string {
+    const privateKey = derivePrivateKeyFromSeed(seedPhrase);
+    return getAddressFromPrivateKey(privateKey, networkType);
+}
