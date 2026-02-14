@@ -44,8 +44,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Missing amount" }, { status: 400 });
         }
 
+        // ---------------------------------------------------------
+        // 🚨 THE FIX: FORCE 'bchtest' PREFIX
+        // The library demands 'bchtest'. We give it what it wants.
+        // The underlying public key hash remains valid for Kaspa.
+        // ---------------------------------------------------------
         const cleanRecipient = recipient.trim();
-        console.log(`🎯 Target: ${cleanRecipient}`);
+        const libraryCompatibleAddress = cleanRecipient.replace("kaspatest:", "bchtest:");
+
+        console.log(`🎯 Input:    ${cleanRecipient}`);
+        console.log(`🤫 Swapped:  ${libraryCompatibleAddress}`);
 
         // 3. Fetch User's Encrypted Key
         const { data: profile } = await supabase
@@ -66,40 +74,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
         }
 
-        // 5. Derive Sender Address
-        // 🚨 FIX: Pass the STRING "testnet" instead of the object.
+        // 5. Sender Address (Allow library to generate its default 'bchtest' format)
         const privateKey = new kaspa.PrivateKey(privateKeyString);
         const senderAddressObj = privateKey.toAddress("testnet");
 
-        // Manual Prefix Patch: The library might output "bchtest:...", so we fix it visually for logs/APIs
-        // But we keep the OBJECT for signing.
-        const rawSenderAddress = senderAddressObj.toString();
-        const fixedSenderAddress = rawSenderAddress.replace('bchtest:', 'kaspatest:');
+        // For API calls, we need the REAL prefix 'kaspatest'
+        // We convert the library's output back to 'kaspatest' for fetching UTXOs
+        const senderAddressString = senderAddressObj.toString().replace("bchtest:", "kaspatest:");
+        console.log(`🔐 Sender:   ${senderAddressString}`);
 
-        console.log(`🔐 Sender (Raw):   ${rawSenderAddress}`);
-        console.log(`🔐 Sender (Fixed): ${fixedSenderAddress}`);
+        // 6. Destination Address Object
+        // We pass the SWAPPED string ('bchtest:...') so the library validation passes.
+        const destinationAddressObj = new kaspa.Address(libraryCompatibleAddress, "testnet");
 
-        // 6. Create Destination Address
-        // 🚨 FIX: If the input has "kaspatest:", we swap it to "bchtest:" so the library parses it
-        let destinationAddressObj;
-        try {
-            // Try parsing with prefix swap
-            destinationAddressObj = new kaspa.Address(cleanRecipient.replace('kaspatest:', 'bchtest:'), "testnet");
-        } catch (e) {
-            // Fallback: Try parsing exactly as is
-            try {
-                destinationAddressObj = new kaspa.Address(cleanRecipient, "testnet");
-            } catch (e2) {
-                console.error("Failed to parse destination address:", e2);
-                return NextResponse.json({ error: "Invalid recipient address format" }, { status: 400 });
-            }
-        }
+        // 7. Get UTXOs (Use the 'kaspatest' string for the API)
+        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${senderAddressString}/utxos`);
 
-        // 7. Get UTXOs (Use the address API recognizes)
-        // The API needs 'kaspatest:', so we use the fixed string.
-        let utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${fixedSenderAddress}/utxos`);
-
-        // Fallback: Check DB address if derived failed
+        // Fallback: Check DB address
         if (!utxoRes.ok || (await utxoRes.clone().json()).length === 0) {
             console.log("⚠️ Derived address empty. Checking DB address...");
             utxoRes = await fetch(`https://api-tn10.kaspa.org/addresses/${profile.wallet_address}/utxos`);
@@ -124,7 +115,7 @@ export async function POST(request: Request) {
         const utxos = utxoData.map((u: any) => ({
             txId: u.outpoint.transactionId,
             outputIndex: u.outpoint.index,
-            address: senderAddressObj, // Pass the Sender Object (bchtest or whatever it is internally)
+            address: senderAddressObj, // Pass the Sender Object (internally bchtest)
             script: u.utxoEntry.scriptPublicKey.scriptPublicKey,
             satoshis: Number(u.utxoEntry.amount)
         }));
@@ -143,7 +134,7 @@ export async function POST(request: Request) {
         // 10. Build & Sign
         const tx = new kaspa.Transaction()
             .from(utxos)
-            .to(destinationAddressObj, amountSompi)
+            .to(destinationAddressObj, amountSompi) // Pass the SWAPPED Destination Object
             .setVersion(0)
             .change(senderAddressObj)
             .sign(privateKey);
