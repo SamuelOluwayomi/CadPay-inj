@@ -61,16 +61,20 @@ export async function POST(request: Request) {
 
         // 5. Save to Supabase
         // We update the user's profile with their new wallet info
+        // 5. Save to Supabase (Upsert ensures profile exists)
+        // We update the user's profile with their new wallet info, or create it if missing
         const { error: dbError } = await supabase
             .from('profiles')
-            .update({
-                wallet_address: address, // Store public address
-                encrypted_private_key: encryptedKey // Store encrypted private key
-            })
-            .eq('id', user.id);
+            .upsert({
+                id: user.id,
+                wallet_address: address,
+                encrypted_private_key: encryptedKey,
+                email: user.email,
+                updated_at: new Date().toISOString()
+            });
 
         if (dbError) {
-            console.error('DB Update Error:', dbError);
+            console.error('DB Upsert Error:', dbError);
             return NextResponse.json({ error: 'Failed to save wallet to profile' }, { status: 500 });
         }
 
