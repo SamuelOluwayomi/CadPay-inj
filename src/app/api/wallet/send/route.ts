@@ -45,20 +45,46 @@ export async function POST(request: Request) {
         }
 
         // 2. Fetch User's Encrypted Key
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('encrypted_private_key, wallet_address')
-            .eq('id', user.id)
-            .single();
+        // Strategy: Try user_credentials (Primary for Payment) -> profiles (Fallback)
+        let encryptedKey: string | null = null;
+        let dbWalletAddress: string | null = null;
 
-        if (profileError || !profile?.encrypted_private_key) {
+        if (user.email) {
+            const { data: creds } = await supabase
+                .from('user_credentials')
+                .select('encrypted_private_key, wallet_address')
+                .eq('email', user.email)
+                .maybeSingle(); // distinct from .single() to avoid 406 if not found
+
+            if (creds?.encrypted_private_key) {
+                encryptedKey = creds.encrypted_private_key;
+                dbWalletAddress = creds.wallet_address;
+                console.log('🔑 Using Private Key from User Credentials');
+            }
+        }
+
+        if (!encryptedKey) {
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('encrypted_private_key, wallet_address')
+                .eq('id', user.id)
+                .single();
+
+            if (profile?.encrypted_private_key) {
+                encryptedKey = profile.encrypted_private_key;
+                dbWalletAddress = profile.wallet_address;
+                console.log('👤 Using Private Key from Profile (Fallback)');
+            }
+        }
+
+        if (!encryptedKey) {
             return NextResponse.json({ error: 'No wallet found for user. Please create one first.' }, { status: 404 });
         }
 
         // 3. Decrypt Key
         let privateKeyString: string;
         try {
-            privateKeyString = decrypt(profile.encrypted_private_key);
+            privateKeyString = decrypt(encryptedKey);
         } catch (e) {
             console.error('Decryption failed:', e);
             return NextResponse.json({ error: 'Failed to access wallet securely' }, { status: 500 });
@@ -85,7 +111,7 @@ export async function POST(request: Request) {
         let sourceAddress = privateKey.toAddress(kaspa.NetworkType.Testnet);
 
         // Sanity Check: Does the derived address match the DB?
-        if (profile.wallet_address && sourceAddress.toString() !== profile.wallet_address) {
+        if (dbWalletAddress && sourceAddress.toString() !== dbWalletAddress) {
             console.warn(`⚠️ Primary derivation (Testnet) mismatch. Probing other networks...`);
 
             // Fallback Probe (Just in case valid keys were made on other networks previously)
@@ -98,7 +124,7 @@ export async function POST(request: Request) {
             let found = false;
             for (const net of networks) {
                 const addr = privateKey.toAddress(net.type);
-                if (addr.toString() === profile.wallet_address) {
+                if (addr.toString() === dbWalletAddress) {
                     sourceAddress = addr;
                     found = true;
                     console.log(`✅ Recovered address on ${net.name}`);
@@ -107,9 +133,9 @@ export async function POST(request: Request) {
             }
 
             if (!found) {
-                console.error(`🚨 CRITICAL: Private Key does not unlock stored address ${profile.wallet_address}`);
+                console.error(`🚨 CRITICAL: Private Key does not unlock stored address ${dbWalletAddress}`);
                 return NextResponse.json({
-                    error: `Wallet Corruption: Private key does not match address ${profile.wallet_address}. Please reset your wallet.`,
+                    error: `Wallet Corruption: Private key does not match address ${dbWalletAddress}. Please reset your wallet.`,
                     senderAddress: sourceAddress.toString()
                 }, { status: 400 });
             }
