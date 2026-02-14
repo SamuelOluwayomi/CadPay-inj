@@ -1,17 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // 1. Externalize kaspa so Webpack doesn't mangle it
+    // 1. Tell Next.js 15+ to treat this as external
     serverExternalPackages: ['kaspa'],
 
-    // 2. 🚨 THE FIX: Force Vercel to copy the ENTIRE kaspa folder
-    // This ensures 'kaspa_wasm' and the .wasm file are present in the cloud.
+    // 2. FORCE copy the files (The Nuclear Option)
     experimental: {
+        // Duplicate for safety on Vercel's builder
+        serverComponentsExternalPackages: ['kaspa'],
         outputFileTracingIncludes: {
             '/api/**/*': ['./node_modules/kaspa/**/*'],
         },
     },
 
-    // 3. Keep standard WASM support
+    // 3. Webpack config
     webpack: (config) => {
         config.experiments = {
             ...config.experiments,
