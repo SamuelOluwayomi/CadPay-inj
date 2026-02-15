@@ -107,35 +107,15 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error(unlockResult.error || 'Failed to unlock wallet with biometrics');
             }
 
-            // 3. Sign transaction client-side
-            const signedTxJson = await signTransaction({
+            // 3. Sign and broadcast transaction directly to Kaspa network
+            const txId = await signTransaction({
                 seedPhrase: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount,
                 networkType: 'testnet-10'
             });
 
-            // 3. Get auth token from Supabase
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.access_token) {
-                throw new Error('Not authenticated');
-            }
-
-            // 4. Broadcast signed transaction via backend
-            const res = await fetch('/api/wallet/broadcast', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ signedTransaction: signedTxJson })
-            });
-
-            const data = await res.json();
-
-            if (!data.success) {
-                throw new Error(data.error || 'Broadcast failed');
-            }
+            console.log('🚀 Transaction complete! TxID:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');
@@ -174,35 +154,15 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error(unlockResult.error || 'Failed to unlock wallet. Check your password.');
             }
 
-            // 3. Sign transaction client-side
-            const signedTxJson = await signTransaction({
+            // 3. Sign and broadcast transaction directly to Kaspa network
+            const txId = await signTransaction({
                 seedPhrase: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount,
                 networkType: 'testnet-10'
             });
 
-            // 4. Get auth token from Supabase
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.access_token) {
-                throw new Error('Not authenticated');
-            }
-
-            // 5. Broadcast signed transaction via backend
-            const res = await fetch('/api/wallet/broadcast', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ signedTransaction: signedTxJson })
-            });
-
-            const data = await res.json();
-
-            if (!data.success) {
-                throw new Error(data.error || 'Broadcast failed');
-            }
+            console.log('🚀 Transaction complete! TxID:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');

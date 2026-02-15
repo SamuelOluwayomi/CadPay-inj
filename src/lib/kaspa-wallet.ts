@@ -127,9 +127,9 @@ export function getAddressFromPrivateKey(privateKey: any, networkType: 'mainnet'
 }
 
 /**
- * Build and sign a transaction
+ * Build, sign, and broadcast a transaction directly to the Kaspa network
  * @param params - Transaction parameters
- * @returns Signed transaction ready for broadcast
+ * @returns Transaction ID from the network
  */
 export async function signTransaction(params: {
     seedPhrase: string;
@@ -209,11 +209,60 @@ export async function signTransaction(params: {
         const privateKeyHex = privateKey.toString();
         await pendingTx.sign([privateKeyHex]);
 
-        const signedTxJson = pendingTx.serializeToSafeJSON();
-
         console.log('✅ Transaction signed successfully');
 
-        return signedTxJson;
+        // 6. Extract signed transaction and serialize for Kaspa REST API
+        const tx = pendingTx.transaction;
+
+        const txPayload = {
+            transaction: {
+                version: tx.version,
+                inputs: tx.inputs.map((input: any) => ({
+                    previousOutpoint: {
+                        transactionId: input.previousOutpoint.transactionId,
+                        index: input.previousOutpoint.index
+                    },
+                    signatureScript: input.signatureScript || '',
+                    sequence: Number(input.sequence),
+                    sigOpCount: input.sigOpCount
+                })),
+                outputs: tx.outputs.map((output: any) => ({
+                    amount: Number(output.value ?? output.amount),
+                    scriptPublicKey: {
+                        version: typeof output.scriptPublicKey === 'object'
+                            ? (output.scriptPublicKey.version ?? 0)
+                            : 0,
+                        scriptPublicKey: typeof output.scriptPublicKey === 'object'
+                            ? (output.scriptPublicKey.script ?? output.scriptPublicKey.scriptPublicKey ?? '')
+                            : String(output.scriptPublicKey)
+                    }
+                })),
+                lockTime: Number(tx.lockTime ?? 0),
+                subnetworkId: tx.subnetworkId || '0000000000000000000000000000000000000000'
+            }
+        };
+
+        console.log('📡 Broadcasting transaction to Kaspa network...');
+
+        // 7. Broadcast directly to Kaspa REST API
+        const broadcastRes = await fetch(`${apiUrl}/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(txPayload)
+        });
+
+        if (!broadcastRes.ok) {
+            const errorText = await broadcastRes.text();
+            console.error('❌ Broadcast failed:', errorText);
+            throw new Error(`Broadcast failed: ${errorText}`);
+        }
+
+        const result = await broadcastRes.json();
+        const txId = result.transactionId;
+
+        console.log(`🚀 Transaction broadcast successful! TxID: ${txId}`);
+
+        return txId;
     } catch (error: any) {
         console.error('Transaction signing failed:', error);
         throw new Error(error.message || 'Failed to sign transaction');
