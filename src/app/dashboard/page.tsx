@@ -480,7 +480,7 @@ export default function Dashboard() {
                         />
                     )}
 
-                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} />}
+                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} kasPrice={kasPrice} />}
 
                     {activeSection === 'wallet' && <WalletSection
                         balance={displayBalance.toFixed(2)}
@@ -1022,18 +1022,19 @@ function StatCard({ title, value, color }: { title: string; value: string; color
 
 // Subscriptions Section
 function SubscriptionsSection({
-    txSpeed, setTxSpeed, balance
+    txSpeed, setTxSpeed, balance, kasPrice
 }: {
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
-    balance: number
+    balance: number,
+    kasPrice: number | null
 }) {
     const [activeTab, setActiveTab] = useState<'browse' | 'active' | 'analytics'>('browse');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-    const [kasPrice, setKasPrice] = useState<number | null>(null);
+
 
     // Toast notifications
     const { showToast } = useToast();
@@ -1079,21 +1080,7 @@ function SubscriptionsSection({
         { name: 'Jun', amount: 85 },
     ];
 
-    // Fetch SOL price
-    useEffect(() => {
-        const fetchPrice = async () => {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
-                const data = await response.json();
-                setKasPrice(data.kaspa.usd);
-            } catch (error) {
-                console.error('Failed to fetch KAS price:', error);
-            }
-        };
-        fetchPrice();
-        const interval = setInterval(fetchPrice, 60000);
-        return () => clearInterval(interval);
-    }, []);
+
 
     const handleServiceClick = (service: Service) => {
         setSelectedService(service);
