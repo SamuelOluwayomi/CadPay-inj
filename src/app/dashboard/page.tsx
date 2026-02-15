@@ -50,6 +50,8 @@ export default function Dashboard() {
     const { showToast } = useToast();
     const { pots } = useSavings();
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
+    // Calculate display balance (prioritize connected wallet)
+    const displayBalance = address ? (walletBalance || 0) : custodialBalance;
     const usdcBalance = 0;
 
     const logout = async () => {
@@ -150,55 +152,32 @@ export default function Dashboard() {
         }
     };
 
-    const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean) => {
-        if (!address && !session) { // Allow if session exists (Custodial) OR address (KasWare)
-            showToast("Wallet not connected", "error");
-            return;
-        }
-
+    // Unified Send Handler - Call this when a transaction is COMPLETED
+    const onTransactionSuccess = async (recipient: string, amount: number, isSavings: boolean) => {
         try {
-            // Start speed tracking
-            setTxSpeed({ start: Date.now(), end: null, status: 'running' });
+            // End speed tracking
+            setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
 
-            // Convert KAS to sompi
-            const amountSompi = Math.floor(amount * 100_000_000);
+            showToast(
+                isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
+                "success"
+            );
 
-            // Check if KasWare is available
-            if (typeof window !== 'undefined' && window.kasware && typeof window.kasware.sendKaspa === 'function') {
-                // Use KasWare for real transaction
-                const txId = await window.kasware.sendKaspa(recipient, amountSompi);
+            // Refresh balance and transactions after completion
+            setTimeout(() => {
+                refreshBalance();
+                if (fetchTransactions) fetchTransactions();
+            }, 500);
 
-                if (!txId) {
-                    throw new Error('Transaction was rejected or failed');
-                }
-
-                // End speed tracking
-                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
-
-                showToast(
-                    isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
-                    "success"
-                );
-
-                // Refresh balance and transactions after completion
-                setTimeout(() => {
-                    if (refreshBalance) refreshBalance();
-                    if (fetchTransactions) fetchTransactions();
-                }, 2000);
-            } else {
-                // KasWare not available - UnifiedSendModal will handle client-side signing
-                // Just show an error message prompting them to use the modal
-                showToast(
-                    "Please use the Send Funds modal to complete this transaction securely.",
-                    "error"
-                );
-                setTxSpeed({ start: null, end: null, status: 'idle' });
-                return;
-            }
+            // Double check refresh
+            setTimeout(() => {
+                refreshBalance();
+                if (fetchTransactions) fetchTransactions();
+            }, 3000);
         } catch (error: any) {
             setTxSpeed({ start: null, end: null, status: 'idle' });
             showToast(error.message || "Transaction failed", "error");
-            console.error('Transaction error:', error);
+            console.error('Transaction success handler error:', error);
         }
     };
 
@@ -306,7 +285,6 @@ export default function Dashboard() {
         else if (profile?.authority) console.log("🟠 Dashboard Mode: Custodial", profile.authority);
     }, [address, profile]);
 
-    const displayBalance = address ? (walletBalance !== null ? walletBalance.toFixed(4) : "0.00") : custodialBalance.toFixed(4);
 
     const copyToClipboard = () => {
         if (walletAddress && walletAddress !== "Loading...") {
@@ -488,7 +466,7 @@ export default function Dashboard() {
                     {activeSection === 'overview' && (
                         <OverviewSection
                             userName={userProfile.username}
-                            balance={displayBalance}
+                            balance={displayBalance.toFixed(2)}
                             address={walletAddress}
                             refreshBalance={refreshBalance}
                             loading={loading}
@@ -502,10 +480,10 @@ export default function Dashboard() {
                         />
                     )}
 
-                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} />}
+                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} />}
 
                     {activeSection === 'wallet' && <WalletSection
-                        balance={displayBalance}
+                        balance={displayBalance.toFixed(2)}
                         address={walletAddress} copyToClipboard={copyToClipboard} />}
                     {activeSection === 'security' && <SecuritySettings />}
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
@@ -539,7 +517,7 @@ export default function Dashboard() {
             <UnifiedSendModal
                 isOpen={showSendModal}
                 onClose={() => setShowSendModal(false)}
-                onSend={handleUnifiedSend}
+                onSend={onTransactionSuccess}
                 pots={pots}
                 balance={address ? (walletBalance || 0) : custodialBalance}
             />
@@ -689,7 +667,7 @@ function OverviewSection({
             const res = await fetch('/api/faucet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address })
+                body: JSON.stringify({ address: address })
             });
             const data = await res.json();
 
@@ -712,8 +690,6 @@ function OverviewSection({
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
-                // --- OPTIMISTIC UI ---
-                // We update the local storage and trigger a refresh immediately
                 const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
                 const newBal = currentBal + fundingAmount;
                 localStorage.setItem(`demo_balance_${address}`, newBal.toString());
@@ -1046,10 +1022,11 @@ function StatCard({ title, value, color }: { title: string; value: string; color
 
 // Subscriptions Section
 function SubscriptionsSection({
-    txSpeed, setTxSpeed
+    txSpeed, setTxSpeed, balance
 }: {
     txSpeed: TxSpeed,
-    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
+    balance: number
 }) {
     const [activeTab, setActiveTab] = useState<'browse' | 'active' | 'analytics'>('browse');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -1062,7 +1039,11 @@ function SubscriptionsSection({
     const { showToast } = useToast();
 
     // @ts-ignore
-    const { address, balance } = useKasWare();
+    const { address } = useKasWare();
+    const { profile } = useUserProfile();
+    // Use effective address for custodial users
+    const effectiveAddress = address || profile?.authority;
+
     const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
@@ -1121,7 +1102,7 @@ function SubscriptionsSection({
 
     const handleSubscribe = async (serviceId: string, plan: SubscriptionPlan, email: string, price: number, txId: string) => {
         try {
-            if (!address) throw new Error("Wallet not connected");
+            if (!effectiveAddress) throw new Error("Wallet not connected");
 
             setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
@@ -1541,7 +1522,16 @@ function PaymentLinkSection() {
 
 // Receipts Section - Display Subscription Payment History
 function ReceiptsSection({ address }: { address: string }) {
-    const { receipts, loading, totalSpending, totalSpendingUSD } = useReceipts(address);
+    const { receipts, loading, totalSpending, totalSpendingUSD, fetchReceipts } = useReceipts(address);
+
+    useEffect(() => {
+        if (address) {
+            fetchReceipts();
+            // Poll for new receipts every 5 seconds to ensure we catch updates
+            const interval = setInterval(fetchReceipts, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [address, fetchReceipts]);
 
     return (
         <div className="space-y-6">

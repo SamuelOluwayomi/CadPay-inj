@@ -99,6 +99,10 @@ export default function SubscribeModal({
         setStep('processing');
 
         try {
+            // Initialize WASM
+            const { initKaspaWasm, signTransaction } = await import('@/lib/kaspa-wallet');
+            await initKaspaWasm();
+
             // Step 1: Verify and unlock wallet
             let unlockResult;
             if (verificationMethod === 'password') {
@@ -131,23 +135,29 @@ export default function SubscribeModal({
                 unlockResult = await unlockWallet(profile?.email || address!);
             }
 
-            if (!unlockResult.success) {
+            if (!unlockResult.success || !unlockResult.mnemonic) {
                 throw new Error(unlockResult.error || 'Failed to unlock wallet');
             }
 
             // Step 2: Send KAS payment
             let txId = '';
-            if (window.kasware) {
+            if (typeof window !== 'undefined' && window.kasware && typeof window.kasware.sendKaspa === 'function') {
                 const amountSompi = Math.floor(priceKAS * 100_000_000); // Convert KAS to sompi
+                // @ts-ignore
                 txId = await window.kasware.sendKaspa(MERCHANT_WALLET, amountSompi);
                 if (!txId) throw new Error('Transaction failed or was rejected');
             } else {
-                // FALLBACK: Smart Wallet / Demo Mode
-                // We simulate a transaction for the hackathon demo to avoid blocking users without the extension
-                console.log("KasWare not found, using Smart Wallet / Demo fallback");
-                txId = 'demo_kaspa_tx_' + Date.now() + Math.random().toString(36).substring(7);
-                // Artificial delay to simulate real network confirmation for the "Sonic" badge to pick up
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // Use built-in wallet for signing
+                console.log("KasWare not found, using Secure Cloud Wallet");
+
+                txId = await signTransaction({
+                    recipient: MERCHANT_WALLET,
+                    amount: priceKAS,
+                    seedPhrase: unlockResult.mnemonic,
+                    networkType: 'testnet-10'
+                });
+
+                if (!txId) throw new Error("Transaction broadcast failed");
             }
 
             setTxSignature(txId);
