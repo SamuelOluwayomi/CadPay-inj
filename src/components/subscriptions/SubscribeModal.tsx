@@ -423,6 +423,20 @@ export default function SubscribeModal({
                                         </div>
                                     )}
 
+                                    {verificationMethod === 'biometric' && (
+                                        <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                                            <div className="flex gap-3">
+                                                <FingerprintIcon size={20} className="text-orange-500 shrink-0 mt-0.5" />
+                                                <div className="text-sm">
+                                                    <p className="text-orange-200 font-medium mb-1">Browser Passkey Prompt</p>
+                                                    <p className="text-zinc-400">
+                                                        Your browser will ask you to <span className="text-white font-mono bg-white/10 px-1 rounded">Sign in</span> with your passkey to authorize this transaction. This secures your funds.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {error && (
                                         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl mt-4">
                                             <p className="text-sm text-red-400">{error}</p>
@@ -442,7 +456,7 @@ export default function SubscribeModal({
                                         disabled={!verificationMethod || (verificationMethod === 'password' && !password)}
                                         className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-colors"
                                     >
-                                        Confirm & Pay
+                                        {verificationMethod === 'biometric' ? 'Authenticate & Pay' : 'Confirm & Pay'}
                                     </button>
                                 </div>
                             </>
