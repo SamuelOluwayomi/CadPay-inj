@@ -94,8 +94,7 @@ export default function Dashboard() {
     const [isOnboardingSubmitting, setIsOnboardingSubmitting] = useState(false);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
     const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
-    const effectiveWalletAddress = address || profile?.wallet_address || profile?.authority || null;
-    const { createReceipt, receipts, fetchReceipts } = useReceipts(effectiveWalletAddress);
+    const { createReceipt } = useReceipts(address); // Pass the connected wallet address
     const [kasPrice, setKasPrice] = useState<number | null>(null);
 
     useEffect(() => {
@@ -128,24 +127,23 @@ export default function Dashboard() {
     }, [address]);
 
     // Fetch Custodial Balance if not connected to KasWare
-    const custodialWalletAddr = profile?.wallet_address || profile?.authority;
     useEffect(() => {
-        if (!address && custodialWalletAddr) {
-            fetch(`/api/kaspa/balance?address=${custodialWalletAddr}`)
+        if (!address && profile?.authority) {
+            fetch(`/api/kaspa/balance?address=${profile.authority}`)
                 .then(res => res.json())
                 .then(data => {
                     setCustodialBalance(data.balance / 100000000);
                 })
                 .catch(err => console.error("Failed to fetch custodial balance:", err));
         }
-    }, [address, custodialWalletAddr]);
+    }, [address, profile?.authority]);
 
     // Refresh function that handles both
     const refreshBalance = () => {
         if (address) {
             refreshWalletBalance();
-        } else if (custodialWalletAddr) {
-            fetch(`/api/kaspa/balance?address=${custodialWalletAddr}`)
+        } else if (profile?.authority) {
+            fetch(`/api/kaspa/balance?address=${profile.authority}`)
                 .then(res => res.json())
                 .then(data => setCustodialBalance(data.balance / 100000000))
                 .catch(err => console.error("Failed to refresh custodial balance:", err));
@@ -153,37 +151,54 @@ export default function Dashboard() {
     };
 
     const handleUnifiedSend = async (recipient: string, amount: number, isSavings: boolean) => {
+        if (!address && !session) { // Allow if session exists (Custodial) OR address (KasWare)
+            showToast("Wallet not connected", "error");
+            return;
+        }
+
         try {
-            // Transaction was already signed and broadcast by UnifiedSendModal
-            // This callback handles UI updates only
+            // Start speed tracking
+            setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
-            showToast(
-                isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
-                "success"
-            );
+            // Convert KAS to sompi
+            const amountSompi = Math.floor(amount * 100_000_000);
 
-            // Create receipt for the transaction
-            if (address || profile?.wallet_address) {
-                await createReceipt({
-                    wallet_address: address || profile?.wallet_address || '',
-                    service_name: isSavings ? 'Savings Deposit' : 'Send KAS',
-                    plan_name: isSavings ? 'Pot Funding' : 'Transfer',
-                    amount_kas: amount,
-                    amount_usd: kasPrice ? amount * kasPrice : 0,
-                    tx_signature: `tx_${Date.now()}`,
-                    status: 'completed',
-                    merchant_wallet: recipient
-                });
+            // Check if KasWare is available
+            if (typeof window !== 'undefined' && window.kasware && typeof window.kasware.sendKaspa === 'function') {
+                // Use KasWare for real transaction
+                const txId = await window.kasware.sendKaspa(recipient, amountSompi);
+
+                if (!txId) {
+                    throw new Error('Transaction was rejected or failed');
+                }
+
+                // End speed tracking
+                setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
+
+                showToast(
+                    isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
+                    "success"
+                );
+
+                // Refresh balance and transactions after completion
+                setTimeout(() => {
+                    if (refreshBalance) refreshBalance();
+                    if (fetchTransactions) fetchTransactions();
+                }, 2000);
+            } else {
+                // KasWare not available - UnifiedSendModal will handle client-side signing
+                // Just show an error message prompting them to use the modal
+                showToast(
+                    "Please use the Send Funds modal to complete this transaction securely.",
+                    "error"
+                );
+                setTxSpeed({ start: null, end: null, status: 'idle' });
+                return;
             }
-
-            // Refresh balance after a short delay for network propagation
-            setTimeout(() => {
-                refreshBalance();
-                if (fetchTransactions) fetchTransactions();
-            }, 3000);
         } catch (error: any) {
-            console.error('Post-transaction update error:', error);
-            // Don't show error toast here — the transaction already succeeded
+            setTxSpeed({ start: null, end: null, status: 'idle' });
+            showToast(error.message || "Transaction failed", "error");
+            console.error('Transaction error:', error);
         }
     };
 
@@ -282,8 +297,8 @@ export default function Dashboard() {
     };
 
     // Fallback to profile.authority (Custodial Address) if KasWare is not connected
-    const walletAddress = address || profile?.wallet_address || profile?.authority || "";
-    const isCustodial = !address && !!(profile?.authority || profile?.wallet_address);
+    const walletAddress = address || profile?.authority || "";
+    const isCustodial = !address && !!profile?.authority;
 
     // Debug Active Mode
     useEffect(() => {
@@ -1048,22 +1063,6 @@ function SubscriptionsSection({
 
     // @ts-ignore
     const { address, balance } = useKasWare();
-    const { profile } = useUserProfile();
-    const [custodialBalance, setCustodialBalance] = useState<number>(0);
-
-    // Fetch on-chain balance for biometric/custodial users
-    useEffect(() => {
-        const walletAddr = profile?.wallet_address || profile?.authority;
-        if (!address && walletAddr) {
-            fetch(`/api/kaspa/balance?address=${walletAddr}`)
-                .then(res => res.json())
-                .then(data => setCustodialBalance(data.balance / 100_000_000))
-                .catch(err => console.error("Failed to fetch balance for subscriptions:", err));
-        }
-    }, [address, profile?.wallet_address, profile?.authority]);
-
-    const effectiveBalance = address ? (balance || 0) : custodialBalance;
-
     const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
@@ -1496,7 +1495,7 @@ function SubscriptionsSection({
                 onClose={() => setShowSubscribeModal(false)}
                 service={selectedService}
                 onSubscribe={handleSubscribe}
-                balance={effectiveBalance}
+                balance={balance || 0}
                 kasPrice={kasPrice}
                 existingSubscriptions={subscriptions}
             />

@@ -41,8 +41,8 @@ import { useKasWare } from './useKasWare';
 export const useSavings = () => {
     const { address: userAddress } = useKasWare();
     const { profile } = useUserProfile();
-    // Prioritize connected wallet, fallback to custodial profile authority, then biometric wallet address
-    const effectiveAddress = userAddress || profile?.authority || profile?.wallet_address;
+    // Prioritize connected wallet, fallback to custodial profile authority
+    const effectiveAddress = userAddress || profile?.authority;
 
     const [pots, setPots] = useState<SavingsPot[]>([]);
     const [transactions, setTransactions] = useState<SavingsTransaction[]>([]);
@@ -130,6 +130,20 @@ export const useSavings = () => {
         if (!effectiveAddress) return null;
 
         try {
+            // Call API to generate a real Pot Address (Custodial Sub-wallet)
+            // For now, we'll assume we need to create a new API route or use a robust generator.
+            // But to fix the "invalid address" error immediately without a new API:
+            // We can use a HARDCODED valid testnet address for testing? No, that's bad for uniqueness.
+            // We should use the /api/wallet/create route but adapted?
+
+            // Better approach: Let's create a real address via a new API route or update this to use a valid format.
+            // Since I cannot easily create a new API route in this single step efficiently without checking existing ones,
+            // I will first check what API routes exist.
+
+            // Placeholder: I will assume I need to create the API route.
+            // But first, let's just make the mock address "valid-ish" so the faucet MIGHT accept it if it just checks regex?
+            // No, faucet checks on-chain or at least checksum. Random string won't work.
+
             // 1. Generate Valid Pot Address via API
             const res = await fetch('/api/savings/create', {
                 method: 'POST',
