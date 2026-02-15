@@ -166,46 +166,51 @@ export async function signTransaction(params: {
             throw new Error('Insufficient funds (no UTXOs found)');
         }
 
-        // 3. Convert API UTXOs to WASM format
-        const utxoEntries = utxoData.map((u: any) => {
-            return new kaspa.UtxoEntry(
-                new kaspa.Outpoint(u.outpoint.transactionId, u.outpoint.index),
-                new kaspa.UtxoEntryReference(
-                    BigInt(u.utxoEntry.amount),
-                    new kaspa.ScriptPublicKey(
-                        u.utxoEntry.scriptPublicKey.version,
-                        u.utxoEntry.scriptPublicKey.scriptPublicKey
-                    ),
-                    BigInt(u.utxoEntry.blockDaaScore),
-                    u.utxoEntry.isCoinbase
-                )
-            );
-        });
+        // 3. Convert API UTXOs to IUtxoEntry format (plain objects)
+        const utxoEntries = utxoData.map((u: any) => ({
+            address: sourceAddress,
+            outpoint: {
+                transactionId: u.outpoint.transactionId,
+                index: u.outpoint.index
+            },
+            amount: BigInt(u.utxoEntry.amount),
+            scriptPublicKey: {
+                version: u.utxoEntry.scriptPublicKey.version,
+                script: u.utxoEntry.scriptPublicKey.scriptPublicKey
+            },
+            blockDaaScore: BigInt(u.utxoEntry.blockDaaScore),
+            isCoinbase: u.utxoEntry.isCoinbase || false
+        }));
 
         console.log(`⚙️ Building transaction with ${utxoEntries.length} UTXOs...`);
 
-        // 4. Build transaction
+        // 4. Build transaction using Generator
         const amountSompi = BigInt(Math.floor(amount * 100000000));
-        const settings = new kaspa.GeneratorSettings(
-            utxoEntries,
-            { [recipient]: amountSompi },
-            new kaspa.Address(sourceAddress),
-            kaspa.PriorityFee.include(0n)
-        );
 
-        const generator = new kaspa.Generator(settings);
+        const generator = new kaspa.Generator({
+            entries: utxoEntries,
+            outputs: [{
+                address: recipient,
+                amount: amountSompi
+            }],
+            changeAddress: sourceAddress,
+            priorityFee: 0n,
+            networkId: networkType === 'mainnet' ? 'mainnet' : 'testnet-10'
+        });
 
-        // 5. Sign transaction
-        const pendingTx = generator.generate_transaction();
+        // 5. Generate and sign transaction
+        const pendingTx = await generator.next();
+
+        if (!pendingTx) {
+            throw new Error('Failed to generate transaction');
+        }
+
         await pendingTx.sign([privateKey]);
-        const signedTx = pendingTx.transaction;
-
-        // 6. Serialize for broadcast
-        const txJson = signedTx.to_json();
+        const signedTxJson = pendingTx.serializeToSafeJSON();
 
         console.log('✅ Transaction signed successfully');
 
-        return JSON.stringify(txJson);
+        return signedTxJson;
     } catch (error: any) {
         console.error('Transaction signing failed:', error);
         throw new Error(error.message || 'Failed to sign transaction');
