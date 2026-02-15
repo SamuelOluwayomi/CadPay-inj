@@ -60,13 +60,18 @@ export function derivePrivateKeyFromSeed(seedPhrase: string): any {
         const mnemonic = new kaspa.Mnemonic(seedPhrase);
 
         // Derive private key at standard path (m/44'/972/0'/0/0)
-        const xprv = mnemonic.toXPrivateKey();
-        const privateKey = xprv.deriveChild(44 | 0x80000000)
-            .deriveChild(972 | 0x80000000)
-            .deriveChild(0 | 0x80000000)
-            .deriveChild(0)
-            .deriveChild(0)
-            .toPrivateKey();
+        // 1. Convert mnemonic to seed
+        const seed = mnemonic.toSeed();
+
+        // 2. Create XPrv from seed
+        const xprv = new kaspa.XPrv(seed);
+
+        // 3. Derive path (m/44'/111111'/0'/0/0)
+        // Kaspa Coin Type is 111111
+        const path = xprv.derivePath("m/44'/111111'/0'/0/0");
+
+        // 4. Get Private Key
+        const privateKey = path.toPrivateKey();
 
         return privateKey;
     } catch (error) {
