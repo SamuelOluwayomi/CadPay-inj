@@ -205,13 +205,37 @@ export async function signTransaction(params: {
             throw new Error('Failed to generate transaction');
         }
 
-        // Convert derived key to a proper PrivateKey instance
-        // path.toPrivateKey() returns an internal key type — sign() needs a PrivateKey class instance
+        // Debug: inspect key type
         const privateKeyHex = privateKey.toString();
-        const signingKey = new kaspa.PrivateKey(privateKeyHex);
+        console.log('🔑 Key type:', typeof privateKey);
+        console.log('🔑 Key constructor:', privateKey?.constructor?.name);
+        console.log('🔑 Key hex (first 16 chars):', privateKeyHex.substring(0, 16) + '...');
+        console.log('🔑 Key hex length:', privateKeyHex.length);
 
-        console.log('🔑 Signing with PrivateKey instance...');
-        await pendingTx.sign([signingKey]);
+        // Try signing with hex string directly (the error says "must be a string or PrivateKey")
+        try {
+            await pendingTx.sign([privateKeyHex]);
+            console.log('✅ Signed with hex string');
+        } catch (e1: any) {
+            console.log('❌ Hex string failed:', e1.message);
+            // Try with new PrivateKey instance
+            try {
+                const pk = new kaspa.PrivateKey(privateKeyHex);
+                await pendingTx.sign([pk]);
+                console.log('✅ Signed with PrivateKey(hex)');
+            } catch (e2: any) {
+                console.log('❌ PrivateKey(hex) failed:', e2.message);
+                // Try the raw privateKey directly
+                try {
+                    await pendingTx.sign([privateKey]);
+                    console.log('✅ Signed with raw key');
+                } catch (e3: any) {
+                    console.log('❌ Raw key failed:', e3.message);
+                    throw e3;
+                }
+            }
+        }
+
         const signedTxJson = pendingTx.serializeToSafeJSON();
 
         console.log('✅ Transaction signed successfully');
