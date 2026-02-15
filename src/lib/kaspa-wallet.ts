@@ -166,7 +166,7 @@ export async function signTransaction(params: {
             throw new Error('Insufficient funds (no UTXOs found)');
         }
 
-        // 3. Convert API UTXOs to IUtxoEntry format (plain objects)
+        // 3. Convert API UTXOs to IUtxoEntry format
         const utxoEntries = utxoData.map((u: any) => ({
             address: sourceAddress,
             outpoint: {
@@ -174,10 +174,10 @@ export async function signTransaction(params: {
                 index: u.outpoint.index
             },
             amount: BigInt(u.utxoEntry.amount),
-            scriptPublicKey: {
-                version: u.utxoEntry.scriptPublicKey.version,
-                script: u.utxoEntry.scriptPublicKey.scriptPublicKey
-            },
+            scriptPublicKey: new kaspa.ScriptPublicKey(
+                u.utxoEntry.scriptPublicKey.version,
+                u.utxoEntry.scriptPublicKey.scriptPublicKey
+            ),
             blockDaaScore: BigInt(u.utxoEntry.blockDaaScore),
             isCoinbase: u.utxoEntry.isCoinbase || false
         }));
