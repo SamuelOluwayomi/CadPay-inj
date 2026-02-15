@@ -205,7 +205,13 @@ export async function signTransaction(params: {
             throw new Error('Failed to generate transaction');
         }
 
-        await pendingTx.sign([privateKey]);
+        // Convert derived key to a proper PrivateKey instance
+        // path.toPrivateKey() returns an internal key type — sign() needs a PrivateKey class instance
+        const privateKeyHex = privateKey.toString();
+        const signingKey = new kaspa.PrivateKey(privateKeyHex);
+
+        console.log('🔑 Signing with PrivateKey instance...');
+        await pendingTx.sign([signingKey]);
         const signedTxJson = pendingTx.serializeToSafeJSON();
 
         console.log('✅ Transaction signed successfully');
