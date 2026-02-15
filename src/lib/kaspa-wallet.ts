@@ -73,6 +73,18 @@ export function derivePrivateKeyFromSeed(seedPhrase: string): any {
         // 4. Get Private Key
         const privateKey = path.toPrivateKey();
 
+        // Debug: Check derived address
+        try {
+            // Assume testnet for debug log, or try to infer? 
+            // Just use Testnet as default since that's what we are on
+            const debugAddress = privateKey.toPublicKey().toAddress(kaspa.NetworkType.Testnet);
+            console.log('🔍 Debug: Derived Private Key Address (Testnet):', debugAddress.toString());
+        } catch (e) {
+            console.log('🔍 Debug: Could not derive address for logging');
+        }
+
+        return privateKey;
+
         return privateKey;
     } catch (error) {
         console.error('Failed to derive private key:', error);
