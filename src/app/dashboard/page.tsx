@@ -232,22 +232,31 @@ export default function Dashboard() {
         setIsOnboardingSubmitting(true);
         try {
             // 1. Ensure Wallet Exists (Custodial Only)
-            // If user is not connected via KasWare, we must generate a backend wallet first.
-            if (!address) {
-                console.log("🔐 Generating Custodial Wallet...");
-                const res = await fetch('/api/wallet/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session?.access_token}`
-                    }
-                });
-                const walletData = await res.json();
+            // Skip if: KasWare is connected (has address) OR user is biometric (wallet created on frontend)
+            const isBiometricUser = profile?.auth_method === 'biometric';
 
-                if (!res.ok || !walletData.success) {
-                    throw new Error(walletData.error || "Failed to generate wallet");
+            if (!address && !isBiometricUser) {
+                // Only create a custodial wallet for password-based users who don't have one yet
+                if (!profile?.authority) {
+                    console.log("🔐 Generating Custodial Wallet (Password User)...");
+                    const res = await fetch('/api/wallet/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session?.access_token}`
+                        }
+                    });
+                    const walletData = await res.json();
+
+                    if (!res.ok || !walletData.success) {
+                        throw new Error(walletData.error || "Failed to generate wallet");
+                    }
+                    console.log("✅ Custodial Wallet generated:", walletData.address);
+                } else {
+                    console.log("✅ Wallet already exists:", profile.authority);
                 }
-                console.log("✅ Wallet generated:", walletData.address);
+            } else if (isBiometricUser) {
+                console.log("✅ Biometric user — wallet created on frontend, skipping backend creation.");
             }
 
             // 2. Save Profile Details (Upsert will merge with wallet data)
