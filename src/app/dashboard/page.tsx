@@ -1048,6 +1048,22 @@ function SubscriptionsSection({
 
     // @ts-ignore
     const { address, balance } = useKasWare();
+    const { profile } = useUserProfile();
+    const [custodialBalance, setCustodialBalance] = useState<number>(0);
+
+    // Fetch on-chain balance for biometric/custodial users
+    useEffect(() => {
+        const walletAddr = profile?.wallet_address || profile?.authority;
+        if (!address && walletAddr) {
+            fetch(`/api/kaspa/balance?address=${walletAddr}`)
+                .then(res => res.json())
+                .then(data => setCustodialBalance(data.balance / 100_000_000))
+                .catch(err => console.error("Failed to fetch balance for subscriptions:", err));
+        }
+    }, [address, profile?.wallet_address, profile?.authority]);
+
+    const effectiveBalance = address ? (balance || 0) : custodialBalance;
+
     const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
@@ -1480,7 +1496,7 @@ function SubscriptionsSection({
                 onClose={() => setShowSubscribeModal(false)}
                 service={selectedService}
                 onSubscribe={handleSubscribe}
-                balance={balance || 0}
+                balance={effectiveBalance}
                 kasPrice={kasPrice}
                 existingSubscriptions={subscriptions}
             />
