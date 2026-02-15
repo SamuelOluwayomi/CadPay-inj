@@ -6,6 +6,7 @@ import { XIcon, LockKeyIcon, FingerprintIcon, CheckCircleIcon } from '@phosphor-
 import { Service, SubscriptionPlan, convertUSDtoKAS } from '@/data/subscriptions';
 import { useKasWare } from '@/hooks/useKasWare';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
+import { initKaspaWasm, signTransaction } from '@/lib/kaspa-wallet';
 import { verifyPassword } from '@/utils/passwordHash';
 import { supabase } from '@/lib/supabase';
 import { useReceipts } from '@/hooks/useReceipts';
@@ -135,20 +136,21 @@ export default function SubscribeModal({
                 throw new Error(unlockResult.error || 'Failed to unlock wallet');
             }
 
-            // Step 2: Send KAS payment
-            let txId = '';
-            if (window.kasware) {
-                const amountSompi = Math.floor(priceKAS * 100_000_000); // Convert KAS to sompi
-                txId = await window.kasware.sendKaspa(MERCHANT_WALLET, amountSompi);
-                if (!txId) throw new Error('Transaction failed or was rejected');
-            } else {
-                // FALLBACK: Smart Wallet / Demo Mode
-                // We simulate a transaction for the hackathon demo to avoid blocking users without the extension
-                console.log("KasWare not found, using Smart Wallet / Demo fallback");
-                txId = 'demo_kaspa_tx_' + Date.now() + Math.random().toString(36).substring(7);
-                // Artificial delay to simulate real network confirmation for the "Sonic" badge to pick up
-                await new Promise(resolve => setTimeout(resolve, 800));
+            // Step 2: Initialize WASM and send real KAS payment
+            await initKaspaWasm();
+
+            if (!unlockResult.mnemonic) {
+                throw new Error('Failed to get wallet seed phrase');
             }
+
+            const txId = await signTransaction({
+                seedPhrase: unlockResult.mnemonic,
+                recipient: MERCHANT_WALLET,
+                amount: priceKAS,
+                networkType: 'testnet-10'
+            });
+
+            if (!txId) throw new Error('Transaction failed');
 
             setTxSignature(txId);
 

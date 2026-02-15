@@ -10,6 +10,7 @@ export interface UserProfile {
     pin: string;
     email?: string;
     authority: string; // Wallet address
+    wallet_address?: string; // Frontend-generated wallet address (biometric users)
     encrypted_private_key?: string; // New field for custodial check
     auth_method?: 'password' | 'biometric';
 }
