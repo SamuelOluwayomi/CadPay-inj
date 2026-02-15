@@ -115,8 +115,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 networkType: 'testnet-10'
             });
 
-            // 3. Get auth token
-            const session = await (await fetch('/api/auth/session')).json();
+            // 3. Get auth token from Supabase
+            const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) {
                 throw new Error('Not authenticated');
             }
@@ -182,8 +182,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 networkType: 'testnet-10'
             });
 
-            // 4. Get auth token
-            const session = await (await fetch('/api/auth/session')).json();
+            // 4. Get auth token from Supabase
+            const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) {
                 throw new Error('Not authenticated');
             }
