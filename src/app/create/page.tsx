@@ -75,10 +75,33 @@ export default function CreateAccount() {
         setStatus('generating');
 
         try {
+            // 1. Generate Kaspa Wallet (Client Side)
+            const wallet = await generateKaspaWallet();
+            setWalletAddress(wallet.address);
+            setWalletMnemonic(wallet.mnemonic);
+
+            console.log('✅ Generated wallet:', wallet.address);
+
+            // 2. Create Biometric/Password Access
+            if (useBiometrics) {
+                setStatus('creating'); // Update status for UI feedback
+                console.log('🔐 Creating biometric passkey...');
+                // Prompt user for biometrics
+                const result = await createWallet(email, wallet.mnemonic);
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to create biometric passkey');
+                }
+            } else {
+                console.log('🔐 Encrypting with password...');
+                const result = await createWalletWithPassword(email, wallet.mnemonic, password);
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to create password-protected wallet');
+                }
+            }
+
             setStatus('creating');
 
-            // Create wallet with chosen authentication method
-            // 1. Create Supabase Auth Account
+            // 3. Create Supabase Auth Account
             const authPassword = useBiometrics
                 ? crypto.randomUUID()
                 : password;
@@ -92,7 +115,7 @@ export default function CreateAccount() {
                 password: authPassword,
                 options: {
                     data: {
-                        // wallet_address: kaspaWallet.address, // REMOVED
+                        wallet_address: wallet.address,
                         auth_method: useBiometrics ? 'biometric' : 'password'
                     }
                 }
