@@ -11,6 +11,7 @@ export interface UserProfile {
     email?: string;
     authority: string; // Wallet address
     encrypted_private_key?: string; // New field for custodial check
+    auth_method?: 'password' | 'biometric';
 }
 
 export function useUserProfile() {
@@ -88,8 +89,9 @@ export function useUserProfile() {
                     gender: data.gender || 'other',
                     pin: data.pin || '',
                     email: data.email || '',
-                    authority: data.wallet_address,
-                    encrypted_private_key: data.encrypted_private_key
+                    authority: data.wallet_address || '', // Map DB wallet_address to internal 'authority'
+                    encrypted_private_key: data.encrypted_private_key,
+                    auth_method: data.auth_method
                 });
             } else {
                 setProfile(null);
@@ -109,9 +111,23 @@ export function useUserProfile() {
         // 1. Double check DB state before acting
         const { data: latestProfile } = await supabase
             .from('profiles')
-            .select('wallet_address, encrypted_private_key')
+            .select('wallet_address, encrypted_private_key, auth_method')
             .eq('id', session.user.id)
             .maybeSingle();
+
+        // 1a. If Biometric, DO NOT Create Custodial Wallet (It's clientside)
+        if (latestProfile?.auth_method === 'biometric') {
+            // Check if wallet exists, if not, it's just sync lag or error, but do NOT overwrite
+            if (latestProfile?.wallet_address) {
+                console.log('✅ Biometric wallet detected:', latestProfile.wallet_address);
+                if (profile?.authority !== latestProfile.wallet_address) {
+                    fetchProfile();
+                }
+            } else {
+                console.warn('⚠️ Biometric user has no wallet address yet. Waiting for client sync.');
+            }
+            return;
+        }
 
         if (latestProfile?.wallet_address && latestProfile?.encrypted_private_key) {
             console.log('✅ Synced with DB Wallet:', latestProfile.wallet_address);

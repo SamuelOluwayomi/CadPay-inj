@@ -52,9 +52,16 @@ export default function Dashboard() {
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
     const usdcBalance = 0;
 
-    const logout = () => {
-        disconnect();
-        router.push('/');
+    const logout = async () => {
+        try {
+            await supabase.auth.signOut();
+            localStorage.removeItem('auth_email');
+            disconnect();
+            router.push('/signin');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            router.push('/');
+        }
     };
 
     const [activeSection, setActiveSection] = useState<NavSection>('overview');

@@ -157,13 +157,21 @@ export default function CreateAccount() {
             // 2. Set Active Session (Local Storage)
             localStorage.setItem('auth_email', cleanEmail);
 
-            // 3. Auto-download recovery kit
+            // 6. Auto-download recovery kit and Finish
             setStatus('success');
 
-            // 4. Redirect to Dashboard after short delay
+            // Trigger download immediately
+            console.log('📥 Triggering auto-download of recovery kit...');
+            try {
+                downloadRecoveryKit(wallet.address, wallet.mnemonic);
+            } catch (e) {
+                console.error('Auto-download failed:', e);
+            }
+
+            // 7. Redirect to Dashboard
             setTimeout(() => {
                 router.push('/dashboard');
-            }, 1200);
+            }, 2500);
 
             // REMOVED ORPHANED BLOCK
         } catch (error: any) {
