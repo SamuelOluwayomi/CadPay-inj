@@ -75,12 +75,24 @@ export function derivePrivateKeyFromSeed(seedPhrase: string): any {
 
         // Debug: Check derived address
         try {
-            // Assume testnet for debug log, or try to infer? 
-            // Just use Testnet as default since that's what we are on
-            const debugAddress = privateKey.toPublicKey().toAddress(kaspa.NetworkType.Testnet);
-            console.log('🔍 Debug: Derived Private Key Address (Testnet):', debugAddress.toString());
+            const network = kaspa.NetworkType.Testnet;
+
+            // Method 1: Via Private Key (Used for Signing)
+            const pubKey1 = privateKey.toPublicKey();
+            const addr1 = pubKey1.toAddress(network);
+            console.log('🔍 Debug: Address via PrivateKey:', addr1.toString());
+
+            // Method 2: Via XPub (Used in Generation)
+            const xpub = path.toXPub();
+            const pubKey2 = xpub.toPublicKey();
+            const addr2 = pubKey2.toAddress(network);
+            console.log('🔍 Debug: Address via XPub:', addr2.toString());
+
+            if (addr1.toString() !== addr2.toString()) {
+                console.error('⚠️ CRITICAL: Derivation Mismatch between PrivateKey and XPub methods!');
+            }
         } catch (e) {
-            console.log('🔍 Debug: Could not derive address for logging');
+            console.log('🔍 Debug: Could not derive address for logging', e);
         }
 
         return privateKey;

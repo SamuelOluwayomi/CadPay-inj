@@ -85,6 +85,29 @@ export async function generateKaspaWallet(
 
         console.log('✅ Wallet generated:', address.toString());
 
+        // 7. Verify Reconstruction (Sanity Check)
+        // Ensure that storing the mnemonic string and reconstructing it produces the SAME address
+        try {
+            // Note: In reconstruction we must ensure we use the same NetworkType logic
+            const verifyMnemonic = new Kaspa.Mnemonic(mnemonicString);
+            const verifySeed = verifyMnemonic.toSeed();
+            const verifyXprv = new Kaspa.XPrv(verifySeed as any);
+            const verifyPath = verifyXprv.derivePath("m/44'/111111'/0'/0/0");
+            // Use XPub method as per generation flow
+            const verifyAddr = verifyPath.toXPub().toPublicKey().toAddress(networkType).toString();
+
+            if (verifyAddr !== address.toString()) {
+                console.error('🚨 CRITICAL GEN ERROR: Reconstructed address does not match!');
+                console.error('Original:', address.toString());
+                console.error('Reconstructed:', verifyAddr);
+                // We should probably throw here to prevent bad wallet generation
+            } else {
+                console.log('✅ Wallet Generation Verified: Reconstruction matches.');
+            }
+        } catch (vErr) {
+            console.error('Validation Error:', vErr);
+        }
+
         return {
             mnemonic: mnemonicString,
             address: address.toString(),
