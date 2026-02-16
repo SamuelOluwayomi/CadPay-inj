@@ -5,43 +5,28 @@ This document outlines the Supabase database schema used in the CadPay applicati
 ## Tables
 
 ### 1. `profiles`
-Stores user profile information, linked to either a Supabase Auth User ID (for custodial users) or a Wallet Address (for non-custodial users).
+Stores user profile information, authentication metadata, and optional custodial wallet keys. This centralized table handles both user identity and wallet association.
 
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
 | `id` | uuid | Primary Key. References `auth.users(id)` ON DELETE CASCADE. |
-| `wallet_address` | text | Unique (Nullable). The user's Kaspa wallet address. |
 | `username` | text | User's display name. |
+| `email` | text | User's email address. |
+| `wallet_address` | text | Unique (Nullable). The user's Kaspa wallet address (Custodial or Connected). |
+| `auth_method` | text | `password` or `biometric`. Tracks the user's login preference. |
+| `encrypted_private_key`| text | AES-256-CBC Encrypted Kaspa Private Key (for custodial wallets). |
+| `pin` | text | 4-digit security PIN (hashed/encrypted). |
 | `emoji` | text | User's avatar emoji (default: 👤). |
 | `gender` | text | User's gender (for customization). |
-| `pin` | text | 4-digit security PIN. |
-| `email` | text | User's email address. |
-| `encrypted_private_key`| text | AES-256-CBC Encrypted Kaspa Private Key (for custodial wallets). |
-| `auth_user_id` | uuid | Foreign Key. References `auth.users(id)`. |
 | `created_at` | timestamptz | Creation timestamp (default: now()). |
 | `updated_at` | timestamptz | Last update timestamp (default: now()). |
 
 **RLS Policies:**
-- Users can view, insert, and update their own profile based on `auth.uid()`.
+- Users can view and update their own profile based on `auth.uid()`.
 
 ---
 
-### 2. `profiles`
-Stores authentication metadata for non-custodial/biometric login flows. This allows users to "log in" using just their email and password/biometrics, which then unlocks their local wallet.
-
-| Column Name | Type | Description |
-| :--- | :--- | :--- |
-| `id` | uuid | Primary Key (default: `uuid_generate_v4()`). |
-| `email` | text | Unique. User's email address. |
-| `wallet_address` | text | The associated Kaspa wallet address. |
-| `auth_method` | text | `password` or `biometric`. |
-| `password_hash` | text | Hashed password (if `auth_method` is `password`). |
-| `last_login` | timestamptz | Timestamp of last successful login. |
-| `created_at` | timestamptz | Creation timestamp. |
-
----
-
-### 3. `receipts`
+### 2. `receipts`
 Stores transaction receipts for the dashboard history.
 
 | Column Name | Type | Description |
@@ -59,7 +44,7 @@ Stores transaction receipts for the dashboard history.
 
 ---
 
-### 4. `savings_pots`
+### 3. `savings_pots`
 Stores user-created savings goals/pots.
 
 | Column Name | Type | Description |
@@ -76,7 +61,7 @@ Stores user-created savings goals/pots.
 
 ---
 
-### 5. `savings_transactions`
+### 4. `savings_transactions`
 Tracks deposits and withdrawals for savings pots.
 
 | Column Name | Type | Description |
@@ -91,7 +76,7 @@ Tracks deposits and withdrawals for savings pots.
 
 ---
 
-### 6. `fund_requests`
+### 5. `fund_requests`
 Tracks requests for faucet funds.
 
 | Column Name | Type | Description |

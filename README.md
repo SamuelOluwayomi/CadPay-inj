@@ -4,6 +4,8 @@
 
 CadPay is a modern payment platform built on the Kaspa blockchain, featuring biometric authentication, custodial wallet management, savings accounts, and subscription payments. It combines Web3 technology with traditional payment UX to create a seamless experience for both users and merchants.
 
+**Live Demo:** [https://cadkas.vercel.app](https://cadkas.vercel.app)
+
 ---
 
 ## 🌟 Features
@@ -11,24 +13,24 @@ CadPay is a modern payment platform built on the Kaspa blockchain, featuring bio
 ### User Features
 
 - **🔐 Biometric Wallet Authentication**
-  - FaceID/TouchID support via WebAuthn
-  - Device-secured private keys (no password memorization)
-  - Fallback password authentication option
+  - **Passkey Integration**: Secure, passwordless login using WebAuthn (FaceID/TouchID).
+  - **Device-Bound Security**: Private keys are encrypted and stored locally; access requires biometric proof.
+  - **Non-Custodial UX**: Experience the security of a hardware wallet with the convenience of a web app.
+  - **Fallback**: Option to use a secure PIN/Password method.
   
 - **💼 Dual Wallet Modes**
-  - **Custodial**: Server-managed encrypted keys for convenience
-  - **Non-Custodial**: KasWare browser extension integration
+  - **Custodial**: Encrypted cloud wallet for easy onboarding.
+  - **Connected**: Seamless integration with **KasWare Wallet** browser extension.
   
 - **🐷 Savings Pots**
-  - Create multiple savings goals
-  - Track balances and transaction history
-  - Quick transfer from main balance
-  - QR code deposit functionality
+  - Create goal-oriented savings accounts.
+  - **Real On-Chain Vaults**: Each pot is a derived address on the Kaspa network.
+  - Track progress and view transaction history.
   
 - **📱 Subscription Management**
-  - Subscribe to services with recurring payments
-  - Track active subscriptions
-  - Manage payment schedules
+  - **Direct KAS Payments**: Pay for subscriptions directly from your wallet.
+  - **Client-Side Signing**: Transactions are signed locally (via WASM SDK) for maximum security.
+  - **Automated Tracking**: Monitor active subscriptions and payment history.
   
 - **📊 User Dashboard**
   - Real-time balance display
