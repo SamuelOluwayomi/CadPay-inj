@@ -164,7 +164,7 @@ function RecoveryContent() {
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-900/10 rounded-full blur-[100px]" />
             </div>
 
             <div className="relative z-10 max-w-md w-full">
@@ -315,9 +315,9 @@ function RecoveryContent() {
                                     )}
 
                                     {authMethod === 'biometric' && (
-                                        <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                            <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
-                                            <p className="text-xs text-blue-200/80 leading-relaxed">
+                                        <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                                            <FingerprintIcon size={20} className="text-orange-400 shrink-0 mt-0.5" />
+                                            <p className="text-xs text-orange-200/80 leading-relaxed">
                                                 We'll use your device's biometrics to create a new secure key.
                                             </p>
                                         </div>

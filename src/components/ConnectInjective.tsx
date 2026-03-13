@@ -42,9 +42,9 @@ export default function ConnectInjective() {
                 <button
                     onClick={() => handleConnect(Wallet.Keplr)}
                     disabled={isLoading || isConnected}
-                    className="group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:border-blue-500/50 transition-all disabled:opacity-50"
+                    className="group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:border-orange-500/50 transition-all disabled:opacity-50"
                 >
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-900/20">
+                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-900/20">
                         K
                     </div>
                     <span className="font-bold text-white text-sm">Keplr</span>

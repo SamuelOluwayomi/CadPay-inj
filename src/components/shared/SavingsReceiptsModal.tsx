@@ -62,7 +62,7 @@ export default function SavingsReceiptsModal({ isOpen, onClose, pot }: SavingsRe
                         <div className="bg-[#1a1b1f] border border-white/10 rounded-3xl p-6 max-w-md w-full shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
                             <div className="flex items-center justify-between mb-6 shrink-0">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-500">
+                                    <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-500">
                                         <ReceiptIcon size={24} weight="bold" />
                                     </div>
                                     <div>
@@ -78,7 +78,7 @@ export default function SavingsReceiptsModal({ isOpen, onClose, pot }: SavingsRe
                             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                                 {isLoading ? (
                                     <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
-                                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2" />
+                                        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2" />
                                         <p className="text-sm">Loading receipts...</p>
                                     </div>
                                 ) : transactions.length === 0 ? (

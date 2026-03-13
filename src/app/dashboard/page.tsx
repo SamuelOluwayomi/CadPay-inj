@@ -296,7 +296,7 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-[#000000] text-white font-sans relative overflow-hidden">
             {/* Blue Glow Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(29,78,216,0.1),transparent_50%)] z-0" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(234,88,12,0.1),transparent_50%)] z-0" />
 
             {/* Particle Dust Animation */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -349,7 +349,7 @@ export default function Dashboard() {
                         {/* Header with Logo and Close Button */}
                         <div className="flex items-center justify-between mb-8 mt-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
+                                <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
                                     C
                                 </div>
                                 <span className="text-xl font-bold tracking-tight">CadPay</span>
@@ -366,7 +366,7 @@ export default function Dashboard() {
                         {/* Profile Section */}
                         <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setShowProfileEdit(true)}>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl">
+                                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl">
                                     {userProfile.avatar}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -376,8 +376,8 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Injective Testnet</span>
-                                <div className="flex items-center gap-1 text-blue-500">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                <div className="flex items-center gap-1 text-orange-500">
+                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
                                     Active
                                 </div>
                             </div>
@@ -570,7 +570,7 @@ function MobileDropdown({ options, value, onChange, label }: any) {
                                             setIsOpen(false);
                                         }}
                                         className={`w-full text-left px-4 py-3 text-sm rounded-lg transition-colors flex items-center justify-between ${value === option.id
-                                            ? 'bg-blue-600 text-white font-bold'
+                                            ? 'bg-orange-600 text-white font-bold'
                                             : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                                             }`}
                                     >
@@ -593,7 +593,7 @@ function NavItem({ icon, label, active, onClick }: any) {
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all group ${active
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
         >
@@ -607,9 +607,9 @@ function NavItem({ icon, label, active, onClick }: any) {
 // Injective Pulse Card
 function InjectivePulseCard() {
     return (
-        <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Injective Mainnet Pulse</span>
+        <div className="px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center gap-2">
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Injective Mainnet Pulse</span>
         </div>
     );
 }
@@ -745,7 +745,7 @@ function OverviewSection({
                                 <LightningIcon size={18} />
                             </motion.div>
                         ) : (
-                            <LightningIcon size={18} className="text-blue-500" />
+                            <LightningIcon size={18} className="text-orange-500" />
                         )}
                         {isFunding ? "Funding..." : "Get INJ"}
                     </button>
@@ -798,7 +798,7 @@ function OverviewSection({
                             </button>
                             <button
                                 onClick={onOpenSend}
-                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95"
+                                className="px-8 py-3 bg-orange-600 text-white rounded-xl font-bold text-sm hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
                             >
                                 <PaperPlaneTiltIcon size={18} weight="bold" />
                                 Send Funds
@@ -812,7 +812,7 @@ function OverviewSection({
                     <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4">
                             <p className="text-sm text-zinc-400 font-medium">Active Subscriptions</p>
-                            <StorefrontIcon size={20} className="text-blue-400" />
+                            <StorefrontIcon size={20} className="text-orange-400" />
                         </div>
                         <h3 className="text-3xl font-bold text-white">{subscriptions.length}</h3>
                         <p className="text-xs text-zinc-500 mt-1">Manage recurring payments</p>
@@ -841,7 +841,7 @@ function OverviewSection({
                 {/* Recent Activity */}
                 <div className="lg:col-span-8 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <ListIcon size={20} className="text-blue-500" />
+                        <ListIcon size={20} className="text-orange-500" />
                         Recent Activity
                     </h3>
                     <div className="space-y-3">
@@ -990,7 +990,7 @@ function SpeedConfirmationOverlay({ txSpeed, setTxSpeed }: {
 
 function StatCard({ title, value, color }: { title: string; value: string; color: 'blue' | 'purple' }) {
     const colors = {
-        blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
+        blue: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
         purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
     };
     return (
@@ -1267,7 +1267,7 @@ function SubscriptionsSection({
                             const overviewWidget = (
                                 <div key="overview-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl h-full flex flex-col justify-center">
                                     <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                                        <WalletIcon size={20} className="text-blue-500" />
+                                        <WalletIcon size={20} className="text-orange-500" />
                                         Monthly Overview
                                     </h3>
 

@@ -168,14 +168,14 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
             }}
         >
             {item.type === 'injective' && (
-                <Image src="/injective-logo.png" alt="Injective" width={item.size} height={item.size} className="opacity-30 object-contain" />
+                <Image src="/injective-logo.svg" alt="Injective" width={item.size} height={item.size} className="opacity-30 object-contain" />
             )}
             {item.type === 'cadpay' && (
                 <div
                     style={{ width: item.size, height: item.size }}
-                    className="rounded-lg bg-blue-500/5 flex items-center justify-center backdrop-blur-[1px] border border-blue-500/5"
+                    className="rounded-lg bg-orange-500/5 flex items-center justify-center backdrop-blur-[1px] border border-orange-500/5"
                 >
-                    <span className="font-black italic text-blue-500/30" style={{ fontSize: item.size * 0.6 }}>C</span>
+                    <span className="font-black italic text-orange-500/30" style={{ fontSize: item.size * 0.6 }}>C</span>
                 </div>
             )}
         </motion.div>

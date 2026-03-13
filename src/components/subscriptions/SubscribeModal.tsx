@@ -223,7 +223,7 @@ export default function SubscribeModal({
                                                     key={plan.name}
                                                     onClick={() => setSelectedPlan(plan)}
                                                     className={`p-4 rounded-xl border-2 transition-all text-left ${selectedPlan?.name === plan.name
-                                                        ? 'border-blue-500 bg-blue-500/10'
+                                                        ? 'border-orange-500 bg-orange-500/10'
                                                         : 'border-white/10 bg-white/5 hover:border-white/20'
                                                         }`}
                                                 >
@@ -231,7 +231,7 @@ export default function SubscribeModal({
                                                         <div>
                                                             <h4 className="text-lg font-bold text-white">{plan.name}</h4>
                                                             <div className="flex items-baseline gap-2 mt-1">
-                                                                <span className="text-2xl font-bold text-blue-400">
+                                                                <span className="text-2xl font-bold text-orange-400">
                                                                     {planPriceINJ.toFixed(2)} INJ
                                                                 </span>
                                                                 <span className="text-sm text-zinc-400">
@@ -355,7 +355,7 @@ export default function SubscribeModal({
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-zinc-400">Amount</span>
                                             <div className="text-right">
-                                                <p className="text-xl font-bold text-blue-400">{priceINJ.toFixed(2)} INJ</p>
+                                                <p className="text-xl font-bold text-orange-400">{priceINJ.toFixed(2)} INJ</p>
                                                 <p className="text-sm text-zinc-500">≈ ${selectedPlan?.priceUSD.toFixed(2)} USD</p>
                                             </div>
                                         </div>

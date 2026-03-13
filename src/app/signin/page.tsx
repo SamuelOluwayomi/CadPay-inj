@@ -162,7 +162,7 @@ export default function SignIn() {
                                     {authMethod === 'password' ? (
                                         <LockKeyIcon size={20} className="text-orange-500" />
                                     ) : (
-                                        <FingerprintIcon size={20} className="text-blue-500" />
+                                        <FingerprintIcon size={20} className="text-orange-500" />
                                     )}
                                     <p className="text-sm text-zinc-300">
                                         This account uses <span className="font-semibold">{authMethod}</span> authentication
@@ -187,9 +187,9 @@ export default function SignIn() {
 
                             {/* Biometric Info */}
                             {authMethod === 'biometric' && !localWalletMissing && (
-                                <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                    <FingerprintIcon size={20} className="text-blue-400 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-blue-200/80 leading-relaxed">
+                                <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                                    <FingerprintIcon size={20} className="text-orange-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-orange-200/80 leading-relaxed">
                                         Click "Sign In" to authenticate with your device biometrics (FaceID, TouchID, etc.)
                                     </p>
                                 </div>

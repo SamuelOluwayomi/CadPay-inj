@@ -23,8 +23,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           minWidth: 200.00,
           scale: 1.1,
           scaleMobile: 0.6,
-          color: 0x00acee,
-          color2: 0x0055ff,
+          color: 0xff8800,
+          color2: 0xff4400,
           backgroundColor: 0x0,
           THREE: THREE
         })
@@ -75,7 +75,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
                 <motion.path
                   d="M0,30 Q50,40 100,30"
                   fill="none"
-                  stroke="#00acee"
+                  stroke="#ff8800"
                   strokeWidth="8"
                   strokeLinecap="round"
                   className="opacity-80"
@@ -96,10 +96,10 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           transition={{ delay: 0.4 }}
           className="mt-10 flex flex-col md:flex-row gap-4 items-center justify-center"
         >
-          <button className="group relative flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-full text-lg font-bold border border-white/10 hover:border-blue-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(0,172,238,0.2)]">
-            <FingerprintIcon size={24} className="text-blue-500 group-hover:scale-110 transition-transform" />
+          <button className="group relative flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-full text-lg font-bold border border-white/10 hover:border-orange-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(255,102,0,0.2)]">
+            <FingerprintIcon size={24} className="text-orange-500 group-hover:scale-110 transition-transform" />
             <span>Get Started</span>
-            <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-orange-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         </motion.div>
       </div>

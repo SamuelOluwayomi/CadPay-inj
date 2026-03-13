@@ -74,7 +74,7 @@ export default function MerchantAuthPage() {
             {/* Background Decoration */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-orange-500/10 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px]" />
+                <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] bg-orange-900/10 rounded-full blur-[100px]" />
             </div>
 
             {/* NAV BACK */}

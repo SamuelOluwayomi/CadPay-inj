@@ -26,35 +26,35 @@ const cadpayFeatures: Feature[] = [
         headline: 'Seamless Interoperability.',
         description: 'Injective is built on Cosmos SDK and uses IBC to connect with other blockchains seamlessly.',
         fullDescription: 'Injective provides a highly interoperable environment by supporting IBC (Inter-Blockchain Communication), allowing users to transfer assets across different L1s and L2s. It also features plug-and-play modules for developers to build cross-chain applications effortlessly.',
-        image: '/features/ibc-diagram.png'
+        image: '/features/ibc-diagram.svg'
     },
     {
         id: 'performance',
         headline: 'Lightning Fast Throughput.',
         description: 'Processing thousands of transactions per second with sub-second block times.',
         fullDescription: 'Injective is engineered for speed, offering sub-second block times and the ability to process over 10,000 transactions per second. This high performance ensures near-instant finality for financial applications, making it ideal for institutional-grade trading and payments.',
-        image: '/features/performance.png'
+        image: '/features/performance.svg'
     },
     {
         id: 'orderbook',
         headline: 'On-Chain Orderbook Infrastructure.',
         description: 'Native on-chain orderbook module that provides shared liquidity for all dApps.',
         fullDescription: 'At the core of Injective is its unique on-chain orderbook module. It provides a shared liquidity primitive that any dApp built on Injective can access. This eliminates liquidity fragmentation and allows for complex financial instruments like perpetuals and options to be built natively on-chain.',
-        image: '/features/orderbook.png'
+        image: '/features/orderbook.svg'
     },
     {
         id: 'smart-contracts',
         headline: 'CosmWasm Smart Contracts.',
         description: 'A robust smart contract layer supporting Rust-based CosmWasm development.',
         fullDescription: 'Injective supports CosmWasm, a powerful smart contract framework that allows developers to build complex logic using Rust. This enables a wide range of decentralized applications, from lending protocols to insurance markets, all benefiting from Injective\'s specialized financial infrastructure.',
-        image: '/features/smart-contracts.png'
+        image: '/features/smart-contracts.svg'
     },
     {
         id: 'peggy',
         headline: 'Institutional-Grade Security.',
         description: 'Leveraging Tendermint PoS consensus and robust bridge infrastructure.',
         fullDescription: 'Injective uses Tendermint Proof-of-Stake (PoS) consensus, providing a secure and energy-efficient foundation. Its decentralized bridge, Peggy, connects Injective to Ethereum, enabling secure asset transfers while maintaining high security standards for institutional and retail users alike.',
-        image: '/features/security.png'
+        image: '/features/security.svg'
     }
 ];
 
@@ -109,7 +109,7 @@ export default function CoreFeatures() {
                         variants={containerVariants}>
 
                         <motion.h2 variants={itemVariants} className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter mb-4">
-                            Why <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-blue-500">Injective?</ScribbleUnderline>
+                            Why <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-orange-500">Injective?</ScribbleUnderline>
                         </motion.h2>
                         <motion.p variants={itemVariants} className="text-zinc-700 text-base md:text-lg max-w-2xl mx-auto">
                             The Blockchain Built for Finance
@@ -187,14 +187,14 @@ function InjectiveSummaryCard() {
                     <h3 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-4 flex items-center justify-center gap-2 md:gap-3">
                         <div className="relative w-12 h-12 md:w-20 md:h-20">
                             <Image
-                                src="/injective-logo.png"
+                                src="/injective-logo.svg"
                                 alt="Injective"
                                 fill
                                 sizes="(max-width: 768px) 48px, 96px"
                                 className="object-contain"
                             />
                         </div>
-                        <span className="relative z-10">Built on <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-blue-500">Injective</ScribbleUnderline></span>
+                        <span className="relative z-10">Built on <ScribbleUnderline className="text-zinc-900 italic" scribbleColor="text-orange-500">Injective</ScribbleUnderline></span>
                     </h3>
                 </motion.div>
                 <motion.div
@@ -218,7 +218,7 @@ function InjectiveSummaryCard() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.5 }}>
-                        Injective's <span className="text-blue-600 font-bold">Interoperable Architecture</span> allows for zero-cost gas, sub-second block times, and a highly secure decentralized network. With <span className="text-blue-600 font-bold">IBC integration</span> and its unique <span className="text-blue-600 font-bold">on-chain orderbook module</span>, Injective represents the next generation of financial infrastructure.
+                        Injective's <span className="text-orange-600 font-bold">Interoperable Architecture</span> allows for zero-cost gas, sub-second block times, and a highly secure decentralized network. With <span className="text-orange-600 font-bold">IBC integration</span> and its unique <span className="text-orange-600 font-bold">on-chain orderbook module</span>, Injective represents the next generation of financial infrastructure.
                     </motion.p>
                 </motion.div>
             </div>
@@ -230,7 +230,7 @@ function InjectiveSummaryCard() {
 function ScribbleUnderline({
     children,
     className,
-    scribbleColor = "text-blue-500",
+    scribbleColor = "text-orange-500",
     variant = "curve"
 }: {
     children: React.ReactNode;
@@ -275,15 +275,15 @@ function DashPattern() {
             <svg className="w-full h-full" width="100%" height="100%">
                 <defs>
                     <pattern id="dash-pattern-vertical" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                        {/* Vertical Blue Dash */}
-                        <line x1="10" y1="0" x2="10" y2="10" stroke="#00acee" strokeWidth="4" strokeLinecap="round" />
+                        {/* Vertical Orange Dash */}
+                        <line x1="10" y1="0" x2="10" y2="10" stroke="#ff8800" strokeWidth="4" strokeLinecap="round" />
 
                         {/* Vertical Black Dash (Below it with gap) */}
                         <line x1="10" y1="20" x2="10" y2="30" stroke="#000000" strokeWidth="4" strokeLinecap="round" />
 
                         {/* Second Column Staggered/Inverted */}
                         <line x1="30" y1="0" x2="30" y2="10" stroke="#000000" strokeWidth="4" strokeLinecap="round" />
-                        <line x1="30" y1="20" x2="30" y2="30" stroke="#00acee" strokeWidth="4" strokeLinecap="round" />
+                        <line x1="30" y1="20" x2="30" y2="30" stroke="#ff8800" strokeWidth="4" strokeLinecap="round" />
                     </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#dash-pattern-vertical)" />
@@ -351,7 +351,7 @@ function Card({
                 <div className={`relative z-10 w-full h-full p-6 md:p-10 flex flex-col justify-center ${isTextRight ? 'items-end text-right' : 'items-start text-left'}`}>
 
                     {/* Badge */}
-                    <span className="inline-block px-3 py-1 bg-zinc-900/5 border border-zinc-900/10 rounded-full text-xs font-bold text-blue-600 mb-6 tracking-widest uppercase">
+                    <span className="inline-block px-3 py-1 bg-zinc-900/5 border border-zinc-900/10 rounded-full text-xs font-bold text-orange-600 mb-6 tracking-widest uppercase">
                         {feature.id === 'interoperability' ? 'Architecture' :
                             feature.id === 'performance' ? 'Performance' :
                                 feature.id === 'orderbook' ? 'Liquidity' :
@@ -359,7 +359,7 @@ function Card({
                     </span>
 
                     <h3 className="text-2xl md:text-4xl font-bold text-zinc-900 mb-4 leading-tight tracking-tight max-w-xl">
-                        <ScribbleUnderline variant="straight" scribbleColor="text-blue-200" className="text-zinc-900">
+                        <ScribbleUnderline variant="straight" scribbleColor="text-orange-200" className="text-zinc-900">
                             {feature.headline}
                         </ScribbleUnderline>
                     </h3>
@@ -370,7 +370,7 @@ function Card({
 
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`mt-6 flex items-center gap-2 text-zinc-900 font-semibold hover:text-blue-600 transition-colors text-sm ${isTextRight ? 'flex-row-reverse' : 'flex-row'}`}
+                        className={`mt-6 flex items-center gap-2 text-zinc-900 font-semibold hover:text-orange-600 transition-colors text-sm ${isTextRight ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                         <span>{isExpanded ? 'Show less' : 'Learn more'}</span>
                         <ArrowUpRightIcon weight="bold" className="w-4 h-4" />

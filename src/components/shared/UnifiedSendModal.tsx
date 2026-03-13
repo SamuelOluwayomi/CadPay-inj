@@ -224,7 +224,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={() => setMode('external')}
                                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'external'
-                                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
                                                 : 'text-zinc-500 hover:text-zinc-300'
                                                 }`}
                                         >
@@ -234,7 +234,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             <button
                                                 onClick={() => setMode('savings')}
                                                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'savings'
-                                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
                                                     : 'text-zinc-500 hover:text-zinc-300'
                                                     }`}
                                             >
@@ -250,7 +250,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                 <div className="relative">
                                                     <input
                                                         placeholder="inj1..."
-                                                        className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-blue-500/50 transition-all font-mono"
+                                                        className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all font-mono"
                                                         value={recipient}
                                                         onChange={(e) => setRecipient(e.target.value)}
                                                     />
@@ -265,12 +265,12 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                             key={pot.name}
                                                             onClick={() => setSelectedPot(pot)}
                                                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedPot?.name === pot.name
-                                                                ? 'bg-blue-500/10 border-blue-500/40'
+                                                                ? 'bg-orange-500/10 border-orange-500/40'
                                                                 : 'bg-white/5 border-white/5 hover:border-white/10'
                                                                 }`}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
+                                                                <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-400">
                                                                     <PiggyBankIcon size={18} />
                                                                 </div>
                                                                 <div className="text-left">
@@ -278,7 +278,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                                     <p className="text-[10px] text-zinc-500">{pot.balance.toFixed(2)} INJ</p>
                                                                 </div>
                                                             </div>
-                                                            {selectedPot?.name === pot.name && <CheckCircleIcon size={20} className="text-blue-500" weight="fill" />}
+                                                            {selectedPot?.name === pot.name && <CheckCircleIcon size={20} className="text-orange-500" weight="fill" />}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -291,7 +291,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                 <input
                                                     type="number"
                                                     placeholder="0.00"
-                                                    className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-3xl font-bold focus:outline-none focus:border-blue-500/50 transition-all text-center"
+                                                    className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-3xl font-bold focus:outline-none focus:border-orange-500/50 transition-all text-center"
                                                     value={amount}
                                                     onChange={(e) => setAmount(e.target.value)}
                                                 />
@@ -321,7 +321,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleContinue}
                                             disabled={isSubmitting}
-                                            className="w-full py-5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                                            className="w-full py-5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
                                         >
                                             <CaretRightIcon size={20} weight="bold" />
                                             <span>Continue</span>
@@ -346,7 +346,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-zinc-500 text-sm">Amount:</span>
-                                            <span className="text-blue-400 font-bold text-lg">{amount} INJ</span>
+                                            <span className="text-orange-400 font-bold text-lg">{amount} INJ</span>
                                         </div>
                                     </div>
 
@@ -390,7 +390,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleBiometricUnlockAndSign}
                                             disabled={isSubmitting}
-                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-blue-500 to-blue-400 rounded-2xl font-bold hover:from-blue-300 hover:to-blue-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-orange-500 to-orange-400 rounded-2xl font-bold hover:from-orange-300 hover:to-orange-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <FingerprintIcon size={20} weight="bold" />
                                             Unlock with Biometrics
@@ -419,7 +419,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleSignAndSend}
                                             disabled={!password || isSubmitting}
-                                            className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                                            className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
                                         >
                                             <LockKeyIcon size={20} weight="bold" />
                                             <span>Sign & Send</span>
@@ -434,8 +434,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="text-center py-8"
                                 >
-                                    <div className="w-20 h-20 mx-auto mb-6 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                                    <div className="w-20 h-20 mx-auto mb-6 bg-orange-500/20 rounded-full flex items-center justify-center">
+                                        <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Signing Transaction</h3>
                                     <p className="text-zinc-400 mb-6">
@@ -446,7 +446,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             initial={{ width: 0 }}
                                             animate={{ width: '100%' }}
                                             transition={{ duration: 3, repeat: Infinity }}
-                                            className="h-full bg-linear-to-r from-blue-500 to-blue-600"
+                                            className="h-full bg-linear-to-r from-orange-500 to-orange-600"
                                         />
                                     </div>
                                 </motion.div>

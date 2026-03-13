@@ -189,8 +189,8 @@ export default function SecuritySettings() {
             {/* Security Info */}
             <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-6">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                        <KeyIcon size={20} className="text-blue-400" weight="bold" />
+                    <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                        <KeyIcon size={20} className="text-orange-400" weight="bold" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-white">Passkey Security</h3>

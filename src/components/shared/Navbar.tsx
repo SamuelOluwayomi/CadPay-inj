@@ -21,10 +21,10 @@ export default function NavBar() {
                     <div className="flex items-center gap-12">
                         {/* LOGO */}
                         <Link href="/" className="font-black italic tracking-tighter text-xl text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 z-10 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
+                            <div className="w-6 h-6 bg-orange-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
                             CADPAY
                             <div className="h-4 w-px bg-white/20 mx-1" />
-                            <img src="/injective-logo.png" alt="Injective" className="h-8 w-auto object-contain" />
+                            <img src="/injective-logo.svg" alt="Injective" className="h-8 w-auto object-contain" />
                         </Link>
 
                         {/* DESKTOP LINKS (Hidden on Mobile) */}
@@ -44,7 +44,7 @@ export default function NavBar() {
                         <Link href="/signin" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
                             Log in
                         </Link>
-                        <Link href="/create" className="group flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-600 transition-all">
+                        <Link href="/create" className="group flex items-center gap-2 bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-orange-600 transition-all">
                             <FingerprintIcon size={14} className="text-white/90" />
                             Create Account
                         </Link>
@@ -78,9 +78,9 @@ export default function NavBar() {
                             <Link
                                 href="/create"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-3 rounded-full font-bold"
+                                className="flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-3 rounded-full font-bold"
                             >
-                                <FingerprintIcon size={18} className="bg-blue-500 text-white" />
+                                <FingerprintIcon size={18} className="bg-orange-500 text-white" />
                                 Create Account
                             </Link>
                         </div>

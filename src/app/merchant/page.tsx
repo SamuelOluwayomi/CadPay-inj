@@ -121,7 +121,7 @@ export default function MerchantDashboard() {
         return (
             <div className="flex items-center justify-center h-screen bg-black text-white">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
                     <p className="text-zinc-500 text-sm">Loading Merchant Portal...</p>
                 </div>
             </div>
@@ -169,7 +169,7 @@ export default function MerchantDashboard() {
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-8">
                                 <Link href="/" className="group flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center rounded-lg font-black text-xl shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
+                                    <div className="w-8 h-8 bg-orange-600 text-white flex items-center justify-center rounded-lg font-black text-xl shadow-lg shadow-orange-600/20 group-hover:scale-110 transition-transform">
                                         C
                                     </div>
                                     <span className="text-xl font-black bg-white text-transparent bg-clip-text">
@@ -232,7 +232,7 @@ export default function MerchantDashboard() {
 
                         <div className="mt-auto p-6 border-t border-white/5">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-blue-500 to-indigo-500 flex items-center justify-center font-bold text-white border-2 border-white/10">
+                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white border-2 border-white/10">
                                     {merchant.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
@@ -266,7 +266,7 @@ export default function MerchantDashboard() {
                         <div className="flex items-center gap-3">
                             <WarningIcon size={24} className="text-orange-500" weight="fill" />
                             <div className="flex-1">
-                                <p className="text-sm font-bold text-blue-400">Demo Mode Active</p>
+                                <p className="text-sm font-bold text-orange-400">Demo Mode Active</p>
                                 <p className="text-xs text-zinc-400">Injective API is temporarily unavailable. Showing demo data. The system will automatically switch to live data when the API recovers.</p>
                             </div>
                         </div>
@@ -301,8 +301,8 @@ export default function MerchantDashboard() {
                                     title="Total Customers"
                                     value={uniqueCustomers.toLocaleString()}
                                     trend={`+${uniqueCustomers} new`}
-                                    icon={<UsersIcon size={24} className="text-blue-400" />}
-                                    color="blue"
+                                    icon={<UsersIcon size={24} className="text-orange-400" />}
+                                    color="orange"
                                     loading={isDataLoading}
                                 />
                                 <MetricCard
@@ -317,8 +317,8 @@ export default function MerchantDashboard() {
                                     title="Gas Subsidized (The Flex)"
                                     value={`${gasSaved.toFixed(4)} INJ`}
                                     trend="100% Covered"
-                                    icon={<LightningIcon size={24} className="text-blue-400 fill-blue-400" />}
-                                    color="blue"
+                                    icon={<LightningIcon size={24} className="text-orange-400 fill-orange-400" />}
+                                    color="orange"
                                     subtext="You saved users this much!"
                                     loading={isDataLoading}
                                 />
@@ -688,7 +688,7 @@ function NavItem({ icon, label, active, onClick }: any) {
 function MetricCard({ title, value, trend, icon, color, subtext, loading }: any) {
     const colors: Record<string, string> = {
         green: 'bg-green-500/10 text-green-400 border-green-500/20',
-        blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        blue: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
         purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
         orange: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
     };
