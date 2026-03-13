@@ -6,7 +6,7 @@ import React from 'react';
 import Image from 'next/image';
 
 
-const LOGO_TYPES = ['lazorkit', 'kaspa', 'cadpay'] as const;
+const LOGO_TYPES = ['injective', 'cadpay'] as const;
 
 interface LogoItem {
     id: number;
@@ -167,20 +167,15 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
                 transition: { duration: 0.3 }
             }}
         >
-            {item.type === 'lazorkit' && (
-                <div style={{ width: item.size, height: item.size }} className="relative">
-                    <Image src="/icon.ico" alt="" fill sizes="(max-width: 768px) 50px, 80px" className="object-contain grayscale opacity-60" />
-                </div>
-            )}
-            {item.type === 'kaspa' && (
-                <Image src="/kaspa-icon.png" alt="Kaspa" width={item.size} height={item.size} className="opacity-30 object-contain" />
+            {item.type === 'injective' && (
+                <Image src="/injective-logo.png" alt="Injective" width={item.size} height={item.size} className="opacity-30 object-contain" />
             )}
             {item.type === 'cadpay' && (
                 <div
                     style={{ width: item.size, height: item.size }}
-                    className="rounded-lg bg-orange-500/5 flex items-center justify-center backdrop-blur-[1px] border border-orange-500/5"
+                    className="rounded-lg bg-blue-500/5 flex items-center justify-center backdrop-blur-[1px] border border-blue-500/5"
                 >
-                    <span className="font-black italic text-orange-500/30" style={{ fontSize: item.size * 0.6 }}>C</span>
+                    <span className="font-black italic text-blue-500/30" style={{ fontSize: item.size * 0.6 }}>C</span>
                 </div>
             )}
         </motion.div>

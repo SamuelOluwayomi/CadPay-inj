@@ -212,15 +212,15 @@ export function useAuth() {
     const clearError = () => setError(null);
 
     /**
-     * Sign in with KasWare (Deterministic Auth)
+     * Sign in with Injective (Deterministic Auth)
      */
-    const signInWithKasWare = async (walletAddress: string): Promise<SignInResult> => {
+    const signInWithInjective = async (walletAddress: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
 
         try {
             // 1. Generate Deterministic Credentials
-            const email = `${walletAddress}@kasware.cadpay.fi`;
+            const email = `${walletAddress}@injective.cadpay.fi`;
             const password = `cadpay-sig-${walletAddress}`;
 
             // 2. Try Login First
@@ -239,7 +239,7 @@ export function useAuth() {
                     options: {
                         data: {
                             wallet_address: walletAddress,
-                            is_kasware: true
+                            is_injective: true
                         }
                     }
                 });
@@ -262,8 +262,8 @@ export function useAuth() {
 
             return { success: true, walletAddress };
         } catch (err: any) {
-            console.error('KasWare sign in error:', err);
-            const errorMsg = err.message || 'KasWare sign in failed';
+            console.error('Injective sign in error:', err);
+            const errorMsg = err.message || 'Injective sign in failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };
         } finally {
@@ -276,7 +276,7 @@ export function useAuth() {
         error,
         signInWithPassword,
         signInWithBiometric,
-        signInWithKasWare, // Export new function
+        signInWithInjective, // Export new function
         signOut,
         checkEmailExists,
         getWalletAddress,

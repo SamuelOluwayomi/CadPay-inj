@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
-import { restoreKaspaWallet } from '@/utils/kaspaWallet';
+import { restoreInjectiveWallet } from '@/utils/injectiveWallet';
 import { parseRecoveryKit } from '@/utils/recoveryKit';
 
 import { Suspense } from 'react';
@@ -87,9 +87,9 @@ function RecoveryContent() {
         e.preventDefault();
         setIsVerifying(true);
         try {
-            // Give UI a moment to show loader (WASM can be blocking)
+            // Give UI a moment to show loader
             await new Promise(r => setTimeout(r, 500));
-            const restored = await restoreKaspaWallet(mnemonic.trim());
+            const restored = await restoreInjectiveWallet(mnemonic.trim());
 
             if (restored.address !== targetAddress) {
                 setError('The provided seed phrase does not match the wallet registered to this account.');
@@ -143,7 +143,7 @@ function RecoveryContent() {
             if (parsed && parsed.mnemonic) {
                 setMnemonic(parsed.mnemonic);
             } else {
-                setError('Could not parse legacy recovery kit. Please paste the mnemonic manually.');
+                setError('Could not parse recovery kit. Please paste the mnemonic manually.');
             }
         };
         reader.readAsText(file);

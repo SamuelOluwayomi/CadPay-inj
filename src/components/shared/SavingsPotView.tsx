@@ -74,7 +74,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                         </button>
                     </div>
                     <p className="text-3xl font-black text-white">
-                        {pot.balance.toFixed(2)} KAS
+                        {pot.balance.toFixed(2)} INJ
                     </p>
                     <p className="text-sm text-zinc-400 mt-1">Available Balance</p>
                 </div>
@@ -101,7 +101,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                         disabled={isLocked}
                         className={`flex flex-col items-center justify-center gap-2 py-3 border rounded-xl transition-all ${isLocked
                             ? 'bg-zinc-800/50 border-white/5 text-zinc-500 cursor-not-allowed'
-                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20'
+                            : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/20'
                             }`}
                         title="Withdraw"
                     >
@@ -140,8 +140,8 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                 <h4 className="text-xl font-bold mb-6 text-center">Add Funds to {pot.name}</h4>
 
                                 {/* Tab 1: Instant Transfer (User Request) */}
-                                <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                                    <h5 className="font-bold text-orange-400 mb-2 flex items-center gap-2">
+                                <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                                    <h5 className="font-bold text-blue-400 mb-2 flex items-center gap-2">
                                         <LightningIcon weight="fill" />
                                         Quick Transfer
                                     </h5>
@@ -152,14 +152,14 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                         <input
                                             type="number"
                                             placeholder="Amount"
-                                            className="w-full min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+                                            className="w-full min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
                                         />
                                         <button
                                             onClick={handleQuickFund}
                                             disabled={!amount}
-                                            className="shrink-0 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl transition-colors whitespace-nowrap"
+                                            className="shrink-0 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl transition-colors whitespace-nowrap"
                                         >
                                             Transfer
                                         </button>
@@ -208,17 +208,17 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                         <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">To Address</label>
                                         <input
                                             placeholder="Enter recipient address"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/50"
                                             value={recipient}
                                             onChange={(e) => setRecipient(e.target.value)}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Amount (KAS)</label>
+                                        <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Amount (INJ)</label>
                                         <input
                                             type="number"
                                             placeholder="0.00"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/50"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
                                         />
@@ -227,7 +227,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                         <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Description</label>
                                         <input
                                             placeholder="e.g. Taking out some for coffee"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500/50"
                                             value={note}
                                             onChange={(e) => setNote(e.target.value)}
                                         />
@@ -236,7 +236,7 @@ export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowRecei
                                     <button
                                         onClick={handleWithdraw}
                                         disabled={!recipient || !amount}
-                                        className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2"
                                     >
                                         <PaperPlaneTiltIcon size={18} weight="bold" />
                                         Send Transaction

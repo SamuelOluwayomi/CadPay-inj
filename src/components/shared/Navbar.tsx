@@ -21,20 +21,20 @@ export default function NavBar() {
                     <div className="flex items-center gap-12">
                         {/* LOGO */}
                         <Link href="/" className="font-black italic tracking-tighter text-xl text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 z-10 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-orange-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
+                            <div className="w-6 h-6 bg-blue-500 text-black flex items-center justify-center rounded-sm not-italic">C</div>
                             CADPAY
                             <div className="h-4 w-px bg-white/20 mx-1" />
-                            <img src="/kaspa-icon.png" alt="Kaspa" className="h-8 w-auto object-contain" />
+                            <img src="/injective-logo.png" alt="Injective" className="h-8 w-auto object-contain" />
                         </Link>
 
                         {/* DESKTOP LINKS (Hidden on Mobile) */}
                         <div className="hidden md:flex items-center gap-8">
-                            <a href="https://github.com/Kaspathon" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
-                                Kaspathon
+                            <a href="https://github.com/injectivelabs" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
+                                INJECTIVE
                             </a>
                             <NavLink href="/merchant-auth">Merchant Portal</NavLink>
-                            <a href="https://kaspa.org/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
-                                Kaspa
+                            <a href="https://injective.com/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors text-sm font-medium tracking-widest">
+                                Injective
                             </a>
                         </div>
                     </div>
@@ -44,7 +44,7 @@ export default function NavBar() {
                         <Link href="/signin" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
                             Log in
                         </Link>
-                        <Link href="/create" className="group flex items-center gap-2 bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-orange-600 transition-all">
+                        <Link href="/create" className="group flex items-center gap-2 bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-600 transition-all">
                             <FingerprintIcon size={14} className="text-white/90" />
                             Create Account
                         </Link>
@@ -70,17 +70,17 @@ export default function NavBar() {
                         className="fixed inset-0 z-55 bg-black pt-24 px-6 md:hidden"
                     >
                         <div className="flex flex-col gap-6 text-lg font-medium">
-                            <MobileLink href="https://github.com/Kaspathon" onClick={() => setIsOpen(false)}>Kaspathon</MobileLink>
+                            <MobileLink href="https://github.com/injectivelabs" onClick={() => setIsOpen(false)}>Injective GitHub</MobileLink>
                             <MobileLink href="/merchant-auth" onClick={() => setIsOpen(false)}>Merchant Portal</MobileLink>
-                            <MobileLink href="https://kaspa.org/" onClick={() => setIsOpen(false)}>Kaspa</MobileLink>
+                            <MobileLink href="https://injective.com/" onClick={() => setIsOpen(false)}>Injective</MobileLink>
                             <hr className="border-white/10" />
                             <MobileLink href="/signin" onClick={() => setIsOpen(false)}>Log In</MobileLink>
                             <Link
                                 href="/create"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-3 rounded-full font-bold"
+                                className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-3 rounded-full font-bold"
                             >
-                                <FingerprintIcon size={18} className="bg-orange-500 text-white" />
+                                <FingerprintIcon size={18} className="bg-blue-500 text-white" />
                                 Create Account
                             </Link>
                         </div>

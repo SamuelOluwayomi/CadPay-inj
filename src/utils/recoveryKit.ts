@@ -10,7 +10,7 @@ export interface RecoveryKitData {
 
 /**
  * Generate and auto-download a recovery kit file
- * @param address - Kaspa wallet address
+ * @param address - Injective wallet address
  * @param mnemonic - Seed phrase
  */
 export function downloadRecoveryKit(address: string, mnemonic: string): void {

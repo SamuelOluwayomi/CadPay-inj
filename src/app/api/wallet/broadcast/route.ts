@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { TxGrpcApi } from '@injectivelabs/sdk-ts';
+import { getNetworkEndpoints, Network } from '@injectivelabs/networks';
 
 export const runtime = 'nodejs';
 
 /**
- * Broadcast a pre-signed transaction to the Kaspa network
- * This endpoint does NOT handle private keys - transactions are signed client-side
+ * Broadcast a pre-signed transaction to the Injective network
  */
 export async function POST(request: Request) {
-    console.log("🚀 [API] Broadcast Request Started");
+    console.log("🚀 [API] Injective Broadcast Request Started");
 
     try {
         // 1. Authenticate User
@@ -31,70 +32,37 @@ export async function POST(request: Request) {
         }
 
         // 2. Parse Request
-        const { signedTransaction, networkType = 'testnet-10' } = await request.json();
+        const { txRaw, network = 'testnet' } = await request.json();
 
-        if (!signedTransaction) {
-            return NextResponse.json({ error: "Missing signed transaction" }, { status: 400 });
+        if (!txRaw) {
+            return NextResponse.json({ error: "Missing raw transaction" }, { status: 400 });
         }
 
-        console.log(`📡 Broadcasting transaction for user: ${user.id}`);
+        console.log(`📡 Broadcasting Injective transaction for user: ${user.id}`);
 
-        // 3. Determine API endpoint
-        const apiUrl = networkType === 'mainnet'
-            ? 'https://api.kaspa.org'
-            : 'https://api-tn10.kaspa.org';
+        // 3. Initialize Injective Client
+        const endpoints = getNetworkEndpoints(network === 'mainnet' ? Network.Mainnet : Network.Testnet);
+        const txClient = new TxGrpcApi(endpoints.grpc);
 
-        // 4. Parse transaction (should already be JSON object)
-        let txJson;
-        try {
-            txJson = typeof signedTransaction === 'string'
-                ? JSON.parse(signedTransaction)
-                : signedTransaction;
-        } catch (e) {
-            return NextResponse.json({ error: "Invalid transaction format" }, { status: 400 });
+        // 4. Broadcast
+        const response = await txClient.broadcast(txRaw);
+
+        if (response.code !== 0) {
+            throw new Error(`Transaction failed with code ${response.code}: ${response.rawLog}`);
         }
 
-        // 5. Broadcast to Kaspa network
-        const broadcastRes = await fetch(`${apiUrl}/transactions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ transaction: txJson })
-        });
-
-        if (!broadcastRes.ok) {
-            const errorText = await broadcastRes.text();
-            console.error(`❌ Broadcast failed: ${errorText}`);
-            return NextResponse.json({
-                error: `Broadcast failed: ${errorText}`
-            }, { status: 502 });
-        }
-
-        const result = await broadcastRes.json();
-        const txId = result.transactionId;
-
-        console.log(`✅ Transaction broadcast successful! TxID: ${txId}`);
-
-        // 6. (Optional) Record transaction in database for receipts
-        // This is for UI purposes only - the blockchain is the source of truth
-        try {
-            // You can add transaction receipt recording here if needed
-            // await supabase.from('receipts').insert({ user_id: user.id, tx_id: txId, ... });
-        } catch (dbError) {
-            // Don't fail the request if receipt recording fails
-            console.warn('Failed to record receipt:', dbError);
-        }
+        console.log(`✅ Injective Transaction broadcast successful! TxHash: ${response.txHash}`);
 
         return NextResponse.json({
             success: true,
-            txId: txId,
-            message: 'Transaction broadcast successfully'
+            txId: response.txHash,
+            message: 'Injective transaction broadcast successfully'
         });
 
     } catch (error: any) {
-        console.error("🔥 Broadcast Error:", error.message || error);
-        if (error.stack) console.error(error.stack);
+        console.error("🔥 Injective Broadcast Error:", error.message || error);
         return NextResponse.json({
-            error: error.message || "Failed to broadcast transaction"
+            error: error.message || "Failed to broadcast Injective transaction"
         }, { status: 500 });
     }
 }

@@ -10,20 +10,20 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     const margin = 20;
 
     // Colors
-    const orangeColor = '#FF6B00';
+    const blueColor = '#00acee';
     const grayColor = '#71717A';
     const darkColor = '#18181B';
 
     let yPos = 20;
 
     // Header: CadPay Logo (circular badge) + Name
-    // Draw orange circle as logo
-    doc.setFillColor(orangeColor);
-    doc.circle(margin + 4, yPos, 4, 'F'); // Orange circle logo
+    // Draw blue circle as logo
+    doc.setFillColor(blueColor);
+    doc.circle(margin + 4, yPos, 4, 'F'); // Blue circle logo
 
     // CadPay text next to logo
     doc.setFontSize(28);
-    doc.setTextColor(orangeColor);
+    doc.setTextColor(blueColor);
     doc.setFont('helvetica', 'bold');
     doc.text('CadPay', margin + 12, yPos + 2);
 
@@ -66,12 +66,12 @@ export const generateReceiptPDF = (receipt: Receipt) => {
 
     yPos += 8;
 
-    // Amount (KAS)
+    // Amount (INJ)
     doc.setTextColor(grayColor);
     doc.text('Amount:', margin, yPos);
-    doc.setTextColor(orangeColor);
+    doc.setTextColor(blueColor);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${receipt.amount_kas.toFixed(2)} KAS`, margin + 50, yPos);
+    doc.text(`${receipt.amount_kas.toFixed(2)} INJ`, margin + 50, yPos);
 
     yPos += 8;
     doc.setFont('helvetica', 'normal');

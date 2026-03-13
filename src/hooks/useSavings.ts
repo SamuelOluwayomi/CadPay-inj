@@ -20,26 +20,26 @@ export interface SavingsTransaction {
     pot_id: string;
     amount: number;
     type: 'deposit' | 'withdraw';
-    currency: 'KAS' | 'USDC';
+    currency: 'INJ' | 'USDC';
     tx_hash: string;
     created_at: string;
 }
 
-// Helper to generate a random Kaspa-like address for demo purposes
-const generateKaspaAddress = () => {
+// Helper to generate a random Injective-like address for demo purposes
+const generateInjectiveAddress = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = 'kaspatest:q';
-    for (let i = 0; i < 60; i++) {
+    let result = 'inj1';
+    for (let i = 0; i < 38; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
 };
 
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useKasWare } from './useKasWare';
+import { useInjective } from './useInjective';
 
 export const useSavings = () => {
-    const { address: userAddress } = useKasWare();
+    const { address: userAddress } = useInjective();
     const { profile } = useUserProfile();
     // Prioritize connected wallet, fallback to custodial profile authority
     const effectiveAddress = userAddress || profile?.authority;
@@ -71,10 +71,12 @@ export const useSavings = () => {
             // 2. Fetch Live Balances from Chain
             const updatedPots = await Promise.all(currentPots.map(async (pot) => {
                 try {
-                    const res = await fetch(`https://api-tn10.kaspa.org/addresses/${pot.address}/balance`);
+                    // Update to Injective LCD endpoint for balance
+                    const res = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${pot.address}/by_denom?denom=uinj`);
                     if (res.ok) {
                         const balanceData = await res.json();
-                        const liveBalance = balanceData.balance / 100000000; // Convert Sompi to KAS
+                        const amount = balanceData.balance?.amount || '0';
+                        const liveBalance = parseInt(amount) / 1e18;
 
                         // If balance changed, update DB silently
                         if (liveBalance !== pot.balance) {
@@ -194,8 +196,8 @@ export const useSavings = () => {
                     pot_id: potId,
                     amount,
                     type: 'deposit',
-                    currency: 'KAS',
-                    tx_hash: txHash || `mock_${generateKaspaAddress().slice(0, 16)}`
+                    currency: 'INJ',
+                    tx_hash: txHash || `mock_${generateInjectiveAddress().slice(0, 16)}`
                 }]);
 
             if (txError) throw txError;
@@ -228,8 +230,8 @@ export const useSavings = () => {
                     pot_id: potId,
                     amount,
                     type: 'withdraw',
-                    currency: 'KAS',
-                    tx_hash: generateKaspaAddress().slice(0, 20) // Mock hash
+                    currency: 'INJ',
+                    tx_hash: generateInjectiveAddress().slice(0, 20) // Mock hash
                 }]);
 
             if (txError) throw txError;

@@ -1,6 +1,6 @@
 /**
  * Seed phrase encryption utilities using AES-GCM
- * Encrypts/decrypts Kaspa seed phrases with biometric-derived keys
+ * Encrypts/decrypts Injective seed phrases with biometric-derived keys
  */
 
 export interface EncryptedSeed {

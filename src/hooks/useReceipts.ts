@@ -60,7 +60,7 @@ export function useReceipts(walletAddress: string | null) {
     // Calculate total spending
     const totalSpending = receipts
         .filter(r => r.status === 'completed')
-        .reduce((sum, r) => sum + r.amount_kas, 0);
+        .reduce((sum, r) => sum + r.amount_inj, 0);
 
     const totalSpendingUSD = receipts
         .filter(r => r.status === 'completed')

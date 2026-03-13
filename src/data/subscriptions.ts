@@ -1,7 +1,7 @@
 import { IconType } from 'react-icons';
 import {
-    SiNetflix, SiSpotify, SiYoutube, SiAmazonprime,
-    SiApplemusic, SiHbo, SiDiscord, SiAdobe, SiGithub, SiOpenai
+    SiNetflix, SiSpotify, SiYoutube,
+    SiApplemusic, SiHbo, SiDiscord, SiGithub, SiOpenai
 } from 'react-icons/si';
 import { FaTv, FaFilm } from 'react-icons/fa';
 import { StorefrontIcon } from '@phosphor-icons/react';
@@ -12,10 +12,10 @@ export interface SubscriptionPlan {
     features: string[];
 }
 
-// Helper function to convert USD to KAS (will be updated dynamically)
-export function convertUSDtoKAS(usdPrice: number, kasPrice: number = 0.15): number {
-    // Default KAS price: $0.15 (will be fetched from CoinGecko in real-time)
-    return Math.ceil((usdPrice / kasPrice) * 100) / 100; // Round to 2 decimals
+// Helper function to convert USD to INJ (will be updated dynamically)
+export function convertUSDtoINJ(usdPrice: number, injPrice: number = 25.00): number {
+    // Default INJ price: $25.00 (will be fetched from CoinGecko in real-time)
+    return Math.ceil((usdPrice / injPrice) * 100) / 100; // Round to 2 decimals
 }
 
 export interface Service {
@@ -84,7 +84,7 @@ export const SERVICES: Service[] = [
         name: 'Amazon Prime',
         category: 'streaming',
         color: '#FF9900',
-        icon: SiAmazonprime,
+        icon: FaFilm,
         description: 'Free shipping + streaming',
         plans: [
             { name: 'Monthly', priceUSD: 14.99, features: ['Free shipping', 'Prime Video', 'Prime Music'] },
@@ -144,7 +144,7 @@ export const SERVICES: Service[] = [
         name: 'Adobe Creative Cloud',
         category: 'creative',
         color: '#FF0000',
-        icon: SiAdobe,
+        icon: FaFilm,
         description: 'Design & creative tools',
         plans: [
             { name: 'Photography', priceUSD: 9.99, features: ['Photoshop', 'Lightroom', '20GB'] },

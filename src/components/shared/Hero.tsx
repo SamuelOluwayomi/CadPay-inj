@@ -23,8 +23,8 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           minWidth: 200.00,
           scale: 1.1,
           scaleMobile: 0.6,
-          color: 0xf97316,
-          color2: 0xdece9b,
+          color: 0x00acee,
+          color2: 0x0055ff,
           backgroundColor: 0x0,
           THREE: THREE
         })
@@ -56,7 +56,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           transition={{ delay: 0.3 }}
           className="text-4xl md:text-8xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
         >
-          Built on Kaspa.
+          Built on Injective.
         </motion.h1>
 
         <div className="relative mt-8 max-w-2xl mx-auto">
@@ -67,15 +67,15 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             transition={{ delay: 0.2 }}
             className="text-base md:text-2xl text-zinc-100 leading-loose md:leading-relaxed font-medium"
           >
-            The fastest and most scalable instant-confirmation transaction layer ever built on proof-of-work. <br className="hidden md:block" />
-            CadPay leverages Kaspa's revolutionary
+            The fastest and most interoperable L1 blockchain optimized for Web3 finance. <br className="hidden md:block" />
+            CadPay leverages Injective's revolutionary
             <span className="relative inline-block mx-2 text-white font-bold z-10">
-              BlockDAG
+              Interoperability
               <svg className="absolute -bottom-2 -left-2 w-[120%] h-[140%] -z-10" viewBox="0 0 100 40" preserveAspectRatio="none">
                 <motion.path
                   d="M0,30 Q50,40 100,30"
                   fill="none"
-                  stroke="#ff9955"
+                  stroke="#00acee"
                   strokeWidth="8"
                   strokeLinecap="round"
                   className="opacity-80"
@@ -85,7 +85,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
                 />
               </svg>
             </span>
-            to deliver subscription payments at unprecedented speed.
+            to deliver global payments at breakneck speed.
           </motion.p>
         </div>
 
@@ -96,10 +96,10 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           transition={{ delay: 0.4 }}
           className="mt-10 flex flex-col md:flex-row gap-4 items-center justify-center"
         >
-          <button className="group relative flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-full text-lg font-bold border border-white/10 hover:border-orange-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(255,102,0,0.2)]">
-            <FingerprintIcon size={24} className="text-orange-500 group-hover:scale-110 transition-transform" />
-            <span>Start Demo</span>
-            <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-orange-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <button className="group relative flex items-center justify-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-full text-lg font-bold border border-white/10 hover:border-blue-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(0,172,238,0.2)]">
+            <FingerprintIcon size={24} className="text-blue-500 group-hover:scale-110 transition-transform" />
+            <span>Get Started</span>
+            <div className="absolute inset-x-0 -bottom-px h-px bg-linear-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         </motion.div>
       </div>

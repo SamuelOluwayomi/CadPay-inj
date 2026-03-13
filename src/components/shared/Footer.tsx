@@ -1,6 +1,6 @@
 'use client';
 
-import { SiDiscord, SiGithub, SiX, SiLinkedin, SiYoutube } from 'react-icons/si';
+import { SiDiscord, SiGithub, SiX, SiYoutube } from 'react-icons/si';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import LogoField from './LogoField';
@@ -9,7 +9,7 @@ import ParticlesBackground from './ParticlesBackground';
 export default function Footer() {
 
     return (
-        <footer className="relative bg-[#1c1209] pt-24 pb-12 overflow-hidden">
+        <footer className="relative bg-[#0a0a0a] pt-24 pb-12 overflow-hidden">
             {/* Particle Background */}
             <ParticlesBackground id="footer-particles" />
 
@@ -22,7 +22,7 @@ export default function Footer() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="w-full bg-orange-500 rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl mb-24 relative overflow-hidden"
+                    className="w-full bg-blue-600 rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl mb-24 relative overflow-hidden"
                 >
                     {/* Background Pattern */}
                     {/* Background Pattern - Removed noise.png */}
@@ -30,8 +30,8 @@ export default function Footer() {
                     <div className="relative z-10 space-y-8">
                         <div className="space-y-4">
                             <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Give us a follow</h2>
-                            <p className="text-orange-100 max-w-xl mx-auto text-lg">
-                                Stay up to date with the latest features, releases, and ecosystem news—created just for you.
+                            <p className="text-blue-100 max-w-xl mx-auto text-lg">
+                                Stay up to date with the latest features, releases, and Injective ecosystem news.
                             </p>
                         </div>
 
@@ -71,14 +71,6 @@ export default function Footer() {
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: 0.7 }}
-                            >
-                                <SocialIcon href="#" icon={<SiLinkedin size={24} />} label="LinkedIn" />
-                            </motion.div>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
                                 transition={{ duration: 0.4, delay: 0.8 }}
                             >
                                 <SocialIcon href="#" icon={<SiYoutube size={24} />} label="YouTube" />
@@ -105,7 +97,7 @@ export default function Footer() {
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
                         <Link href="/" className="font-black italic tracking-tighter text-2xl text-white flex items-center gap-2">
-                            <div className="w-8 h-8 bg-orange-500 text-black flex items-center justify-center rounded-sm not-italic text-lg">C</div>
+                            <div className="w-8 h-8 bg-blue-500 text-black flex items-center justify-center rounded-sm not-italic text-lg">C</div>
                             CADPAY
                         </Link>
                     </motion.div>
@@ -118,10 +110,10 @@ export default function Footer() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
                         <FooterColumn title="The Tech">
-                            <FooterLink href="https://docs.lazorkit.com/">Lazorkit Engine</FooterLink>
-                            <FooterLink href="https://github.com/lazor-kit/lazor-kit">The Bridge</FooterLink>
-                            <FooterLink href="https://kaspa.org/docs/">Kaspa Docs</FooterLink>
-                            <FooterLink href="https://spectre-network.github.io/spectre-docs/">GhostDAG Specs</FooterLink>
+                            <FooterLink href="https://docs.injective.network/">Injective Docs</FooterLink>
+                            <FooterLink href="https://github.com/injectivelabs">Injective GitHub</FooterLink>
+                            <FooterLink href="https://hub.injective.network/">Injective Hub</FooterLink>
+                            <FooterLink href="https://explorer.injective.network/">Injective Explorer</FooterLink>
                         </FooterColumn>
                     </motion.div>
 
@@ -134,8 +126,8 @@ export default function Footer() {
                         <FooterColumn title="Links">
                             <FooterLink href="/merchant-auth">Merchant Portal</FooterLink>
                             <FooterLink href="/signin">Dashboard</FooterLink>
-                            <FooterLink href="https://discord.gg/kaspa">Kaspa Discord</FooterLink>
-                            <FooterLink href="https://twitter.com/KaspaCurrency">Kaspa X</FooterLink>
+                            <FooterLink href="https://discord.gg/injective">Injective Discord</FooterLink>
+                            <FooterLink href="https://twitter.com/Injective_">Injective X</FooterLink>
                         </FooterColumn>
                     </motion.div>
 
@@ -176,7 +168,7 @@ export default function Footer() {
                 >
                     <p>© 2026 CadPay. All rights reserved.</p>
                     <div className="flex gap-6">
-                        <span>Made with 🧡 on Kaspa</span>
+                        <span>Made with 💙 on Injective</span>
                     </div>
                 </motion.div>
 
@@ -190,7 +182,7 @@ function SocialIcon({ href, icon, label }: { href: string; icon: React.ReactNode
         <a
             href={href}
             aria-label={label}
-            className="w-14 h-14 md:w-16 md:h-16 bg-white text-orange-600 rounded-full flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all duration-300"
+            className="w-14 h-14 md:w-16 md:h-16 bg-white text-blue-600 rounded-full flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all duration-300"
         >
             {icon}
         </a>
@@ -210,7 +202,7 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
     return (
-        <Link href={href} className="text-zinc-400 hover:text-orange-400 transition-colors text-sm font-medium">
+        <Link href={href} className="text-zinc-400 hover:text-blue-400 transition-colors text-sm font-medium">
             {children}
         </Link>
     );

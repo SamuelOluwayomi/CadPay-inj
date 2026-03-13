@@ -29,7 +29,7 @@ import CreateSavingsModal from '@/components/shared/CreateSavingsModal';
 import SavingsPotView from '@/components/shared/SavingsPotView';
 import SavingsReceiptsModal from '@/components/shared/SavingsReceiptsModal';
 import UnifiedSendModal from '@/components/shared/UnifiedSendModal';
-import { useKasWare } from '@/hooks/useKasWare';
+import { useInjective } from '@/hooks/useInjective';
 import { useSavings } from '@/hooks/useSavings';
 import { useToast } from '@/context/ToastContext';
 import { useReceipts } from '@/hooks/useReceipts';
@@ -46,7 +46,7 @@ interface TxSpeed {
 export default function Dashboard() {
     const { session } = useUserProfile();
 
-    const { address, balance: walletBalance, isLoading: loading, connect, isConnected, disconnect, refreshBalance: refreshWalletBalance, transactions, fetchTransactions } = useKasWare();
+    const { address, balance: walletBalance, isLoading: loading, connect, isConnected, disconnect, refreshBalance: refreshWalletBalance, transactions, fetchTransactions } = useInjective();
     const { showToast } = useToast();
     const { pots } = useSavings();
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
@@ -97,16 +97,16 @@ export default function Dashboard() {
     const [isProfileSaving, setIsProfileSaving] = useState(false);
     const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
     const { createReceipt } = useReceipts(address); // Pass the connected wallet address
-    const [kasPrice, setKasPrice] = useState<number | null>(null);
+    const [injPrice, setInjPrice] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const res = await fetch('https://api.kaspa.org/info/price');
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
                 const data = await res.json();
-                setKasPrice(data.price);
+                setInjPrice(data['injective-protocol'].usd);
             } catch (error) {
-                console.error('Failed to fetch KAS price:', error);
+                console.error('Failed to fetch INJ price:', error);
             }
         };
         fetchPrice();
@@ -124,17 +124,17 @@ export default function Dashboard() {
     // Unified wallet interaction logging
     useEffect(() => {
         if (address) {
-            console.log("Kaspa Wallet Connected:", address);
+            console.log("Injective Wallet Connected:", address);
         }
     }, [address]);
 
-    // Fetch Custodial Balance if not connected to KasWare
+    // Fetch Custodial Balance if not connected to Injective
     useEffect(() => {
         if (!address && profile?.authority) {
-            fetch(`/api/kaspa/balance?address=${profile.authority}`)
+            fetch(`/api/injective/balance?address=${profile.authority}`)
                 .then(res => res.json())
                 .then(data => {
-                    setCustodialBalance(data.balance / 100000000);
+                    setCustodialBalance(data.balance || 0);
                 })
                 .catch(err => console.error("Failed to fetch custodial balance:", err));
         }
@@ -145,9 +145,9 @@ export default function Dashboard() {
         if (address) {
             refreshWalletBalance();
         } else if (profile?.authority) {
-            fetch(`/api/kaspa/balance?address=${profile.authority}`)
+            fetch(`/api/injective/balance?address=${profile.authority}`)
                 .then(res => res.json())
-                .then(data => setCustodialBalance(data.balance / 100000000))
+                .then(data => setCustodialBalance(data.balance || 0))
                 .catch(err => console.error("Failed to refresh custodial balance:", err));
         }
     };
@@ -159,7 +159,7 @@ export default function Dashboard() {
             setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
 
             showToast(
-                isSavings ? `Successfully deposited ${amount.toFixed(2)} KAS to savings pot!` : `Successfully sent ${amount.toFixed(2)} KAS!`,
+                isSavings ? `Successfully deposited ${amount.toFixed(2)} INJ to savings pot!` : `Successfully sent ${amount.toFixed(2)} INJ!`,
                 "success"
             );
 
@@ -211,7 +211,7 @@ export default function Dashboard() {
         setIsOnboardingSubmitting(true);
         try {
             // 1. Ensure Wallet Exists (Custodial Only)
-            // Skip if: KasWare is connected (has address) OR user is biometric (wallet created on frontend)
+            // Skip if: Injective is connected (has address) OR user is biometric (wallet created on frontend)
             const isBiometricUser = profile?.auth_method === 'biometric';
 
             if (!address && !isBiometricUser) {
@@ -281,8 +281,8 @@ export default function Dashboard() {
 
     // Debug Active Mode
     useEffect(() => {
-        if (address) console.log("🔵 Dashboard Mode: KasWare Connected", address);
-        else if (profile?.authority) console.log("🟠 Dashboard Mode: Custodial", profile.authority);
+        if (address) console.log("🔵 Dashboard Mode: Injective Connected", address);
+        else if (profile?.authority) console.log("望 Dashboard Mode: Custodial", profile.authority);
     }, [address, profile]);
 
 
@@ -294,9 +294,9 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-[#1c1209] text-white font-sans relative overflow-hidden">
-            {/* Orange Glow Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(234,88,12,0.1),transparent_50%)] z-0" />
+        <div className="min-h-screen bg-[#000000] text-white font-sans relative overflow-hidden">
+            {/* Blue Glow Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(29,78,216,0.1),transparent_50%)] z-0" />
 
             {/* Particle Dust Animation */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -349,7 +349,7 @@ export default function Dashboard() {
                         {/* Header with Logo and Close Button */}
                         <div className="flex items-center justify-between mb-8 mt-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-black font-black text-xl">
+                                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
                                     C
                                 </div>
                                 <span className="text-xl font-bold tracking-tight">CadPay</span>
@@ -366,7 +366,7 @@ export default function Dashboard() {
                         {/* Profile Section */}
                         <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setShowProfileEdit(true)}>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl">
+                                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl">
                                     {userProfile.avatar}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -375,9 +375,9 @@ export default function Dashboard() {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-500">Testnet-10</span>
-                                <div className="flex items-center gap-1 text-orange-500">
-                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                                <span className="text-zinc-500">Injective Testnet</span>
+                                <div className="flex items-center gap-1 text-blue-500">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
                                     Active
                                 </div>
                             </div>
@@ -467,8 +467,8 @@ export default function Dashboard() {
                         <OverviewSection
                             userName={userProfile.username}
                             balance={displayBalance.toFixed(2)}
-                            address={walletAddress}
-                            refreshBalance={refreshBalance}
+                            address={address || ""}
+                            refreshBalance={refreshWalletBalance}
                             loading={loading}
                             copyToClipboard={copyToClipboard}
                             onOpenSend={() => setShowSendModal(true)}
@@ -480,14 +480,14 @@ export default function Dashboard() {
                         />
                     )}
 
-                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} kasPrice={kasPrice} />}
+                    {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} injPrice={injPrice} />}
 
                     {activeSection === 'wallet' && <WalletSection
                         balance={displayBalance.toFixed(2)}
                         address={walletAddress} copyToClipboard={copyToClipboard} />}
                     {activeSection === 'security' && <SecuritySettings />}
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
-                    {activeSection === 'receipts' && <ReceiptsSection address={walletAddress} />}
+                    {activeSection === 'receipts' && <ReceiptsSection address={address || ""} />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
                     {activeSection === 'savings' && <SavingsSection session={session} />}
                 </div>
@@ -570,7 +570,7 @@ function MobileDropdown({ options, value, onChange, label }: any) {
                                             setIsOpen(false);
                                         }}
                                         className={`w-full text-left px-4 py-3 text-sm rounded-lg transition-colors flex items-center justify-between ${value === option.id
-                                            ? 'bg-orange-500 text-white font-bold'
+                                            ? 'bg-blue-600 text-white font-bold'
                                             : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                                             }`}
                                     >
@@ -593,7 +593,7 @@ function NavItem({ icon, label, active, onClick }: any) {
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all group ${active
-                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
         >
@@ -601,6 +601,16 @@ function NavItem({ icon, label, active, onClick }: any) {
             <span className="text-sm font-medium flex-1 text-left">{label}</span>
             {active && <CaretRightIcon size={16} weight="bold" />}
         </button>
+    );
+}
+
+// Injective Pulse Card
+function InjectivePulseCard() {
+    return (
+        <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Injective Mainnet Pulse</span>
+        </div>
     );
 }
 
@@ -619,7 +629,7 @@ function OverviewSection({
     pots: any[]
 }) {
     const [showUSD, setShowUSD] = useState(true);
-    const [kasPrice, setKasPrice] = useState<number | null>(null);
+    const [injPrice, setInjPrice] = useState<number | null>(null);
     const { subscriptions } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
@@ -636,15 +646,15 @@ function OverviewSection({
         return () => clearInterval(interval);
     }, [txSpeed.status]);
 
-    // Fetch KAS price
+    // Fetch INJ price
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
                 const data = await response.json();
-                setKasPrice(data.kaspa.usd);
+                setInjPrice(data['injective-protocol'].usd);
             } catch (error) {
-                console.error('Failed to fetch KAS price:', error);
+                console.error('Failed to fetch INJ price:', error);
             }
         };
         fetchPrice();
@@ -682,14 +692,14 @@ function OverviewSection({
                     wallet_address: address,
                     service_name: 'Private Vault',
                     plan_name: 'Faucet Funding',
-                    amount_kas: fundingAmount,
-                    amount_usd: fundingAmount * (kasPrice || 0),
+                    amount_inj: fundingAmount,
+                    amount_usd: fundingAmount * (injPrice || 0),
                     status: 'completed',
                     tx_signature: data.signature || `faucet_${Date.now()}`,
                     merchant_wallet: 'Vault_System'
                 });
 
-                showToast(`Funding Successful! +${fundingAmount} KAS`, "success");
+                showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
                 const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
                 const newBal = currentBal + fundingAmount;
                 localStorage.setItem(`demo_balance_${address}`, newBal.toString());
@@ -715,7 +725,7 @@ function OverviewSection({
     };
 
     const balanceValue = parseFloat(balance) || 0;
-    const usdValue = kasPrice ? (balanceValue * kasPrice).toFixed(2) : '...';
+    const usdValue = injPrice ? (balanceValue * injPrice).toFixed(2) : '...';
 
     return (
         <div className="space-y-8">
@@ -735,11 +745,11 @@ function OverviewSection({
                                 <LightningIcon size={18} />
                             </motion.div>
                         ) : (
-                            <LightningIcon size={18} className="text-orange-500" />
+                            <LightningIcon size={18} className="text-blue-500" />
                         )}
-                        {isFunding ? "Funding..." : "Get KAS"}
+                        {isFunding ? "Funding..." : "Get INJ"}
                     </button>
-                    <KaspaPulseCard />
+                    <InjectivePulseCard />
                 </div>
             </div>
 
@@ -768,7 +778,7 @@ function OverviewSection({
                                 <h2 className="text-4xl md:text-5xl font-black text-white">
                                     {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </h2>
-                                <span className="text-xl font-bold text-zinc-500 uppercase">KAS</span>
+                                <span className="text-xl font-bold text-zinc-500 uppercase">INJ</span>
                             </div>
                             <p className="text-lg text-[#70C7BA] font-medium">≈ ${usdValue} USD</p>
                         </div>
@@ -788,7 +798,7 @@ function OverviewSection({
                             </button>
                             <button
                                 onClick={onOpenSend}
-                                className="px-8 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
+                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95"
                             >
                                 <PaperPlaneTiltIcon size={18} weight="bold" />
                                 Send Funds
@@ -858,7 +868,7 @@ function OverviewSection({
                                     </div>
                                     <div className="text-right">
                                         <p className={`text-sm font-bold ${tx.err ? 'text-red-400' : 'text-zinc-100'}`}>
-                                            {tx.amount.toFixed(2)} KAS
+                                            {tx.amount.toFixed(2)} INJ
                                         </p>
                                         <p className="text-[10px] text-zinc-500 uppercase font-black">
                                             {tx.err ? 'Failed' : 'Completed'}
@@ -987,7 +997,7 @@ function SpeedConfirmationOverlay({ txSpeed, setTxSpeed }: {
                                 <span className={`text-xl font-black tabular-nums ${txSpeed.status === 'running' ? 'text-white' : 'text-green-500'}`}>
                                     {elapsed.toFixed(3)}s
                                 </span>
-                                <span className="text-[10px] text-zinc-500 font-bold uppercase">Kaspa L1</span>
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase">Injective L1</span>
                             </div>
                         </div>
 
@@ -1022,12 +1032,12 @@ function StatCard({ title, value, color }: { title: string; value: string; color
 
 // Subscriptions Section
 function SubscriptionsSection({
-    txSpeed, setTxSpeed, balance, kasPrice
+    txSpeed, setTxSpeed, balance, injPrice
 }: {
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
     balance: number,
-    kasPrice: number | null
+    injPrice: number | null
 }) {
     const [activeTab, setActiveTab] = useState<'browse' | 'active' | 'analytics'>('browse');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -1039,8 +1049,7 @@ function SubscriptionsSection({
     // Toast notifications
     const { showToast } = useToast();
 
-    // @ts-ignore
-    const { address } = useKasWare();
+    const { address } = useInjective();
     const { profile } = useUserProfile();
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
@@ -1340,9 +1349,9 @@ function SubscriptionsSection({
                                     <div>
                                         <p className="text-sm text-orange-200/60 mb-1">Monthly Spending</p>
                                         <p className="text-4xl font-bold text-white">${getMonthlyTotal().toFixed(2)}</p>
-                                        {kasPrice && (
+                                        {injPrice && (
                                             <p className="text-sm text-orange-200/40 mt-1">
-                                                ≈ {(getMonthlyTotal() / kasPrice).toFixed(2)} KAS
+                                                ≈ {(getMonthlyTotal() / injPrice).toFixed(2)} INJ
                                             </p>
                                         )}
                                     </div>
@@ -1464,7 +1473,7 @@ function SubscriptionsSection({
                 service={selectedService}
                 onSubscribe={handleSubscribe}
                 balance={balance || 0}
-                kasPrice={kasPrice}
+                injPrice={injPrice}
                 existingSubscriptions={subscriptions}
             />
         </div>
@@ -1479,7 +1488,7 @@ function WalletSection({ balance, address, copyToClipboard }: any) {
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-linear-to-br from-zinc-900/80 to-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-8">
                     <h3 className="text-lg font-bold mb-6">Main Wallet</h3>
-                    <p className="text-4xl font-bold mb-6">{balance} KAS</p>
+                    <p className="text-4xl font-bold mb-6">{balance} INJ</p>
                     <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5 text-sm">
                         <span className="font-mono text-zinc-300 truncate">{address}</span>
                         <button onClick={copyToClipboard} className="text-orange-500 ml-3">
@@ -1531,7 +1540,7 @@ function ReceiptsSection({ address }: { address: string }) {
                 {receipts.length > 0 && (
                     <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
                         <p className="text-xs text-zinc-400 mb-1">Total Amount</p>
-                        <p className="text-2xl font-bold text-[#70C7BA]">{totalSpending.toFixed(2)} KAS</p>
+                        <p className="text-2xl font-bold text-[#70C7BA]">{totalSpending.toFixed(2)} INJ</p>
                         <p className="text-xs text-zinc-500">≈ ${totalSpendingUSD.toFixed(2)} USD</p>
                     </div>
                 )}
@@ -1574,7 +1583,7 @@ function ReceiptsSection({ address }: { address: string }) {
                                     <button
                                         onClick={() => {
                                             window.open(
-                                                `https://explorer.kaspa.org/txs/${receipt.tx_signature}?testnet=true`,
+                                                `https://explorer.injective.network/transaction/${receipt.tx_signature}`,
                                                 '_blank'
                                             );
                                         }}
@@ -1604,7 +1613,7 @@ function ReceiptsSection({ address }: { address: string }) {
 
                             <div className="mb-4">
                                 <p className="text-2xl font-black text-white">
-                                    {receipt.amount_kas.toFixed(2)} KAS
+                                    {(receipt as any).amount_inj?.toFixed(2) || (receipt as any).amount_kas?.toFixed(2)} INJ
                                 </p>
                                 <p className="text-sm text-zinc-400">
                                     ≈ ${receipt.amount_usd.toFixed(2)} USD
@@ -1645,25 +1654,25 @@ function DevKeysSection() {
 // Savings Section
 function SavingsSection({ session }: { session: any }) {
     const { pots, isLoading, createPot, withdrawFromPot, depositToPot } = useSavings();
-    const { address, refreshBalance, fetchTransactions } = useKasWare(); // Need address for receipts
+    const { address, refreshBalance, fetchTransactions } = useInjective(); // Need address for receipts
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [selectedPot, setSelectedPot] = useState<any>(null);
     const [showReceipts, setShowReceipts] = useState(false);
     const [isFunding, setIsFunding] = useState(false);
-    const [kasPrice, setKasPrice] = useState<number | null>(null);
+    const [injPrice, setInjPrice] = useState<number | null>(null);
     const { showToast } = useToast();
     const { createReceipt } = useReceipts(address);
 
-    // Fetch KAS price
+    // Fetch INJ price
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
                 const data = await response.json();
-                setKasPrice(data.kaspa.usd);
+                setInjPrice(data['injective-protocol'].usd);
             } catch (error) {
-                console.error('Failed to fetch KAS price:', error);
+                console.error('Failed to fetch INJ price:', error);
             }
         };
         fetchPrice();
@@ -1702,16 +1711,11 @@ function SavingsSection({ session }: { session: any }) {
 
             let txId = '';
 
-            // 1. Try KasWare Wallet First (Non-Custodial)
-            if (address && typeof window !== 'undefined' && window.kasware) {
-                showToast(`Please sign the transaction in KasWare...`, "pending");
-                // Convert KAS to sompi
-                const amountSompi = Math.floor(fundingAmount * 100_000_000);
-                const tx = await window.kasware.sendKaspa(potAddress, amountSompi);
-
-                if (!tx) throw new Error("Transaction rejected");
-                txId = tx;
-                showToast(`Transaction sent! ID: ${txId}`, "success");
+            // 1. Try Injective Wallet (Keplr/Leap)
+            if (address && typeof window !== 'undefined') {
+                showToast(`Please sign the transaction in your wallet...`, "pending");
+                // For now, we use the transferInj utility for all demo purposes or direct them to use unified modal
+                throw new Error("Please use the 'Send Funds' modal to fund your savings pot securely with client-side signing.");
             }
             // 2. Fallback to Client-Side Signing (Use UnifiedSendModal)
             else {

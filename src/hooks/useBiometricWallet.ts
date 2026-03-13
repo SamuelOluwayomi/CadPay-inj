@@ -50,7 +50,7 @@ export function useBiometricWallet() {
     /**
      * Create a new wallet with biometric protection
      * @param username - User identifier
-     * @param seedPhrase - Kaspa seed phrase to protect
+     * @param seedPhrase - Injective seed phrase to protect
      */
     const createWallet = async (username: string, seedPhrase: string) => {
         setIsLoading(true);
@@ -86,7 +86,7 @@ export function useBiometricWallet() {
     /**
      * Create a new wallet with password protection
      * @param username - User identifier
-     * @param seedPhrase - Kaspa seed phrase to protect
+     * @param seedPhrase - Injective seed phrase to protect
      * @param password - User password
      */
     const createWalletWithPassword = async (

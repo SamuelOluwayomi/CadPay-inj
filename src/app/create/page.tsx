@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { WalletIcon, ShieldCheckIcon, LightningIcon, ArrowLeftIcon, FingerprintIcon, LockKeyIcon, CheckCircleIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
-import { generateKaspaWallet } from '@/utils/kaspaWallet';
+import { generateInjectiveWallet } from '@/utils/injectiveWallet';
 import { downloadRecoveryKit } from '@/utils/recoveryKit';
-import ConnectKasWare from '@/components/ConnectKasWare';
+import ConnectInjective from '@/components/ConnectInjective';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -75,8 +75,8 @@ export default function CreateAccount() {
         setStatus('generating');
 
         try {
-            // 1. Generate Kaspa Wallet (Client Side)
-            const wallet = await generateKaspaWallet();
+            // 1. Generate Injective Wallet (Client Side)
+            const wallet = await generateInjectiveWallet();
             setWalletAddress(wallet.address);
             setWalletMnemonic(wallet.mnemonic);
 
@@ -216,7 +216,7 @@ export default function CreateAccount() {
                         {/* OPTION A: Connect Existing Wallet */}
                         <div className="space-y-2">
                             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pl-1">Existing User</p>
-                            <ConnectKasWare />
+                            <ConnectInjective />
                         </div>
 
                         <div className="relative py-4">
@@ -288,7 +288,7 @@ export default function CreateAccount() {
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Wallet Created!</h3>
                             <p className="text-sm text-zinc-400 mb-4">
-                                Your Kaspa wallet has been created and secured with {useBiometrics ? 'biometric protection' : 'password protection'}.
+                                Your Injective wallet has been created and secured with {useBiometrics ? 'biometric protection' : 'password protection'}.
                             </p>
                             {walletAddress && (
                                 <div className="bg-zinc-900/50 p-3 rounded-lg border border-white/10 mb-6">

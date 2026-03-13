@@ -14,7 +14,7 @@ import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import { useRouter } from 'next/navigation';
 
 import { useMerchant } from '@/context/MerchantContext';
-import { useKaspaData } from '@/hooks/useKaspaData';
+import { useInjectiveData } from '@/hooks/useInjectiveData';
 import { useToast } from '@/context/ToastContext';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -43,7 +43,7 @@ export default function MerchantDashboard() {
         isLoading: isDataLoading,
         isUsingDemoData,
         refetch
-    } = useKaspaData(merchant?.walletPublicKey || null);
+    } = useInjectiveData(merchant?.walletPublicKey || null);
 
     // Derived Metrics from Hook
     const totalRevenue = stats?.revenue || 0;
@@ -52,7 +52,7 @@ export default function MerchantDashboard() {
     const mrr = stats?.mrr || 0;
 
     // Calculate Gas Saved (Simulated based on Volume for "The Flex")
-    // Assuming 0.0001 KAS per tx vs standard network
+    // Assuming 0.0001 INJ per tx vs standard network
     const gasSaved = txCount * 0.0001;
 
     // Chart Data - Single segment for now as we don't have product breakdown yet
@@ -121,7 +121,7 @@ export default function MerchantDashboard() {
         return (
             <div className="flex items-center justify-center h-screen bg-black text-white">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     <p className="text-zinc-500 text-sm">Loading Merchant Portal...</p>
                 </div>
             </div>
@@ -169,7 +169,7 @@ export default function MerchantDashboard() {
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-8">
                                 <Link href="/" className="group flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-orange-500 text-black flex items-center justify-center rounded-lg font-black text-xl shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                                    <div className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center rounded-lg font-black text-xl shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
                                         C
                                     </div>
                                     <span className="text-xl font-black bg-white text-transparent bg-clip-text">
@@ -232,7 +232,7 @@ export default function MerchantDashboard() {
 
                         <div className="mt-auto p-6 border-t border-white/5">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-black border-2 border-white/10">
+                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-blue-500 to-indigo-500 flex items-center justify-center font-bold text-white border-2 border-white/10">
                                     {merchant.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
@@ -266,8 +266,8 @@ export default function MerchantDashboard() {
                         <div className="flex items-center gap-3">
                             <WarningIcon size={24} className="text-orange-500" weight="fill" />
                             <div className="flex-1">
-                                <p className="text-sm font-bold text-orange-400">Demo Mode Active</p>
-                                <p className="text-xs text-zinc-400">Kaspa API is temporarily unavailable. Showing demo data. The system will automatically switch to live data when the API recovers.</p>
+                                <p className="text-sm font-bold text-blue-400">Demo Mode Active</p>
+                                <p className="text-xs text-zinc-400">Injective API is temporarily unavailable. Showing demo data. The system will automatically switch to live data when the API recovers.</p>
                             </div>
                         </div>
                     </motion.div>
@@ -291,7 +291,7 @@ export default function MerchantDashboard() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                                 <MetricCard
                                     title="Total Revenue"
-                                    value={`${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KAS`}
+                                    value={`${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INJ`}
                                     trend="+0%"
                                     icon={<TrendUpIcon size={24} className="text-green-400" />}
                                     color="green"
@@ -307,7 +307,7 @@ export default function MerchantDashboard() {
                                 />
                                 <MetricCard
                                     title="Monthly Recurring (MRR)"
-                                    value={`${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KAS`}
+                                    value={`${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INJ`}
                                     trend="+0%"
                                     icon={<ReceiptIcon size={24} className="text-purple-400" />}
                                     color="purple"
@@ -315,10 +315,10 @@ export default function MerchantDashboard() {
                                 />
                                 <MetricCard
                                     title="Gas Subsidized (The Flex)"
-                                    value={`${gasSaved.toFixed(4)} KAS`}
+                                    value={`${gasSaved.toFixed(4)} INJ`}
                                     trend="100% Covered"
-                                    icon={<LightningIcon size={24} className="text-orange-400 fill-orange-400" />}
-                                    color="orange"
+                                    icon={<LightningIcon size={24} className="text-blue-400 fill-blue-400" />}
+                                    color="blue"
                                     subtext="You saved users this much!"
                                     loading={isDataLoading}
                                 />
@@ -356,7 +356,7 @@ export default function MerchantDashboard() {
                                                             ))}
                                                         </Pie>
                                                         <Tooltip
-                                                            formatter={(value: any) => `${value?.toLocaleString()} KAS`}
+                                                            formatter={(value: any) => `${value?.toLocaleString()} INJ`}
                                                             contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
                                                             itemStyle={{ color: '#fff' }}
                                                         />
@@ -369,7 +369,7 @@ export default function MerchantDashboard() {
                                                         <span className="block text-xl font-bold text-white">
                                                             {totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                         </span>
-                                                        <span className="block text-[10px] text-zinc-500">KAS</span>
+                                                        <span className="block text-[10px] text-zinc-500">INJ</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -496,7 +496,7 @@ export default function MerchantDashboard() {
                                                             </div>
                                                         </td>
                                                         <td className={`py-3 pr-2 text-right font-bold text-[10px] sm:text-xs ${tx.isIncoming ? 'text-green-400' : 'text-white'}`}>
-                                                            {tx.isIncoming ? '+' : '-'}{tx.amount.toFixed(2)} KAS
+                                                            {tx.isIncoming ? '+' : '-'}{tx.amount.toFixed(2)} INJ
                                                         </td>
                                                     </motion.tr>
                                                 ))}

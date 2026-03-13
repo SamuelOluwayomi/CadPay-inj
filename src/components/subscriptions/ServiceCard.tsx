@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Service, convertUSDtoKAS } from '@/data/subscriptions';
+import { Service, convertUSDtoINJ } from '@/data/subscriptions';
 import { useState, useEffect } from 'react';
 
 interface ServiceCardProps {
@@ -10,24 +10,24 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service, onClick }: ServiceCardProps) {
-    const [kasPrice, setKasPrice] = useState(0.15); // Default KAS price
+    const [injPrice, setInjPrice] = useState(25.00); // Default INJ price
 
     // Fetch real-time KAS price
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
                 const data = await response.json();
-                setKasPrice(data.kaspa.usd);
+                setInjPrice(data['injective-protocol'].usd);
             } catch (error) {
-                console.error('Failed to fetch KAS price:', error);
+                console.error('Failed to fetch INJ price:', error);
             }
         };
         fetchPrice();
     }, []);
 
     const minPriceUSD = Math.min(...service.plans.map(p => p.priceUSD));
-    const minPriceKAS = convertUSDtoKAS(minPriceUSD, kasPrice);
+    const minPriceINJ = convertUSDtoINJ(minPriceUSD, injPrice);
 
     return (
         <div className="flex items-center justify-center w-full">
@@ -63,7 +63,6 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                     <h3 className="text-lg font-bold text-white mb-1 leading-tight">{service.name}</h3>
                     <p className="text-xs text-zinc-400 line-clamp-2 max-w-[140px] mx-auto mb-2 opacity-80 group-hover:opacity-100 transition-opacity">{service.description}</p>
 
-                    {/* Price pill with KAS */}
                     <div
                         className="inline-block px-3 py-1 rounded-full text-xs font-bold"
                         style={{
@@ -71,7 +70,7 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                             color: service.color
                         }}
                     >
-                        {minPriceUSD === 0 ? 'Free' : `${minPriceKAS.toFixed(0)} KAS`}
+                        {minPriceUSD === 0 ? 'Free' : `${minPriceINJ.toFixed(0)} INJ`}
                     </div>
                     {minPriceUSD > 0 && (
                         <p className="text-[10px] text-zinc-500 mt-1">≈ ${minPriceUSD} USD</p>

@@ -1,59 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
 
 /**
- * API Route to generate Kaspa wallet
- * This runs on the server-side where Node.js require() is available
+ * API Route to generate Injective wallet
  */
 export async function POST(request: NextRequest) {
     try {
-        const { network = 'testnet-10' } = await request.json();
-
-        // Dynamic import of the Kaspa WASM module (server-side only)
-        const Kaspa = await import('@kluster/kaspa-wasm-web');
-
-        // Initialize WASM
-        try {
-            // @ts-ignore
-            await Kaspa.default();
-        } catch (e) {
-            // Already loaded
-        }
-
-        // Generate Mnemonic
-        const mnemonic = Kaspa.Mnemonic.random();
-        const mnemonicString = mnemonic.phrase;
-
-        // Convert mnemonic to seed using instance method
-        const seed = mnemonic.toSeed();
-
-        // Create Extended Private Key
-        const xprv = new Kaspa.XPrv(seed);
-
-        // Derivation Path: m/44'/111111'/0'/0/0 (Standard Kaspa)
-        const path = xprv.derivePath("m/44'/111111'/0'/0/0");
-
-        // Get Extended Public Key
-        const xpub = path.toXPub();
-
-        // Generate Address using createAddress function
-        const pubkey = xpub.toPublicKey();
-        const address = Kaspa.createAddress(pubkey, network);
+        // Generate Injective Wallet
+        const mnemonic = Mnemonic.generate();
+        const privateKey = PrivateKey.fromMnemonic(mnemonic);
+        const address = privateKey.toBech32();
+        const publicKey = privateKey.toPublicKey().toBase64();
 
         return NextResponse.json({
             success: true,
             wallet: {
-                mnemonic: mnemonicString,
-                address: address.toString(),
-                publicKey: pubkey.toString(),
-                seed: seed,
+                mnemonic: mnemonic,
+                address: address,
+                publicKey: publicKey,
             },
         });
     } catch (error: any) {
-        console.error('Wallet generation error:', error);
+        console.error('Injective wallet generation error:', error);
         return NextResponse.json(
             {
                 success: false,
-                error: error.message || 'Failed to generate Kaspa wallet',
+                error: error.message || 'Failed to generate Injective wallet',
             },
             { status: 500 }
         );

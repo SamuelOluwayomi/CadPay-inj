@@ -6,8 +6,9 @@ import {
     XIcon, PaperPlaneTiltIcon, WalletIcon, PiggyBankIcon,
     CaretRightIcon, WarningIcon, CheckCircleIcon, LockKeyIcon, FingerprintIcon
 } from '@phosphor-icons/react';
-import { initKaspaWasm, signTransaction } from '@/lib/kaspa-wallet';
+import { useInjective } from '@/hooks/useInjective';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
+import { transferInj } from '@/lib/injective-wallet';
 import { supabase } from '@/lib/supabase';
 
 
@@ -20,6 +21,7 @@ interface UnifiedSendModalProps {
 }
 
 export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balance }: UnifiedSendModalProps) {
+    const { address: userAddress, connect, isConnected, balance: injBalance } = useInjective();
     const [mode, setMode] = useState<'external' | 'savings'>('external');
     const [step, setStep] = useState<'details' | 'password' | 'signing'>('details');
     const [recipient, setRecipient] = useState('');
@@ -76,7 +78,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             return;
         }
         if (numAmount > availableBalance) {
-            setError(`Insufficient balance. You have ${availableBalance.toFixed(2)} KAS but need ${numAmount.toFixed(2)} KAS.`);
+            setError(`Insufficient balance. You have ${availableBalance.toFixed(2)} INJ but need ${numAmount.toFixed(2)} INJ.`);
             return;
         }
 
@@ -97,9 +99,6 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error('User not authenticated');
             }
 
-            // 1. Initialize WASM SDK
-            await initKaspaWasm();
-
             // 2. Unlock with biometrics using Supabase auth email
             const unlockResult = await unlockWallet(userEmail);
 
@@ -107,15 +106,14 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error(unlockResult.error || 'Failed to unlock wallet with biometrics');
             }
 
-            // 3. Sign and broadcast transaction directly to Kaspa network
-            const txId = await signTransaction({
-                seedPhrase: unlockResult.mnemonic,
+            // 3. For Injective, we use the transferInj utility with the derived mnemonic
+            const txId = await transferInj({
+                mnemonic: unlockResult.mnemonic,
                 recipient: targetRecipient!,
-                amount: numAmount,
-                networkType: 'testnet-10'
+                amount: numAmount
             });
 
-            console.log('🚀 Transaction complete! TxID:', txId);
+            console.log('🚀 Injective Transaction complete! TxHash:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');
@@ -144,25 +142,21 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error('User not authenticated');
             }
 
-            // 1. Initialize WASM SDK
-            await initKaspaWasm();
-
-            // 2. Unlock wallet with password to get seed phrase
+            // 2. Unlock with password
             const unlockResult = await unlockWalletWithPassword(userEmail, password);
 
             if (!unlockResult.success || !unlockResult.mnemonic) {
-                throw new Error(unlockResult.error || 'Failed to unlock wallet. Check your password.');
+                throw new Error(unlockResult.error || 'Failed to unlock wallet');
             }
 
-            // 3. Sign and broadcast transaction directly to Kaspa network
-            const txId = await signTransaction({
-                seedPhrase: unlockResult.mnemonic,
+            // 3. Sign and broadcast transaction directly to Injective network
+            const txId = await transferInj({
+                mnemonic: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount,
-                networkType: 'testnet-10'
             });
 
-            console.log('🚀 Transaction complete! TxID:', txId);
+            console.log('🚀 Injective Transaction complete! TxHash:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');
@@ -230,7 +224,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={() => setMode('external')}
                                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'external'
-                                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
                                                 : 'text-zinc-500 hover:text-zinc-300'
                                                 }`}
                                         >
@@ -240,7 +234,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             <button
                                                 onClick={() => setMode('savings')}
                                                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'savings'
-                                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
                                                     : 'text-zinc-500 hover:text-zinc-300'
                                                     }`}
                                             >
@@ -255,8 +249,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Recipient Address</label>
                                                 <div className="relative">
                                                     <input
-                                                        placeholder="kaspatest:qzsv8nxe2qpe2qwproh...."
-                                                        className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-orange-500/50 transition-all font-mono"
+                                                        placeholder="inj1..."
+                                                        className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-sm focus:outline-none focus:border-blue-500/50 transition-all font-mono"
                                                         value={recipient}
                                                         onChange={(e) => setRecipient(e.target.value)}
                                                     />
@@ -271,20 +265,20 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                             key={pot.name}
                                                             onClick={() => setSelectedPot(pot)}
                                                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedPot?.name === pot.name
-                                                                ? 'bg-orange-500/10 border-orange-500/40'
+                                                                ? 'bg-blue-500/10 border-blue-500/40'
                                                                 : 'bg-white/5 border-white/5 hover:border-white/10'
                                                                 }`}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-400">
+                                                                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
                                                                     <PiggyBankIcon size={18} />
                                                                 </div>
                                                                 <div className="text-left">
                                                                     <p className="text-sm font-bold text-white">{pot.name}</p>
-                                                                    <p className="text-[10px] text-zinc-500">{pot.balance.toFixed(2)} KAS</p>
+                                                                    <p className="text-[10px] text-zinc-500">{pot.balance.toFixed(2)} INJ</p>
                                                                 </div>
                                                             </div>
-                                                            {selectedPot?.name === pot.name && <CheckCircleIcon size={20} className="text-orange-500" weight="fill" />}
+                                                            {selectedPot?.name === pot.name && <CheckCircleIcon size={20} className="text-blue-500" weight="fill" />}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -292,12 +286,12 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         )}
 
                                         <div>
-                                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Amount (KAS)</label>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Amount (INJ)</label>
                                             <div className="relative">
                                                 <input
                                                     type="number"
                                                     placeholder="0.00"
-                                                    className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-3xl font-bold focus:outline-none focus:border-orange-500/50 transition-all text-center"
+                                                    className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white text-3xl font-bold focus:outline-none focus:border-blue-500/50 transition-all text-center"
                                                     value={amount}
                                                     onChange={(e) => setAmount(e.target.value)}
                                                 />
@@ -309,7 +303,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                 </button>
                                             </div>
                                             <p className="text-[10px] text-zinc-500 mt-2 text-right uppercase tracking-widest">
-                                                Balance: <span className="text-zinc-300 font-bold">{availableBalance.toFixed(2)} KAS</span>
+                                                Balance: <span className="text-zinc-300 font-bold">{availableBalance.toFixed(2)} INJ</span>
                                             </p>
                                         </div>
 
@@ -327,7 +321,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleContinue}
                                             disabled={isSubmitting}
-                                            className="w-full py-5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                                            className="w-full py-5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
                                         >
                                             <CaretRightIcon size={20} weight="bold" />
                                             <span>Continue</span>
@@ -352,7 +346,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-zinc-500 text-sm">Amount:</span>
-                                            <span className="text-orange-400 font-bold text-lg">{amount} KAS</span>
+                                            <span className="text-blue-400 font-bold text-lg">{amount} INJ</span>
                                         </div>
                                     </div>
 
@@ -396,7 +390,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleBiometricUnlockAndSign}
                                             disabled={isSubmitting}
-                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-orange-500 to-orange-400 rounded-2xl font-bold hover:from-orange-300 hover:to-orange-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-blue-500 to-blue-400 rounded-2xl font-bold hover:from-blue-300 hover:to-blue-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <FingerprintIcon size={20} weight="bold" />
                                             Unlock with Biometrics
@@ -425,7 +419,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                         <button
                                             onClick={handleSignAndSend}
                                             disabled={!password || isSubmitting}
-                                            className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                                            className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
                                         >
                                             <LockKeyIcon size={20} weight="bold" />
                                             <span>Sign & Send</span>
@@ -440,8 +434,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="text-center py-8"
                                 >
-                                    <div className="w-20 h-20 mx-auto mb-6 bg-orange-500/20 rounded-full flex items-center justify-center">
-                                        <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+                                    <div className="w-20 h-20 mx-auto mb-6 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Signing Transaction</h3>
                                     <p className="text-zinc-400 mb-6">
@@ -452,7 +446,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             initial={{ width: 0 }}
                                             animate={{ width: '100%' }}
                                             transition={{ duration: 3, repeat: Infinity }}
-                                            className="h-full bg-linear-to-r from-orange-500 to-orange-600"
+                                            className="h-full bg-linear-to-r from-blue-500 to-blue-600"
                                         />
                                     </div>
                                 </motion.div>

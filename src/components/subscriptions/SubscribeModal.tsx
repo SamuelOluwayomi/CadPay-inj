@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, LockKeyIcon, FingerprintIcon, CheckCircleIcon } from '@phosphor-icons/react';
-import { Service, SubscriptionPlan, convertUSDtoKAS } from '@/data/subscriptions';
-import { useKasWare } from '@/hooks/useKasWare';
+import { Service, SubscriptionPlan, convertUSDtoINJ } from '@/data/subscriptions';
+import { useInjective } from '@/hooks/useInjective';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { verifyPassword } from '@/utils/passwordHash';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,7 @@ import { useReceipts } from '@/hooks/useReceipts';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { CaretDownIcon, EnvelopeSimpleIcon, UserIcon } from '@phosphor-icons/react';
 
-const MERCHANT_WALLET = 'kaspatest:qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay';
+const MERCHANT_WALLET = 'inj1qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay';
 
 interface SubscribeModalProps {
     isOpen: boolean;
@@ -20,7 +20,7 @@ interface SubscribeModalProps {
     service: Service | null;
     onSubscribe: (serviceId: string, plan: SubscriptionPlan, email: string, price: number, txId: string) => void;
     balance: number;
-    kasPrice: number | null;
+    injPrice: number | null;
     existingSubscriptions: any[];
 }
 
@@ -30,7 +30,7 @@ export default function SubscribeModal({
     service,
     onSubscribe,
     balance,
-    kasPrice,
+    injPrice,
     existingSubscriptions
 }: SubscribeModalProps) {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
@@ -41,7 +41,7 @@ export default function SubscribeModal({
     const [error, setError] = useState('');
     const [txSignature, setTxSignature] = useState('');
 
-    const { address } = useKasWare();
+    const { address } = useInjective();
     const { profile } = useUserProfile();
     const { unlockWallet, unlockWalletWithPassword } = useBiometricWallet();
     const { createReceipt } = useReceipts(address);
@@ -66,8 +66,8 @@ export default function SubscribeModal({
 
     if (!service || !isOpen) return null;
 
-    const priceKAS = selectedPlan ? convertUSDtoKAS(selectedPlan.priceUSD, kasPrice || 0.15) : 0;
-    const hasEnoughBalance = balance >= priceKAS;
+    const priceINJ = selectedPlan ? convertUSDtoINJ(selectedPlan.priceUSD, injPrice || 25.00) : 0;
+    const hasEnoughBalance = balance >= priceINJ;
 
     // Check if user already has this subscription
     const alreadySubscribed = existingSubscriptions.some(sub => sub.serviceId === service.id);
@@ -82,7 +82,7 @@ export default function SubscribeModal({
             return;
         }
         if (!hasEnoughBalance) {
-            setError(`Insufficient balance. You need ${priceKAS.toFixed(2)} KAS`);
+            setError(`Insufficient balance. You need ${priceINJ.toFixed(2)} INJ`);
             return;
         }
         setError('');
@@ -99,11 +99,6 @@ export default function SubscribeModal({
         setStep('processing');
 
         try {
-            // Initialize WASM
-            const { initKaspaWasm, signTransaction } = await import('@/lib/kaspa-wallet');
-            await initKaspaWasm();
-
-            // Step 1: Verify and unlock wallet
             let unlockResult;
             if (verificationMethod === 'password') {
                 if (!password) {
@@ -128,10 +123,10 @@ export default function SubscribeModal({
                     throw new Error('Invalid password');
                 }
 
-                // Use profile email for wallet unlock, not subscription email
+                // Use profile email for wallet unlock
                 unlockResult = await unlockWalletWithPassword(profile?.email || address!, password);
             } else {
-                // Biometric verification - use profile email for wallet unlock
+                // Biometric verification
                 unlockResult = await unlockWallet(profile?.email || address!);
             }
 
@@ -139,26 +134,15 @@ export default function SubscribeModal({
                 throw new Error(unlockResult.error || 'Failed to unlock wallet');
             }
 
-            // Step 2: Send KAS payment
-            let txId = '';
-            if (typeof window !== 'undefined' && window.kasware && typeof window.kasware.sendKaspa === 'function') {
-                const amountSompi = Math.floor(priceKAS * 100_000_000); // Convert KAS to sompi
-                // @ts-ignore
-                txId = await window.kasware.sendKaspa(MERCHANT_WALLET, amountSompi);
-                if (!txId) throw new Error('Transaction failed or was rejected');
-            } else {
-                // Use built-in wallet for signing
-                console.log("KasWare not found, using Secure Cloud Wallet");
+            // Step 2: Send INJ payment
+            const { transferInj } = await import('@/lib/injective-wallet');
+            const txId = await transferInj({
+                mnemonic: unlockResult.mnemonic,
+                recipient: MERCHANT_WALLET,
+                amount: priceINJ,
+            });
 
-                txId = await signTransaction({
-                    recipient: MERCHANT_WALLET,
-                    amount: priceKAS,
-                    seedPhrase: unlockResult.mnemonic,
-                    networkType: 'testnet-10'
-                });
-
-                if (!txId) throw new Error("Transaction broadcast failed");
-            }
+            if (!txId) throw new Error('Transaction failed or was rejected');
 
             setTxSignature(txId);
 
@@ -167,7 +151,7 @@ export default function SubscribeModal({
                 wallet_address: address!,
                 service_name: service.name,
                 plan_name: selectedPlan!.name,
-                amount_kas: priceKAS,
+                amount_inj: priceINJ,
                 amount_usd: selectedPlan!.priceUSD,
                 tx_signature: txId,
                 status: 'completed',
@@ -175,7 +159,7 @@ export default function SubscribeModal({
             });
 
             // Step 4: Add to local subscriptions
-            onSubscribe(service.id, selectedPlan!, email, priceKAS, txId);
+            onSubscribe(service.id, selectedPlan!, email, priceINJ, txId);
 
             setStep('success');
         } catch (err: any) {
@@ -233,22 +217,22 @@ export default function SubscribeModal({
                                     <h3 className="text-lg font-bold text-white">Select Plan</h3>
                                     <div className="grid gap-4">
                                         {service.plans.map(plan => {
-                                            const planPriceKAS = convertUSDtoKAS(plan.priceUSD, kasPrice || 0.15);
+                                            const planPriceINJ = convertUSDtoINJ(plan.priceUSD, injPrice || 25.0);
                                             return (
                                                 <button
                                                     key={plan.name}
                                                     onClick={() => setSelectedPlan(plan)}
                                                     className={`p-4 rounded-xl border-2 transition-all text-left ${selectedPlan?.name === plan.name
-                                                        ? 'border-orange-500 bg-orange-500/10'
-                                                        : '                                                            border-white/10 bg-white/5 hover:border-white/20'
+                                                        ? 'border-blue-500 bg-blue-500/10'
+                                                        : 'border-white/10 bg-white/5 hover:border-white/20'
                                                         }`}
                                                 >
                                                     <div className="flex items-start justify-between mb-2">
                                                         <div>
                                                             <h4 className="text-lg font-bold text-white">{plan.name}</h4>
                                                             <div className="flex items-baseline gap-2 mt-1">
-                                                                <span className="text-2xl font-bold text-[#70C7BA]">
-                                                                    {planPriceKAS.toFixed(2)} KAS
+                                                                <span className="text-2xl font-bold text-blue-400">
+                                                                    {planPriceINJ.toFixed(2)} INJ
                                                                 </span>
                                                                 <span className="text-sm text-zinc-400">
                                                                     ≈ ${plan.priceUSD.toFixed(2)} USD
@@ -333,7 +317,7 @@ export default function SubscribeModal({
                                 {!hasEnoughBalance && (
                                     <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
                                         <p className="text-sm text-red-400">
-                                            Insufficient balance. You have {balance.toFixed(2)} KAS but need {priceKAS.toFixed(2)} KAS
+                                            Insufficient balance. You have {balance.toFixed(2)} INJ but need {priceINJ.toFixed(2)} INJ
                                         </p>
                                     </div>
                                 )}
@@ -371,7 +355,7 @@ export default function SubscribeModal({
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-zinc-400">Amount</span>
                                             <div className="text-right">
-                                                <p className="text-xl font-bold text-[#70C7BA]">{priceKAS.toFixed(2)} KAS</p>
+                                                <p className="text-xl font-bold text-blue-400">{priceINJ.toFixed(2)} INJ</p>
                                                 <p className="text-sm text-zinc-500">≈ ${selectedPlan?.priceUSD.toFixed(2)} USD</p>
                                             </div>
                                         </div>
@@ -480,7 +464,7 @@ export default function SubscribeModal({
                                 <div className="p-4 bg-white/5 rounded-xl mb-6 text-left">
                                     <div className="flex justify-between mb-2">
                                         <span className="text-zinc-400">Amount Paid</span>
-                                        <span className="text-white font-bold">{priceKAS.toFixed(2)} KAS</span>
+                                        <span className="text-white font-bold">{priceINJ.toFixed(2)} INJ</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-zinc-400">Transaction</span>
