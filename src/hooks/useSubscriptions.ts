@@ -74,7 +74,6 @@ export function useSubscriptions() {
             const subsToSave = subscriptions.map(({ icon, ...rest }) => rest);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(subsToSave));
         }
-        // Note: We don't clear localStorage when subscriptions.length === 0 automatically
         // Clearing only happens explicitly through removeSubscription
 
         updateMonthlyData();

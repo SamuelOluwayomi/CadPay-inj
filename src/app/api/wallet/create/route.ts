@@ -1,22 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import * as kaspa from '@kluster/kaspa-wasm-web';
+import { generateInjectiveWallet } from '@/lib/injective-wallet';
 import { encrypt } from '@/utils/encryption';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
 
-// Node.js runtime for WASM + fs
+// Node.js runtime
 export const runtime = 'nodejs';
-
-// WASM hack for Node environment
-// @ts-ignore
-if (typeof global !== 'undefined' && !global.WebSocket) {
-    // @ts-ignore
-    global.WebSocket = globalThis.WebSocket;
-}
-
-let isWasmInitialized = false;
 
 export async function POST(request: Request) {
     try {
@@ -39,30 +27,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Initialize WASM robustly
-        if (!isWasmInitialized) {
-            const wasmPath = path.join(process.cwd(), 'public', 'kaspa_wasm_bg.wasm');
-            const wasmBuffer = fs.readFileSync(wasmPath);
-            await kaspa.default(wasmBuffer);
-            isWasmInitialized = true;
-        }
+        // 2. Generate New Injective Wallet
+        const { mnemonic, address } = generateInjectiveWallet();
+        
+        console.log(`🆕 Created Custodial Injective Wallet: ${address}`);
 
-        // 3. Generate New Wallet (Standardized)
-        const randomSecret = crypto.randomBytes(32).toString('hex');
-        const privateKey = new kaspa.PrivateKey(randomSecret);
-        const publicKey = privateKey.toPublicKey();
-        const address = publicKey.toAddress(kaspa.NetworkType.Testnet).toString();
-        const privateKeyHex = privateKey.toString();
+        // Encrypt credentials
+        const encryptedKey = encrypt(mnemonic);
 
-        console.log(`🆕 Created Custodial Wallet: ${address}`);
-
-        // 4. Encrypt Private Key
-        const encryptedKey = encrypt(privateKeyHex);
-
-        // 5. Save to Supabase
-        // We update the user's profile with their new wallet info
-        // 5. Save to Supabase (Upsert ensures profile exists)
-        // We update the user's profile with their new wallet info, or create it if missing
+        // 4. Save to Supabase
         const { error: dbError } = await supabase
             .from('profiles')
             .upsert({
@@ -81,7 +54,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             address: address,
-            message: 'Custodial wallet created successfully'
+            message: 'Custodial Injective wallet created successfully'
         });
 
     } catch (error: any) {

@@ -10,17 +10,11 @@ import {
 import { Network, getNetworkEndpoints } from '@injectivelabs/networks';
 import { BigNumberInBase } from '@injectivelabs/utils';
 
-/**
- * Injective wallet utilities
- */
 
 export const INJECTIVE_NETWORK = Network.Testnet;
 export const INJECTIVE_ENDPOINTS = getNetworkEndpoints(INJECTIVE_NETWORK);
 export const INJECTIVE_CHAIN_ID = 'injective-888'; // Injective Testnet
 
-/**
- * Derive an Injective address from a mnemonic
- */
 export function getAddressFromMnemonic(mnemonic: string): string {
     const result = PrivateKey.fromMnemonic(mnemonic);
     // @ts-ignore - Handle different return types from SDK versions
@@ -28,9 +22,6 @@ export function getAddressFromMnemonic(mnemonic: string): string {
     return pk.toBech32();
 }
 
-/**
- * Generate a new mnemonic and address
- */
 export function generateInjectiveWallet(): { mnemonic: string; address: string } {
     const result = PrivateKey.generate();
     // @ts-ignore
@@ -39,9 +30,6 @@ export function generateInjectiveWallet(): { mnemonic: string; address: string }
     return { mnemonic: "random-mnemonic-not-recoverable-fix-with-bip39", address };
 }
 
-/**
- * Sign and broadcast a transfer transaction on Injective
- */
 export async function transferInj(params: {
     mnemonic: string;
     recipient: string;
@@ -99,7 +87,6 @@ export async function transferInj(params: {
         const sig = await privateKey.sign(Buffer.from(signDoc.toBinary ? signDoc.toBinary() : signDoc.serializeBinary()));
         
         // 6. Broadcast Transaction
-        // In some versions TxRaw is a class, in others it's imported differently
         // @ts-ignore
         const txRaw = (TxRaw.fromPartial || TxRaw.fromJSON)({
             bodyBytes: signDoc.bodyBytes,

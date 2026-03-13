@@ -234,7 +234,7 @@ export default function MerchantAuthPage() {
 
                 {mainTab === 'merchant' && merchantSubTab === 'register' && (
                     <p className="text-center text-xs text-zinc-500 mt-6">
-                        By joining, a new Kaspa wallet will be automatically created <br /> for your business to receive payments.
+                        By joining, a new Injective wallet will be automatically created <br /> for your business to receive payments.
                     </p>
                 )}
             </div>

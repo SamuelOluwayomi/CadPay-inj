@@ -912,33 +912,6 @@ function OverviewSection({
     );
 }
 
-// Kaspa Pulse Card - Visualizing 1 BPS
-function KaspaPulseCard() {
-    return (
-        <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl flex items-center gap-4 p-4 pr-6 relative overflow-hidden group">
-            <div className="relative">
-                <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.4, 0.1] }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute inset-0 bg-orange-500 rounded-full blur-md"
-                />
-                <div className="relative w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
-                    <ActivityIcon size={20} className="text-orange-500" />
-                </div>
-            </div>
-            <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Network Pulse</p>
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                </div>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-black text-white leading-none">1.0</span>
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">BPS</span>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 // Speed Confirmation Overlay - Subtle Corner Badge
 function SpeedConfirmationOverlay({ txSpeed, setTxSpeed }: {

@@ -100,7 +100,7 @@ export default function CoreFeatures() {
                 <DashPattern />
 
                 <div className="w-full max-w-7xl mx-auto px-6 relative z-10">
-                    {/* Title Section with Kaspa Branding */}
+                    {/* Title Section with Injective Branding */}
                     <motion.div
                         className="mb-16 text-center"
                         initial="hidden"

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useKasWare } from '@/hooks/useKasWare';
+import { useInjective } from '@/hooks/useInjective';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
@@ -15,7 +15,7 @@ export interface UserProfile {
 }
 
 export function useUserProfile() {
-    const { address, isConnected } = useKasWare();
+    const { address, isConnected } = useInjective();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,6 @@ export function useUserProfile() {
             let data, error;
             // ... (rest of logic same)
 
-            // Strategy: Prioritize Supabase Session (Custodial), Fallback to KasWare (Non-Custodial)
             if (session?.user) {
                 // Fetch by User ID
                 const result = await supabase
@@ -61,14 +60,12 @@ export function useUserProfile() {
                 data = result.data;
                 error = result.error;
             } else if (address) {
-                // Fetch by Wallet Address (Non-Custodial / KasWare detected)
                 const result = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('wallet_address', address)
                     .maybeSingle();
 
-                // CRITICAL: If no profile found for this address, do NOT use it?
                 // Or allows transient usage?
                 data = result.data;
                 error = result.error;
@@ -104,7 +101,6 @@ export function useUserProfile() {
         }
     }, [address, session]);
 
-    // Create Custodial Wallet if missing (Server-Side Generation only)
     const checkOrCreateWallet = useCallback(async () => {
         if (!session?.access_token || !session?.user?.id) return;
 
@@ -115,9 +111,8 @@ export function useUserProfile() {
             .eq('id', session.user.id)
             .maybeSingle();
 
-        // 1a. If Biometric, DO NOT Create Custodial Wallet (It's clientside)
         if (latestProfile?.auth_method === 'biometric') {
-            // Check if wallet exists, if not, it's just sync lag or error, but do NOT overwrite
+            // Do not overwrite biometric wallet
             if (latestProfile?.wallet_address) {
                 console.log('✅ Biometric wallet detected:', latestProfile.wallet_address);
                 if (profile?.authority !== latestProfile.wallet_address) {

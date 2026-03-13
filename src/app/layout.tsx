@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Cadpay",
-  description: "Next Gen Subscriptions on Kaspa",
+  description: "Next Gen Subscriptions on Injective",
   icons: {
     icon: "/icon.ico",
   },

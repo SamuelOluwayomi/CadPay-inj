@@ -23,7 +23,6 @@ export const useInjective = () => {
         const endpoints = getNetworkEndpoints(INJECTIVE_NETWORK);
         const strategy = new WalletStrategy({
             chainId: INJECTIVE_CHAIN_ID as ChainId,
-            endpoints,
         });
         setWalletStrategy(strategy);
     }, []);
@@ -32,7 +31,6 @@ export const useInjective = () => {
 
     const fetchTransactions = useCallback(async (addr: string) => {
         try {
-            // For demo: fetch from explorer or mock
             const response = await fetch(`https://testnet.explorer.injective.network/api/v1/accounts/${addr}/transactions`);
             if (response.ok) {
                 const data = await response.json();
@@ -45,8 +43,6 @@ export const useInjective = () => {
 
     const fetchBalance = useCallback(async (addr: string) => {
         try {
-            // For demo purposes, we'll fetch from a public indexer or LCD
-            // Real implementation would use @injectivelabs/sdk-ts ChainGrpcBankApi
             const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${addr}/by_denom?denom=uinj`);
             if (response.ok) {
                 const data = await response.json();

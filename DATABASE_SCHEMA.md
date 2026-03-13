@@ -1,20 +1,20 @@
 # Database Schema
 
-This document outlines the Supabase database schema used in the CadPay application.
+This document outlines the Supabase database schema for CadPay.
 
 ## Tables
 
 ### 1. `profiles`
-Stores user profile information, authentication metadata, and optional custodial wallet keys. This centralized table handles both user identity and wallet association.
+Stores user profile information and authentication metadata.
 
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
 | `id` | uuid | Primary Key. References `auth.users(id)` ON DELETE CASCADE. |
 | `username` | text | User's display name. |
 | `email` | text | User's email address. |
-| `wallet_address` | text | Unique (Nullable). The user's Kaspa wallet address (Custodial or Connected). |
+| `wallet_address` | text | Unique (Nullable). The user's Injective wallet address. |
 | `auth_method` | text | `password` or `biometric`. Tracks the user's login preference. |
-| `encrypted_private_key`| text | AES-256-CBC Encrypted Kaspa Private Key (for custodial wallets). |
+| `encrypted_private_key`| text | AES-256-CBC Encrypted Injective Private Key (for custodial wallets). |
 | `pin` | text | 4-digit security PIN (hashed/encrypted). |
 | `emoji` | text | User's avatar emoji (default: 👤). |
 | `gender` | text | User's gender (for customization). |
@@ -35,7 +35,7 @@ Stores transaction receipts for the dashboard history.
 | `wallet_address` | text | Foreign Key. The user's wallet address. |
 | `service_name` | text | Name of the service/merchant (e.g., "Netflix", "Uber"). |
 | `plan_name` | text | Description of the transaction (e.g., "Standard Plan"). |
-| `amount_kas` | decimal | Amount paid in KAS. |
+| `amount_inj` | decimal | Amount paid in INJ. |
 | `amount_usd` | decimal | Approx. value in USD at time of transaction. |
 | `status` | text | `completed`, `pending`, `failed`. |
 | `tx_signature` | text | On-chain transaction ID (if available). |
@@ -52,8 +52,8 @@ Stores user-created savings goals/pots.
 | `id` | uuid | Primary Key (default: `gen_random_uuid()`). |
 | `user_address` | text | Owner's wallet address. Indexed. |
 | `name` | text | Name of the savings pot (e.g., "Vacation Fund"). |
-| `address` | text | Unique address generated for this pot (mock address for demo). |
-| `balance` | numeric | Current balance in the pot (KAS). Default: 0. |
+| `address` | text | Unique address generated for this pot. |
+| `balance` | numeric | Current balance in the pot (INJ). Default: 0. |
 | `duration_months` | integer | Lock duration in months. |
 | `unlock_time` | bigint | Unix timestamp when the pot unlocks. |
 | `status` | text | `active` or `closed`. |
@@ -70,7 +70,7 @@ Tracks deposits and withdrawals for savings pots.
 | `pot_id` | uuid | Foreign Key. References `savings_pots(id)` ON DELETE CASCADE. Indexed. |
 | `amount` | numeric | Transaction amount. |
 | `type` | text | `deposit` or `withdraw`. |
-| `currency` | text | `KAS` or `USDC`. |
+| `currency` | text | `INJ` or `USDT`. |
 | `tx_hash` | text | Transaction ID. |
 | `created_at` | timestamptz | Transaction timestamp. |
 
