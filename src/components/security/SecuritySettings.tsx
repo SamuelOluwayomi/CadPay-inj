@@ -66,7 +66,7 @@ export default function SecuritySettings() {
     }, []);
 
     const handleAddDevice = () => {
-        alert('In a real implementation, this would:\n\n1. Prompt for biometric authentication\n2. Create new WebAuthn credential\n3. Register public key with Lazorkit smart wallet\n4. Link to your existing wallet\n\nFor demo: New device would be added to the list below.');
+        alert('In a real implementation, this would:\n\n1. Prompt for biometric authentication\n2. Create new WebAuthn credential\n3. Register public key with Injective smart wallet\n4. Link to your existing wallet\n\nFor demo: New device would be added to the list below.');
     };
 
     const handleRemoveDevice = (deviceId: number) => {

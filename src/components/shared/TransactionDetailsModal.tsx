@@ -30,7 +30,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
     };
 
     const openExplorer = () => {
-        window.open(`https://explorer.solana.com/tx/${transaction.signature}?cluster=devnet`, '_blank');
+        window.open(`https://explorer.injective.network/transaction/${transaction.signature}`, '_blank');
     };
 
     const formatDate = (timestamp: number | null) => {
@@ -100,7 +100,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                                     <CurrencyDollarIcon size={16} className="text-orange-400" />
                                     <p className="text-sm font-bold text-orange-400">Gasless Transaction</p>
                                 </div>
-                                <p className="text-xs text-orange-200/60">Transaction fees sponsored by Lazorkit Paymaster</p>
+                                <p className="text-xs text-orange-200/60">Transaction fees sponsored by Injective Paymaster</p>
                             </div>
 
                             {/* Details */}
@@ -141,7 +141,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                                 onClick={openExplorer}
                                 className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                             >
-                                View on Solana Explorer
+                                View on Injective Explorer
                                 <ArrowSquareOutIcon size={18} weight="bold" />
                             </button>
                         </div>
