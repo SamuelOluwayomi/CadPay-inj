@@ -1,10 +1,11 @@
-import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
+import { PrivateKey } from '@injectivelabs/sdk-ts';
+import { Wallet } from 'ethers';
 
 /**
  * Generate a new Injective wallet (mnemonic and address)
  */
 export async function generateInjectiveWallet() {
-    const mnemonic = Mnemonic.generate();
+    const mnemonic = Wallet.createRandom().mnemonic?.phrase || "";
     const privateKey = PrivateKey.fromMnemonic(mnemonic);
     const address = privateKey.toBech32();
 

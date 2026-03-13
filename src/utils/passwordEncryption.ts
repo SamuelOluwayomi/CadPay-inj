@@ -18,7 +18,7 @@ export async function deriveKeyFromPassword(
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
         "raw",
-        enc.encode(password),
+        enc.encode(password) as any,
         "PBKDF2",
         false,
         ["deriveKey"]

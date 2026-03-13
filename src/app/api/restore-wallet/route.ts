@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
+import { PrivateKey } from '@injectivelabs/sdk-ts';
 
 /**
  * API Route to restore Injective wallet from mnemonic

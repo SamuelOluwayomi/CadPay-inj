@@ -231,7 +231,7 @@ export function useAuth() {
 
             if (signInError) {
                 // 3. If Login Fails, Try Signup (Auto-Register)
-                console.log("KasWare account not found, creating new...", signInError.message);
+                console.log("Injective account not found, creating new...", signInError.message);
 
                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email,

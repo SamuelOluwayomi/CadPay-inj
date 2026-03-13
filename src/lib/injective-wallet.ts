@@ -4,8 +4,7 @@ import {
   TxGrpcApi,
   createTransaction,
   ChainRestBankApi,
-  ChainRestAuthApi,
-  TxRaw
+  ChainRestAuthApi
 } from '@injectivelabs/sdk-ts';
 import { Network, getNetworkEndpoints } from '@injectivelabs/networks';
 import { BigNumberInBase } from '@injectivelabs/utils';
@@ -67,7 +66,7 @@ export async function transferInj(params: {
         const accountNumber = account.base_account ? account.base_account.account_number : (account.account_number || 0);
 
         // 4. Create Transaction
-        const { signDoc } = createTransaction({
+        const { signDoc, txRaw } = createTransaction({
             pubKey: privateKey.toPublicKey().toBase64(),
             chainId: INJECTIVE_CHAIN_ID,
             fee: {
@@ -87,12 +86,7 @@ export async function transferInj(params: {
         const sig = await privateKey.sign(Buffer.from(signDoc.toBinary ? signDoc.toBinary() : signDoc.serializeBinary()));
         
         // 6. Broadcast Transaction
-        // @ts-ignore
-        const txRaw = (TxRaw.fromPartial || TxRaw.fromJSON)({
-            bodyBytes: signDoc.bodyBytes,
-            authInfoBytes: signDoc.authInfoBytes,
-            signatures: [sig],
-        });
+        txRaw.signatures = [sig];
         
         const response = await txGrpcApi.broadcast(txRaw);
         

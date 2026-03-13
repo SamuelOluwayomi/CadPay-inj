@@ -39,7 +39,7 @@ function hexToBuffer(hex: string): Uint8Array {
  */
 async function hashPasswordWithSalt(password: string, salt: Uint8Array): Promise<string> {
     const encoder = new TextEncoder();
-    const passwordBuffer = encoder.encode(password);
+    const passwordBuffer = encoder.encode(password) as any;
 
     // Import password as key material
     const keyMaterial = await crypto.subtle.importKey(

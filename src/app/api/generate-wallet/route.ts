@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
+import { PrivateKey } from '@injectivelabs/sdk-ts';
+import { Wallet } from 'ethers';
 
 /**
  * API Route to generate Injective wallet
@@ -7,7 +8,7 @@ import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
 export async function POST(request: NextRequest) {
     try {
         // Generate Injective Wallet
-        const mnemonic = Mnemonic.generate();
+        const mnemonic = Wallet.createRandom().mnemonic?.phrase || "";
         const privateKey = PrivateKey.fromMnemonic(mnemonic);
         const address = privateKey.toBech32();
         const publicKey = privateKey.toPublicKey().toBase64();

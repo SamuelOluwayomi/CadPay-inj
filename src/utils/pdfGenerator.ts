@@ -71,7 +71,7 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     doc.text('Amount:', margin, yPos);
     doc.setTextColor(blueColor);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${receipt.amount_kas.toFixed(2)} INJ`, margin + 50, yPos);
+    doc.text(`${receipt.amount_inj.toFixed(2)} INJ`, margin + 50, yPos);
 
     yPos += 8;
     doc.setFont('helvetica', 'normal');

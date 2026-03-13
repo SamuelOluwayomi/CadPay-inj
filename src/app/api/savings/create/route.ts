@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { encrypt } from '@/utils/encryption';
-import { Mnemonic, PrivateKey } from '@injectivelabs/sdk-ts';
+import { PrivateKey } from '@injectivelabs/sdk-ts';
+import { Wallet } from 'ethers';
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
 
         // 1. Generate Injective Wallet
         console.log(`Generating Injective wallet for pot: ${name}`);
-        const mnemonic = Mnemonic.generate();
+        const mnemonic = Wallet.createRandom().mnemonic?.phrase || "";
         const privateKey = PrivateKey.fromMnemonic(mnemonic);
         const address = privateKey.toBech32();
         

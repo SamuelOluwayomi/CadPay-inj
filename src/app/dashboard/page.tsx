@@ -76,7 +76,7 @@ export default function Dashboard() {
     useEffect(() => {
         // Wait for initial checks to complete
         if (!loading && !profileLoading) {
-            // If no session (Custodial) AND no address (non-custodial/KasWare)
+            // If no session (Custodial) AND no address (non-custodial/Injective)
             if (!session && !address) {
                 router.push('/');
             }
@@ -190,13 +190,13 @@ export default function Dashboard() {
             if (loading || profileLoading) return;
 
             // Trigger Onboarding if:
-            // 1. Profile exists but is incomplete (No Username) -> Covers Custodial (created by API) & KasWare
-            // 2. OR KasWare is connected but no profile exists yet
+            // 1. Profile exists but is incomplete (No Username) -> Covers Custodial (created by API) & Injective
+            // 2. OR Injective is connected but no profile exists yet
             if (profile && !profile.username) {
                 console.log("⚠️ Profile incomplete (no username), triggering Onboarding...");
                 setShowOnboarding(true);
             } else if (address && !profile) {
-                console.log("⚠️ KasWare connected but no profile, triggering Onboarding...");
+                console.log("⚠️ Injective connected but no profile, triggering Onboarding...");
                 setShowOnboarding(true);
             } else {
                 setShowOnboarding(false);
@@ -275,7 +275,7 @@ export default function Dashboard() {
         }
     };
 
-    // Fallback to profile.authority (Custodial Address) if KasWare is not connected
+    // Fallback to profile.authority (Custodial Address) if Injective is not connected
     const walletAddress = address || profile?.authority || "";
     const isCustodial = !address && !!profile?.authority;
 

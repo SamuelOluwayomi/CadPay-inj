@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
-import ConnectKasWare from '@/components/ConnectKasWare';
+import ConnectInjective from '@/components/ConnectInjective';
 import { WarningCircleIcon, LifebuoyIcon } from '@phosphor-icons/react';
 
 export default function SignIn() {
@@ -117,10 +117,10 @@ export default function SignIn() {
                 </div>
 
                 <div className="space-y-4">
-                    {/* OPTION A: Connect KasWare Wallet */}
+                    {/* OPTION A: Connect Injective Wallet */}
                     <div className="space-y-2">
                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pl-1">Wallet Login</p>
-                        <ConnectKasWare />
+                        <ConnectInjective />
                     </div>
 
                     <div className="relative py-4">
