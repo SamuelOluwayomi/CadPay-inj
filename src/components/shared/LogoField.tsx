@@ -168,7 +168,7 @@ function DriftingLogo({ item, mouseX, mouseY }: { item: LogoItem; mouseX: any; m
             }}
         >
             {item.type === 'injective' && (
-                <Image src="/injective-logo.svg" alt="Injective" width={item.size} height={item.size} className="opacity-30 object-contain" />
+                <Image src="/features/injective-logo.svg" alt="Injective" width={item.size} height={item.size} className="opacity-30 object-contain" />
             )}
             {item.type === 'cadpay' && (
                 <div
