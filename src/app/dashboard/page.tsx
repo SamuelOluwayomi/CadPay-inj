@@ -44,11 +44,31 @@ interface TxSpeed {
 }
 
 export default function Dashboard() {
-    const { session } = useUserProfile();
+    const { 
+        profile, 
+        loading: profileLoading, 
+        session, 
+        sessionInitialized,
+        createProfile, 
+        updateProfile 
+    } = useUserProfile();
 
-    const { address, balance: walletBalance, isLoading: loading, connect, isConnected, disconnect, refreshBalance: refreshWalletBalance, transactions, fetchTransactions } = useInjective();
+    const { 
+        address, 
+        balance: walletBalance, 
+        isLoading: loading, 
+        connect, 
+        isConnected, 
+        disconnect, 
+        refreshBalance: refreshWalletBalance, 
+        transactions, 
+        fetchTransactions 
+    } = useInjective();
+
     const { showToast } = useToast();
     const { pots } = useSavings();
+    const router = useRouter();
+    
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
     // Calculate display balance (prioritize connected wallet)
     const displayBalance = address ? (walletBalance || 0) : custodialBalance;
@@ -69,19 +89,17 @@ export default function Dashboard() {
     const [activeSection, setActiveSection] = useState<NavSection>('overview');
     const [showSendModal, setShowSendModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { profile, loading: profileLoading, createProfile, updateProfile } = useUserProfile();
-    const router = useRouter();
-
     // Auth Guard: Redirect to Home if not authenticated
     useEffect(() => {
-        // Wait for initial checks to complete
-        if (!loading && !profileLoading) {
-            // If no session (Custodial) AND no address (non-custodial/Injective)
-            if (!session && !address) {
-                router.push('/');
-            }
+        // block until all initial checks are done
+        if (loading || profileLoading || !sessionInitialized) return;
+
+        // If after everything is loaded, we STILL have no session and no wallet address
+        if (!session && !address) {
+            console.log("🚫 Auth Guard: Redirecting to home (No Auth found)");
+            router.push('/');
         }
-    }, [session, address, loading, profileLoading, router]);
+    }, [session, address, loading, profileLoading, sessionInitialized, router]);
 
     const userProfile = {
         username: profile?.username || 'User',

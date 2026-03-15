@@ -304,6 +304,7 @@ export function useUserProfile() {
         createProfile,
         updateProfile,
         fetchProfile,
-        session
+        session,
+        sessionInitialized
     };
 }
