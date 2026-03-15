@@ -138,35 +138,31 @@ export function useAuth() {
     };
     const checkEmailExists = async (email: string): Promise<{ exists: boolean; authMethod?: 'password' | 'biometric' }> => {
         try {
-            // Attempt sign-in with a clearly wrong password
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password: '__cadpay_existence_check__'
-            });
+            // 1. Call the Security Definer RPC to get auth method
+            // This bypasses RLS for just this one check
+            const { data, error } = await supabase.rpc('get_auth_method', { email_in: email });
 
-            if (!error) {
-                // Extremely unlikely: somehow logged in — sign back out
-                await supabase.auth.signOut();
-                return { exists: true };
+            if (error || !data) {
+                // Fallback to dummy login attempt if RPC is not yet created or returns nothing
+                const { error: loginError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password: '__cadpay_existence_check__'
+                });
+
+                if (loginError) {
+                    const msg = loginError.message.toLowerCase();
+                    const exists = msg.includes('invalid login credentials') || msg.includes('email not confirmed');
+                    if (!exists) return { exists: false };
+                } else {
+                    await supabase.auth.signOut();
+                    return { exists: true };
+                }
+                
+                const cachedMethod = localStorage.getItem(`auth_method_${email}`) as 'password' | 'biometric' | null;
+                return { exists: true, authMethod: cachedMethod || 'password' };
             }
 
-            // "Invalid login credentials" → account exists, wrong password
-            // "Email not confirmed" → account exists but unconfirmed
-            // "User not found" / "No user found" → does NOT exist
-            const msg = error.message.toLowerCase();
-            const accountExists =
-                msg.includes('invalid login credentials') ||
-                msg.includes('email not confirmed') ||
-                msg.includes('invalid credentials');
-
-            if (!accountExists) {
-                return { exists: false };
-            }
-
-            // Account exists — try to get auth_method from localStorage (cached from last login)
-            // or default to 'password' since we can't safely query profiles without a session
-            const cachedMethod = localStorage.getItem(`auth_method_${email}`) as 'password' | 'biometric' | null;
-            return { exists: true, authMethod: cachedMethod || 'password' };
+            return { exists: true, authMethod: data as 'password' | 'biometric' };
         } catch {
             return { exists: false };
         }

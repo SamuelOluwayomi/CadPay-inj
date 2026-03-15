@@ -103,7 +103,7 @@ export default function CreateAccount() {
 
             // 3. Create Supabase Auth Account
             const authPassword = useBiometrics
-                ? crypto.randomUUID()
+                ? wallet.address.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32)
                 : password;
 
             // Remove invisible characters and whitespace
