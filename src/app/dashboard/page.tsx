@@ -195,8 +195,8 @@ export default function Dashboard() {
             if (profile && !profile.username) {
                 console.log("⚠️ Profile incomplete (no username), triggering Onboarding...");
                 setShowOnboarding(true);
-            } else if (address && !profile) {
-                console.log("⚠️ Injective connected but no profile, triggering Onboarding...");
+            } else if (!profile && (address || session)) {
+                console.log("⚠️ Logged in but no profile found, triggering Onboarding...");
                 setShowOnboarding(true);
             } else {
                 setShowOnboarding(false);

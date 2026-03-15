@@ -46,12 +46,12 @@ export function useUserProfile() {
         if (!sessionInitialized) return;
 
         setLoading(true);
+        setError(null);
         try {
             let data, error;
-            // ... (rest of logic same)
 
             if (session?.user) {
-                // Fetch by User ID
+                // 1. Prioritize Supabase Auth session (Email/Biometric login)
                 const result = await supabase
                     .from('profiles')
                     .select('*')
@@ -60,13 +60,12 @@ export function useUserProfile() {
                 data = result.data;
                 error = result.error;
             } else if (address) {
+                // 2. Fallback to Wallet Address (Injective Keplr/Leap login)
                 const result = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('wallet_address', address)
                     .maybeSingle();
-
-                // Or allows transient usage?
                 data = result.data;
                 error = result.error;
             } else {
@@ -77,6 +76,7 @@ export function useUserProfile() {
 
             if (error && error.code !== 'PGRST116' && error.code !== '406') {
                 console.warn('Supabase fetch error:', error);
+                setError(error.message);
             }
 
             if (data) {
@@ -86,11 +86,12 @@ export function useUserProfile() {
                     gender: data.gender || 'other',
                     pin: data.pin || '',
                     email: data.email || '',
-                    authority: data.wallet_address || '', // Map DB wallet_address to internal 'authority'
+                    authority: data.wallet_address || '',
                     encrypted_private_key: data.encrypted_private_key,
                     auth_method: data.auth_method
                 });
             } else {
+                console.log('No profile found for user:', session?.user?.id || address);
                 setProfile(null);
             }
         } catch (err: any) {
@@ -99,7 +100,7 @@ export function useUserProfile() {
         } finally {
             setLoading(false);
         }
-    }, [address, session]);
+    }, [address, session, sessionInitialized]);
 
     const checkOrCreateWallet = useCallback(async () => {
         if (!session?.access_token || !session?.user?.id) return;
