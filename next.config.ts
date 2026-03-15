@@ -1,8 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+
+  // Treat Injective SDK and related packages as server-external so they
+  // are never bundled into the static renderer (fixes /_not-found build crash)
+  serverExternalPackages: [
+    '@injectivelabs/sdk-ts',
+    '@injectivelabs/wallet-ts',
+    '@injectivelabs/networks',
+    '@injectivelabs/utils',
+    '@injectivelabs/ts-types',
+    'kaspa',
+  ],
+
   webpack: (config, { isServer }) => {
     config.experiments = {
       ...config.experiments,
@@ -10,7 +21,7 @@ const nextConfig: NextConfig = {
       layers: true,
     };
 
-    // Fix the "Can't resolve 'fs'" and dynamic require errors for browser builds
+    // Fix "Can't resolve 'fs'" and dynamic require errors for browser builds
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
