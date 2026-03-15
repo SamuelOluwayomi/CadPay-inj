@@ -26,35 +26,35 @@ const cadpayFeatures: Feature[] = [
         headline: 'Seamless Interoperability.',
         description: 'Injective is built on Cosmos SDK and uses IBC to connect with other blockchains seamlessly.',
         fullDescription: 'Injective provides a highly interoperable environment by supporting IBC (Inter-Blockchain Communication), allowing users to transfer assets across different L1s and L2s. It also features plug-and-play modules for developers to build cross-chain applications effortlessly.',
-        image: '/features/ibc-diagram.svg'
+        image: '/features/tokens.png'
     },
     {
         id: 'performance',
         headline: 'Lightning Fast Throughput.',
         description: 'Processing thousands of transactions per second with sub-second block times.',
         fullDescription: 'Injective is engineered for speed, offering sub-second block times and the ability to process over 10,000 transactions per second. This high performance ensures near-instant finality for financial applications, making it ideal for institutional-grade trading and payments.',
-        image: '/features/performance.svg'
+        image: '/features/throughput.png'
     },
     {
         id: 'orderbook',
         headline: 'On-Chain Orderbook Infrastructure.',
         description: 'Native on-chain orderbook module that provides shared liquidity for all dApps.',
         fullDescription: 'At the core of Injective is its unique on-chain orderbook module. It provides a shared liquidity primitive that any dApp built on Injective can access. This eliminates liquidity fragmentation and allows for complex financial instruments like perpetuals and options to be built natively on-chain.',
-        image: '/features/orderbook.svg'
+        image: '/features/blockdag-diagram.png'
     },
     {
         id: 'smart-contracts',
         headline: 'CosmWasm Smart Contracts.',
         description: 'A robust smart contract layer supporting Rust-based CosmWasm development.',
         fullDescription: 'Injective supports CosmWasm, a powerful smart contract framework that allows developers to build complex logic using Rust. This enables a wide range of decentralized applications, from lending protocols to insurance markets, all benefiting from Injective\'s specialized financial infrastructure.',
-        image: '/features/smart-contracts.svg'
+        image: '/features/pow.png'
     },
     {
         id: 'peggy',
         headline: 'Institutional-Grade Security.',
         description: 'Leveraging Tendermint PoS consensus and robust bridge infrastructure.',
         fullDescription: 'Injective uses Tendermint Proof-of-Stake (PoS) consensus, providing a secure and energy-efficient foundation. Its decentralized bridge, Peggy, connects Injective to Ethereum, enabling secure asset transfers while maintaining high security standards for institutional and retail users alike.',
-        image: '/features/security.svg'
+        image: '/features/utxo.png'
     }
 ];
 
