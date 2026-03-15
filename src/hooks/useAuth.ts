@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { verifyPassword } from '@/utils/passwordHash';
 import { useBiometricWallet } from './useBiometricWallet';
 
 interface SignInResult {
@@ -14,73 +13,48 @@ export function useAuth() {
     const [error, setError] = useState<string | null>(null);
     const { unlockWallet, unlockWalletWithPassword } = useBiometricWallet();
 
-    /**
-     * Sign in with email and password
-     */
     const signInWithPassword = async (email: string, password: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Fetch credentials from Supabase
-            const { data, error: fetchError } = await supabase
-                .from('profiles')
-                .select('wallet_address, password_hash, auth_method')
-                .eq('email', email)
-                .single();
-
-            if (fetchError || !data) {
-                setError('Invalid email or password');
-                return { success: false, error: 'Invalid email or password' };
-            }
-
-            // 2. Verify auth method
-            if (data.auth_method !== 'password') {
-                setError('This account uses biometric authentication');
-                return { success: false, error: 'This account uses biometric authentication' };
-            }
-
-            // 3. Verify password
-            if (!data.password_hash) {
-                setError('Account configuration error');
-                return { success: false, error: 'Account configuration error' };
-            }
-
-            const isValid = await verifyPassword(password, data.password_hash);
-            if (!isValid) {
-                setError('Invalid email or password');
-                return { success: false, error: 'Invalid email or password' };
-            }
-
-            // 4. Update last login
-            await supabase
-                .from('profiles')
-                .update({ last_login: new Date().toISOString() })
-                .eq('email', email);
-
-            // 5. Unlock wallet from IndexedDB using password
-            const unlockResult = await unlockWalletWithPassword(email, password);
-            if (!unlockResult.success || !unlockResult.mnemonic) {
-                setError(unlockResult.error || 'Failed to unlock wallet');
-                return { success: false, error: unlockResult.error || 'Failed to unlock wallet' };
-            }
-
-            // 6. Create Supabase Auth session (NEW - enables custodial features)
-            const { error: authSignInError } = await supabase.auth.signInWithPassword({
+            // 1. Authenticate with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (authSignInError) {
-                console.warn('Supabase Auth signin failed:', authSignInError);
-                // Don't fail the login, just log the error
+            if (authError || !authData.user) {
+                const msg = authError?.message || 'Invalid email or password';
+                setError(msg);
+                return { success: false, error: msg };
             }
 
-            // 7. Set active session
-            localStorage.setItem('active_wallet_address', data.wallet_address);
+            // 2. Now authenticated — fetch profile (RLS will pass)
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('wallet_address, auth_method')
+                .eq('id', authData.user.id)
+                .maybeSingle();
+
+            if (profile?.auth_method === 'biometric') {
+                await supabase.auth.signOut();
+                setError('This account uses biometric authentication');
+                return { success: false, error: 'This account uses biometric authentication' };
+            }
+
+            // 3. Unlock IndexedDB wallet with password
+            const unlockResult = await unlockWalletWithPassword(email, password);
+            if (!unlockResult.success || !unlockResult.mnemonic) {
+                // Non-fatal: wallet may not be in IndexedDB (e.g. different device)
+                console.warn('IndexedDB wallet unlock failed:', unlockResult.error);
+            }
+
+            const walletAddress = profile?.wallet_address || '';
+            localStorage.setItem('active_wallet_address', walletAddress);
             localStorage.setItem('auth_email', email);
 
-            return { success: true, walletAddress: data.wallet_address };
+            return { success: true, walletAddress };
         } catch (err: any) {
             console.error('Sign in error:', err);
             const errorMsg = err.message || 'Sign in failed';
@@ -92,62 +66,57 @@ export function useAuth() {
     };
 
     /**
-     * Sign in with email and biometric authentication
+     * Sign in with email and biometric authentication.
      */
     const signInWithBiometric = async (email: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Fetch credentials from Supabase
-            const { data, error: fetchError } = await supabase
-                .from('profiles')
-                .select('wallet_address, auth_method')
-                .eq('email', email)
-                .single();
-
-            if (fetchError || !data) {
-                setError('Account not found');
-                return { success: false, error: 'Account not found' };
-            }
-
-            // 2. Verify auth method
-            if (data.auth_method !== 'biometric') {
-                setError('This account uses password authentication');
-                return { success: false, error: 'This account uses password authentication' };
-            }
-
-            // 3. Unlock wallet from IndexedDB using biometric
+            // 1. Unlock wallet from IndexedDB (needs to happen before we know the auth password)
             const unlockResult = await unlockWallet(email);
             if (!unlockResult.success || !unlockResult.mnemonic) {
                 setError(unlockResult.error || 'Biometric authentication failed');
                 return { success: false, error: unlockResult.error || 'Biometric authentication failed' };
             }
 
-            // 4. Update last login
-            await supabase
-                .from('profiles')
-                .update({ last_login: new Date().toISOString() })
-                .eq('email', email);
+            // 2. Derive the deterministic password used at signup for biometric users
+            const cachedAddress = localStorage.getItem('active_wallet_address');
+            let walletAddress = cachedAddress || '';
 
-            // 5. Create Supabase Auth session (NEW - enables custodial features)
-            // For biometric users, use simplified wallet address as password (matching signup)
-            const authPassword = data.wallet_address.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-            const { error: authSignInError } = await supabase.auth.signInWithPassword({
-                email,
-                password: authPassword
-            });
-
-            if (authSignInError) {
-                console.warn('Supabase Auth signin failed:', authSignInError);
-                // Don't fail the login, just log the error
+            // 3. Try signing in with Supabase auth using derived password
+            if (walletAddress) {
+                const authPassword = walletAddress.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+                const { error: authSignInError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password: authPassword
+                });
+                if (authSignInError) {
+                    console.warn('Supabase Auth biometric signin warning:', authSignInError.message);
+                }
             }
 
-            // 6. Set active session
-            localStorage.setItem('active_wallet_address', data.wallet_address);
+            // 4. After auth attempt, read profile (may succeed now if session was set)
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('wallet_address, auth_method')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (profile?.auth_method === 'password') {
+                    setError('This account uses password authentication');
+                    return { success: false, error: 'This account uses password authentication' };
+                }
+
+                walletAddress = profile?.wallet_address || walletAddress;
+            }
+
+            localStorage.setItem('active_wallet_address', walletAddress);
             localStorage.setItem('auth_email', email);
 
-            return { success: true, walletAddress: data.wallet_address };
+            return { success: true, walletAddress };
         } catch (err: any) {
             console.error('Biometric sign in error:', err);
             const errorMsg = err.message || 'Biometric sign in failed';
@@ -161,102 +130,100 @@ export function useAuth() {
     /**
      * Sign out
      */
-    const signOut = () => {
+    const signOut = async () => {
+        await supabase.auth.signOut();
         localStorage.removeItem('active_wallet_address');
         localStorage.removeItem('auth_email');
         setError(null);
     };
-
-    /**
-     * Check if user has an account with given email
-     */
     const checkEmailExists = async (email: string): Promise<{ exists: boolean; authMethod?: 'password' | 'biometric' }> => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('auth_method')
-                .eq('email', email)
-                .single();
+            // Attempt sign-in with a clearly wrong password
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password: '__cadpay_existence_check__'
+            });
 
-            if (error || !data) {
+            if (!error) {
+                // Extremely unlikely: somehow logged in — sign back out
+                await supabase.auth.signOut();
+                return { exists: true };
+            }
+
+            // "Invalid login credentials" → account exists, wrong password
+            // "Email not confirmed" → account exists but unconfirmed
+            // "User not found" / "No user found" → does NOT exist
+            const msg = error.message.toLowerCase();
+            const accountExists =
+                msg.includes('invalid login credentials') ||
+                msg.includes('email not confirmed') ||
+                msg.includes('invalid credentials');
+
+            if (!accountExists) {
                 return { exists: false };
             }
 
-            return { exists: true, authMethod: data.auth_method as 'password' | 'biometric' };
-        } catch (err) {
+            // Account exists — try to get auth_method from localStorage (cached from last login)
+            // or default to 'password' since we can't safely query profiles without a session
+            const cachedMethod = localStorage.getItem(`auth_method_${email}`) as 'password' | 'biometric' | null;
+            return { exists: true, authMethod: cachedMethod || 'password' };
+        } catch {
             return { exists: false };
         }
     };
 
     /**
-     * Get user's wallet address from Supabase (for recovery validation)
+     * Get user's wallet address from Supabase (for recovery validation).
+     * Only works when user is already authenticated.
      */
     const getWalletAddress = async (email: string): Promise<string | null> => {
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return null;
+
             const { data, error } = await supabase
                 .from('profiles')
                 .select('wallet_address')
-                .eq('email', email)
-                .single();
+                .eq('id', user.id)
+                .maybeSingle();
 
-            if (error || !data) {
-                return null;
-            }
-
+            if (error || !data) return null;
             return data.wallet_address;
-        } catch (err) {
+        } catch {
             return null;
         }
     };
 
-    const clearError = () => setError(null);
-
     /**
-     * Sign in with Injective (Deterministic Auth)
+     * Sign in with Injective wallet (Deterministic Auth)
      */
     const signInWithInjective = async (walletAddress: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Generate Deterministic Credentials
             const email = `${walletAddress}@injective.cadpay.fi`;
             const password = `cadpay-sig-${walletAddress}`;
 
-            // 2. Try Login First
+            // Try login first
             const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
             if (signInError) {
-                // 3. If Login Fails, Try Signup (Auto-Register)
-                console.log("Injective account not found, creating new...", signInError.message);
-
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                // Auto-register if not found
+                console.log('Injective account not found, creating new...', signInError.message);
+                const { error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
-                        data: {
-                            wallet_address: walletAddress,
-                            is_injective: true
-                        }
+                        data: { wallet_address: walletAddress, is_injective: true }
                     }
                 });
-
-                if (signUpError) {
-                    throw signUpError;
-                }
-
-                if (signUpData.user) {
-                    // Create Profile Entry Immediately to avoid race conditions
-                    // createProfile in useUserProfile will handle the rest via optimistic updates
-                    // but we ensure the DB row exists here if possible, or let the hook handle it.
-                    // For now, we rely on the session being established.
-                }
+                if (signUpError) throw signUpError;
             }
 
-            // 4. Set Active Session
             localStorage.setItem('active_wallet_address', walletAddress);
             localStorage.setItem('auth_email', email);
 
@@ -276,7 +243,7 @@ export function useAuth() {
         error,
         signInWithPassword,
         signInWithBiometric,
-        signInWithInjective, // Export new function
+        signInWithInjective,
         signOut,
         checkEmailExists,
         getWalletAddress,
