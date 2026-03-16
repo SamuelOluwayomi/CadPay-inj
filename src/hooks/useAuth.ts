@@ -144,33 +144,24 @@ export function useAuth() {
     const checkEmailExists = async (email: string): Promise<{ exists: boolean; authMethod?: 'password' | 'biometric' }> => {
         try {
             // 1. Call the Security Definer RPC to get auth method
+            // This is the ONLY safe way to check existence without clearing the session
             const { data, error } = await supabase.rpc('get_auth_method', { email_in: email });
 
-            if (error || !data) {
-                // If RPC fails (not created yet), use the fallback existence check
-                // We use a known-bad password to avoid accidentally logging in
-                const { error: loginError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password: '__existence_check_only__'
-                });
+            if (error) {
+                console.error('🔑 [useAuth] RPC Error checking email:', error.message);
+                // Fallback: If RPC fails, we can't reliably know if it exists or clear the session.
+                // We return exists: true to allow a password attempt, but we DO NOT do a dummy login.
+                return { exists: true, authMethod: 'password' };
+            }
 
-                if (loginError) {
-                    const msg = loginError.message.toLowerCase();
-                    // "Invalid credentials" implies account exists but password was wrong
-                    const exists = msg.includes('invalid login credentials') || msg.includes('email not confirmed');
-                    if (!exists) return { exists: false };
-                } else {
-                    // This shouldn't happen with the bad password, but for safety:
-                    await supabase.auth.signOut();
-                    return { exists: true };
-                }
-                
-                const cachedMethod = localStorage.getItem(`auth_method_${email}`) as 'password' | 'biometric' | null;
-                return { exists: true, authMethod: cachedMethod || 'password' };
+            if (!data) {
+                console.log('🔑 [useAuth] No account found for:', email);
+                return { exists: false };
             }
 
             return { exists: true, authMethod: data as 'password' | 'biometric' };
-        } catch {
+        } catch (err) {
+            console.error('🔑 [useAuth] Unexpected error in checkEmailExists:', err);
             return { exists: false };
         }
     };

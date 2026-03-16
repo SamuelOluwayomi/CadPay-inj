@@ -91,34 +91,24 @@ export default function Dashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     // Auth Guard: Redirect to Home if not authenticated
     useEffect(() => {
-        console.log('🛡️ [Dashboard Guard]', { 
-            loading, 
-            profileLoading, 
-            sessionInitialized, 
-            hasSession: !!session, 
-            hasAddress: !!address 
-        });
-
         // block until all initial checks are done
-        if (loading || profileLoading || !sessionInitialized) {
-            console.log('🛡️ [Dashboard Guard] Waiting for load...');
+        if (loading || profileLoading || !sessionInitialized) return;
+
+        // If we HAVE a session or address, we are good. Stop waiting.
+        if (session || address) {
+            console.log('🛡️ [Dashboard Guard] Access granted');
             return;
         }
 
-        // Definitive check: No session and no address after loading finished
-        if (!session && !address) {
-            // Give a tiny grace period for any late-arriving state
-            const timer = setTimeout(() => {
-                // Re-check state after 2 seconds
-                if (!session && !address) {
-                    console.error("🚫 [Dashboard Guard] Auth definitively not found. Redirecting to home...");
-                    router.push('/');
-                }
-            }, 2000); 
-            return () => clearTimeout(timer);
-        } else {
-            console.log('🛡️ [Dashboard Guard] Access granted');
-        }
+        // Only if we definitively have NEITHER after loading, do we wait a tiny bit to be sure
+        const timer = setTimeout(() => {
+            if (!session && !address) {
+                console.error("🚫 [Dashboard Guard] Auth definitively not found. Redirecting to home...");
+                router.push('/');
+            }
+        }, 800); // Reduced to 800ms now that session-clearing is fixed
+
+        return () => clearTimeout(timer);
     }, [session, address, loading, profileLoading, sessionInitialized, router]);
 
     const userProfile = {

@@ -12,7 +12,15 @@ function getSupabaseClient(): SupabaseClient {
         if (!supabaseUrl || !supabaseKey) {
             throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.');
         }
-        _supabase = createClient(supabaseUrl, supabaseKey);
+        _supabase = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storageKey: 'cadpay-auth-token',
+                storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+            }
+        });
     }
     return _supabase;
 }
