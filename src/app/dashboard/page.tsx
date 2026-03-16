@@ -91,13 +91,33 @@ export default function Dashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     // Auth Guard: Redirect to Home if not authenticated
     useEffect(() => {
-        // block until all initial checks are done
-        if (loading || profileLoading || !sessionInitialized) return;
+        console.log('🛡️ [Dashboard Guard]', { 
+            loading, 
+            profileLoading, 
+            sessionInitialized, 
+            hasSession: !!session, 
+            hasAddress: !!address 
+        });
 
-        // If after everything is loaded, we STILL have no session and no wallet address
+        // block until all initial checks are done
+        if (loading || profileLoading || !sessionInitialized) {
+            console.log('🛡️ [Dashboard Guard] Waiting for load...');
+            return;
+        }
+
+        // Definitive check: No session and no address after loading finished
         if (!session && !address) {
-            console.log("🚫 Auth Guard: Redirecting to home (No Auth found)");
-            router.push('/');
+            // Give a tiny grace period for any late-arriving state
+            const timer = setTimeout(() => {
+                // Re-check state after 2 seconds
+                if (!session && !address) {
+                    console.error("🚫 [Dashboard Guard] Auth definitively not found. Redirecting to home...");
+                    router.push('/');
+                }
+            }, 2000); 
+            return () => clearTimeout(timer);
+        } else {
+            console.log('🛡️ [Dashboard Guard] Access granted');
         }
     }, [session, address, loading, profileLoading, sessionInitialized, router]);
 

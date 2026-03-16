@@ -16,6 +16,7 @@ export function useAuth() {
     const signInWithPassword = async (email: string, password: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
+        console.log('🔑 [useAuth] Attempting signInWithPassword for:', email);
 
         try {
             // 1. Authenticate with Supabase Auth
@@ -25,11 +26,13 @@ export function useAuth() {
             });
 
             if (authError || !authData.user) {
+                console.warn('🔑 [useAuth] Supabase Auth Error:', authError?.message);
                 const msg = authError?.message || 'Invalid email or password';
                 setError(msg);
                 return { success: false, error: msg };
             }
 
+            console.log('🔑 [useAuth] Auth successful, fetching profile...');
             // 2. Now authenticated — fetch profile (RLS will pass)
             const { data: profile } = await supabase
                 .from('profiles')
@@ -38,25 +41,27 @@ export function useAuth() {
                 .maybeSingle();
 
             if (profile?.auth_method === 'biometric') {
+                console.warn('🔑 [useAuth] Account is biometric, signing out...');
                 await supabase.auth.signOut();
                 setError('This account uses biometric authentication');
                 return { success: false, error: 'This account uses biometric authentication' };
             }
 
             // 3. Unlock IndexedDB wallet with password
+            console.log('🔑 [useAuth] Unlocking local wallet...');
             const unlockResult = await unlockWalletWithPassword(email, password);
             if (!unlockResult.success || !unlockResult.mnemonic) {
-                // Non-fatal: wallet may not be in IndexedDB (e.g. different device)
-                console.warn('IndexedDB wallet unlock failed:', unlockResult.error);
+                console.warn('🔑 [useAuth] IndexedDB wallet unlock failed (non-fatal):', unlockResult.error);
             }
 
             const walletAddress = profile?.wallet_address || '';
+            console.log('🔑 [useAuth] Login complete. Wallet:', walletAddress);
             localStorage.setItem('active_wallet_address', walletAddress);
             localStorage.setItem('auth_email', email);
 
             return { success: true, walletAddress };
         } catch (err: any) {
-            console.error('Sign in error:', err);
+            console.error('🔑 [useAuth] Sign in catch error:', err);
             const errorMsg = err.message || 'Sign in failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };
@@ -139,21 +144,23 @@ export function useAuth() {
     const checkEmailExists = async (email: string): Promise<{ exists: boolean; authMethod?: 'password' | 'biometric' }> => {
         try {
             // 1. Call the Security Definer RPC to get auth method
-            // This bypasses RLS for just this one check
             const { data, error } = await supabase.rpc('get_auth_method', { email_in: email });
 
             if (error || !data) {
-                // Fallback to dummy login attempt if RPC is not yet created or returns nothing
+                // If RPC fails (not created yet), use the fallback existence check
+                // We use a known-bad password to avoid accidentally logging in
                 const { error: loginError } = await supabase.auth.signInWithPassword({
                     email,
-                    password: '__cadpay_existence_check__'
+                    password: '__existence_check_only__'
                 });
 
                 if (loginError) {
                     const msg = loginError.message.toLowerCase();
+                    // "Invalid credentials" implies account exists but password was wrong
                     const exists = msg.includes('invalid login credentials') || msg.includes('email not confirmed');
                     if (!exists) return { exists: false };
                 } else {
+                    // This shouldn't happen with the bad password, but for safety:
                     await supabase.auth.signOut();
                     return { exists: true };
                 }

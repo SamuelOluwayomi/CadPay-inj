@@ -25,15 +25,23 @@ export function useUserProfile() {
     // Initial Session Check
     useEffect(() => {
         const initSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setSessionInitialized(true);
+            console.log('🔍 [useUserProfile] Initializing session...');
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                console.log('🔍 [useUserProfile] getSession result:', session ? 'Session found' : 'No session');
+                setSession(session);
+            } catch (err) {
+                console.error('🔍 [useUserProfile] getSession failed:', err);
+            } finally {
+                setSessionInitialized(true);
+            }
         };
         initSession();
 
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            console.log(`🔍 [useUserProfile] Auth state change Event: ${_event}`, session ? 'Session found' : 'No session');
             setSession(session);
             setSessionInitialized(true);
         });
@@ -43,10 +51,15 @@ export function useUserProfile() {
 
     const fetchProfile = useCallback(async () => {
         // block until session check is done
-        if (!sessionInitialized) return;
+        if (!sessionInitialized) {
+            console.log('🔍 [useUserProfile] fetchProfile blocked: session not initialized');
+            return;
+        }
 
         setLoading(true);
         setError(null);
+        console.log('🔍 [useUserProfile] Starting fetchProfile...', { hasSession: !!session, address });
+
         try {
             let data, error;
 
@@ -69,17 +82,19 @@ export function useUserProfile() {
                 data = result.data;
                 error = result.error;
             } else {
+                console.log('🔍 [useUserProfile] fetchProfile: No session OR address available');
                 setProfile(null);
                 setLoading(false);
                 return;
             }
 
             if (error && error.code !== 'PGRST116' && error.code !== '406') {
-                console.warn('Supabase fetch error:', error);
+                console.warn('🔍 [useUserProfile] Supabase fetch error:', error);
                 setError(error.message);
             }
 
             if (data) {
+                console.log('🔍 [useUserProfile] Profile data loaded successfully');
                 setProfile({
                     username: data.username,
                     emoji: data.emoji || '👤',
@@ -91,11 +106,11 @@ export function useUserProfile() {
                     auth_method: data.auth_method
                 });
             } else {
-                console.log('No profile found for user:', session?.user?.id || address);
+                console.log('🔍 [useUserProfile] No profile found in DB for user:', session?.user?.id || address);
                 setProfile(null);
             }
         } catch (err: any) {
-            console.error('Failed to fetch profile:', err);
+            console.error('🔍 [useUserProfile] Failed to fetch profile:', err);
             setError(err.message);
         } finally {
             setLoading(false);
