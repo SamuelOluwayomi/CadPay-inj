@@ -18,15 +18,6 @@ export const useInjective = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [walletStrategy, setWalletStrategy] = useState<WalletStrategy | null>(null);
 
-    // Initialize Wallet Strategy
-    useEffect(() => {
-        const endpoints = getNetworkEndpoints(INJECTIVE_NETWORK);
-        const strategy = new WalletStrategy({
-            chainId: INJECTIVE_CHAIN_ID as ChainId,
-        });
-        setWalletStrategy(strategy);
-    }, []);
-
     const [transactions, setTransactions] = useState<any[]>([]);
 
     const fetchTransactions = useCallback(async (addr: string) => {
@@ -53,6 +44,40 @@ export const useInjective = () => {
             console.error("Failed to fetch balance", e);
         }
     }, []);
+
+    // Initialize Wallet Strategy & Sync with localStorage
+    useEffect(() => {
+        const endpoints = getNetworkEndpoints(INJECTIVE_NETWORK);
+        const strategy = new WalletStrategy({
+            chainId: INJECTIVE_CHAIN_ID as ChainId,
+        });
+        setWalletStrategy(strategy);
+
+        // Check for cached address
+        const cachedAddress = localStorage.getItem('active_wallet_address');
+        if (cachedAddress) {
+            console.log('🔌 [useInjective] Restoring address from localStorage:', cachedAddress);
+            setAddress(cachedAddress);
+            setIsConnected(true);
+            fetchBalance(cachedAddress);
+            fetchTransactions(cachedAddress);
+        }
+
+        // Listen for storage changes (for multi-tab sync or useAuth updates)
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'active_wallet_address') {
+                if (e.newValue) {
+                    setAddress(e.newValue);
+                    setIsConnected(true);
+                } else {
+                    setAddress(null);
+                    setIsConnected(false);
+                }
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [fetchBalance, fetchTransactions]);
 
     const connect = async (wallet: Wallet = Wallet.Keplr) => {
         setError(null);

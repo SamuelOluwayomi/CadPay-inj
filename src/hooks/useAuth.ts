@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useBiometricWallet } from './useBiometricWallet';
+import { getAddressFromMnemonic } from '@/lib/injective-wallet';
 
 interface SignInResult {
     success: boolean;
@@ -76,54 +77,47 @@ export function useAuth() {
     const signInWithBiometric = async (email: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
+        console.log('🔑 [useAuth] Attempting signInWithBiometric for:', email);
 
         try {
-            // 1. Unlock wallet from IndexedDB (needs to happen before we know the auth password)
+            // 1. Unlock wallet from IndexedDB
             const unlockResult = await unlockWallet(email);
             if (!unlockResult.success || !unlockResult.mnemonic) {
+                console.error('🔑 [useAuth] Biometric unlock failed:', unlockResult.error);
                 setError(unlockResult.error || 'Biometric authentication failed');
                 return { success: false, error: unlockResult.error || 'Biometric authentication failed' };
             }
 
-            // 2. Derive the deterministic password used at signup for biometric users
-            const cachedAddress = localStorage.getItem('active_wallet_address');
-            let walletAddress = cachedAddress || '';
+            console.log('🔑 [useAuth] Biometric match! Deriving address...');
+            // 2. Derive the deterministic address from the mnemonic
+            // This allows login on a "clean" browser where localStorage is empty
+            const walletAddress = getAddressFromMnemonic(unlockResult.mnemonic);
+            console.log('🔑 [useAuth] Derived address:', walletAddress);
 
-            // 3. Try signing in with Supabase auth using derived password
-            if (walletAddress) {
-                const authPassword = walletAddress.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-                const { error: authSignInError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password: authPassword
-                });
-                if (authSignInError) {
-                    console.warn('Supabase Auth biometric signin warning:', authSignInError.message);
-                }
+            // 3. Derive the deterministic password used at signup
+            const authPassword = walletAddress.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+
+            // 4. Sign in to Supabase Auth to establish a session for the dashboard
+            console.log('🔑 [useAuth] Establishing Supabase session...');
+            const { data: authData, error: authSignInError } = await supabase.auth.signInWithPassword({
+                email,
+                password: authPassword
+            });
+
+            if (authSignInError) {
+                console.warn('🔑 [useAuth] Supabase session establishment warning:', authSignInError.message);
+                // We still proceed if we have the wallet, but RLS might block the dashboard if no session
+            } else {
+                console.log('🔑 [useAuth] Supabase session established successfully');
             }
 
-            // 4. After auth attempt, read profile (may succeed now if session was set)
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('wallet_address, auth_method')
-                    .eq('id', user.id)
-                    .maybeSingle();
-
-                if (profile?.auth_method === 'password') {
-                    setError('This account uses password authentication');
-                    return { success: false, error: 'This account uses password authentication' };
-                }
-
-                walletAddress = profile?.wallet_address || walletAddress;
-            }
-
+            // 5. Ensure local state is synced
             localStorage.setItem('active_wallet_address', walletAddress);
             localStorage.setItem('auth_email', email);
 
             return { success: true, walletAddress };
         } catch (err: any) {
-            console.error('Biometric sign in error:', err);
+            console.error('🔑 [useAuth] Biometric sign in catch error:', err);
             const errorMsg = err.message || 'Biometric sign in failed';
             setError(errorMsg);
             return { success: false, error: errorMsg };

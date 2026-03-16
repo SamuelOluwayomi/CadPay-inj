@@ -17,8 +17,6 @@ function getSupabaseClient(): SupabaseClient {
                 persistSession: true,
                 autoRefreshToken: true,
                 detectSessionInUrl: true,
-                storageKey: 'cadpay-auth-token',
-                storage: typeof window !== 'undefined' ? window.localStorage : undefined,
             }
         });
     }
