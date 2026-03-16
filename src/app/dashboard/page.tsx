@@ -218,10 +218,10 @@ export default function Dashboard() {
             if (loading || profileLoading) return;
 
             // Trigger Onboarding if:
-            // 1. Profile exists but is incomplete (No Username) -> Covers Custodial (created by API) & Injective
-            // 2. OR Injective is connected but no profile exists yet
-            if (profile && !profile.username) {
-                console.log("⚠️ Profile incomplete (no username), triggering Onboarding...");
+            // 1. Profile exists but is incomplete (No Username OR No PIN) 
+            //    -> Covers Google users (have username but no PIN) & Custodial
+            if (profile && (!profile.username || !profile.pin)) {
+                console.log("⚠️ Profile incomplete, triggering Onboarding...");
                 setShowOnboarding(true);
             } else if (!profile && (address || session)) {
                 console.log("⚠️ Logged in but no profile found, triggering Onboarding...");
@@ -539,6 +539,10 @@ export default function Dashboard() {
                 isOpen={showOnboarding}
                 isSubmitting={isOnboardingSubmitting}
                 walletAddress={walletAddress}
+                initialProfile={profile ? {
+                    username: profile.username,
+                    email: profile.email || session?.user?.email || ''
+                } : undefined}
                 onComplete={handleOnboardingComplete}
             />
 

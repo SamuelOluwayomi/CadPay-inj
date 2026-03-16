@@ -226,12 +226,45 @@ export function useAuth() {
         }
     };
 
+    /**
+     * Sign in with Google OAuth
+     */
+    const signInWithGoogle = async () => {
+        setIsLoading(true);
+        setError(null);
+        console.log('🔑 [useAuth] Attempting signInWithGoogle');
+
+        try {
+            const { data, error: authError } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                },
+            });
+
+            if (authError) throw authError;
+            return { success: true };
+        } catch (err: any) {
+            console.error('🔑 [useAuth] Google sign in error:', err);
+            const errorMsg = err.message || 'Google sign in failed';
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         isLoading,
         error,
         signInWithPassword,
         signInWithBiometric,
         signInWithInjective,
+        signInWithGoogle,
         signOut,
         checkEmailExists,
         getWalletAddress,

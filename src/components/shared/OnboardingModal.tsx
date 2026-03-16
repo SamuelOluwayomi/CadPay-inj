@@ -8,6 +8,10 @@ interface OnboardingModalProps {
     isOpen: boolean;
     isSubmitting?: boolean;
     walletAddress?: string;
+    initialProfile?: {
+        username?: string;
+        email?: string;
+    };
     onComplete: (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => void;
 }
 
@@ -16,14 +20,23 @@ const AVATAR_OPTIONS = [
     '👨‍💻', '👩‍💻', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧑‍🚀', '👨‍🚀'
 ];
 
-export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, onComplete }: OnboardingModalProps) {
+export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, initialProfile, onComplete }: OnboardingModalProps) {
     const [step, setStep] = useState(1);
-    const [username, setUsername] = useState('');
+    const [username, setUsername] = useState(initialProfile?.username || '');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [gender, setGender] = useState('');
     const [avatar, setAvatar] = useState(AVATAR_OPTIONS[0]);
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(initialProfile?.email || '');
+
+    // Sync initial profile if it arrives late
+    useState(() => {
+        if (initialProfile) {
+            if (initialProfile.username && !username) setUsername(initialProfile.username);
+            if (initialProfile.email && !email) setEmail(initialProfile.email);
+        }
+    });
+
     const handleComplete = () => {
         if (username && pin && pin === confirmPin && gender && avatar) {
             onComplete({ username, pin, gender, avatar, email });
