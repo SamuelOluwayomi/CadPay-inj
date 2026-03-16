@@ -11,7 +11,7 @@ import { WarningCircleIcon, LifebuoyIcon } from '@phosphor-icons/react';
 
 export default function SignIn() {
     const router = useRouter();
-    const { signInWithPassword, signInWithBiometric, checkEmailExists, clearError, isLoading, error } = useAuth();
+    const { signInWithPassword, signInWithBiometric, signInWithGoogle, checkEmailExists, clearError, isLoading, error } = useAuth();
     const { checkWalletExists } = useBiometricWallet();
 
     const [email, setEmail] = useState('');
