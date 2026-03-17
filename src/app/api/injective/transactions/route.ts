@@ -11,6 +11,10 @@ export async function GET(request: Request) {
     try {
         const response = await fetch(`https://testnet.explorer.injective.network/api/v1/accounts/${address}/transactions`);
         
+        if (response.status === 404) {
+            return NextResponse.json({ transactions: [] });
+        }
+
         if (!response.ok) {
             return NextResponse.json({ error: 'Failed to fetch from explorer' }, { status: response.status });
         }

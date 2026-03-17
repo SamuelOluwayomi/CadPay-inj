@@ -28,14 +28,14 @@ export const useInjective = () => {
     const fetchBalance = useCallback(async (addr: string) => {
         if (!addr) return;
         try {
-            const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${addr}/by_denom?denom=uinj`);
+            const response = await fetch(`/api/injective/balance?address=${addr}`);
             if (response.ok) {
                 const data = await response.json();
                 const amount = data.balance?.amount || '0';
                 setBalance(parseInt(amount) / 1e18);
             }
         } catch (e) {
-            console.error("Failed to fetch balance", e);
+            console.error("Failed to fetch balance via proxy", e);
         }
     }, []);
 

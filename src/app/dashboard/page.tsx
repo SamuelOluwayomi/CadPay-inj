@@ -266,15 +266,17 @@ export default function Dashboard() {
             }
 
             // 2. Save Profile Details (Upsert will merge with wallet data)
-            const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email);
+            console.log("💾 Saving profile with data:", data);
+            const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email, data.avatar_url);
 
-            setShowOnboarding(false);
             if (result) {
+                console.log("✅ Profile saved, finishing onboarding...");
+                setShowOnboarding(false);
                 showToast("Profile created successfully!", "success");
+                
+                // Force reload after short delay to ensure DB sync
+                setTimeout(() => window.location.reload(), 1500);
             }
-
-            // Force reload to ensure all states (wallet, profile, balance) are synced active
-            window.location.reload();
         } catch (e: any) {
             console.error("Onboarding failed", e);
             showToast(e.message || "Failed to create profile. Try again.", "error");

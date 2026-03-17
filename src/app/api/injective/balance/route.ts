@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs'; // Switch to Node.js runtime for better debugging
-
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const address = searchParams.get('address');
@@ -11,22 +9,21 @@ export async function GET(request: Request) {
     }
 
     try {
-        const targetUrl = `https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=uinj`;
-        console.log(`[Proxy] Fetching balance from: ${targetUrl}`);
-
-        const response = await fetch(targetUrl);
-
+        // Using LCD endpoint but via server to avoid CORS/SSL issues in browser
+        const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=uinj`);
+        
         if (!response.ok) {
-            console.error(`[Proxy] Upstream Error: ${response.status} ${response.statusText}`);
-            throw new Error(`Injective API Error: ${response.status} ${response.statusText}`);
+            // If the account doesn't exist yet, return 0 balance
+            if (response.status === 404) {
+                return NextResponse.json({ balance: { amount: "0" } });
+            }
+            return NextResponse.json({ error: 'Failed to fetch balance' }, { status: response.status });
         }
 
         const data = await response.json();
-        // Convert uinj to INJ in the response if needed, or just pass it through
         return NextResponse.json(data);
-
     } catch (error: any) {
-        console.error('[Proxy] Internal Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Balance Proxy Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }

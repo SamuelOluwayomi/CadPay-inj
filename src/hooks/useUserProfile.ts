@@ -250,7 +250,16 @@ export function useUserProfile() {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error("❌ Profile Upsert Conflict/Error:", {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    data: newProfileData
+                });
+                throw error;
+            }
 
             // Optimistic update
             if (data) {
