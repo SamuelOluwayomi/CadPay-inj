@@ -107,8 +107,20 @@ export function useUserProfile() {
                     encrypted_private_key: data.encrypted_private_key,
                     auth_method: data.auth_method
                 });
+
+                // Identity Sync: If we have a wallet in DB but it doesn't match localStorage, sync it
+                // This prevents "claiming" the wrong wallet from an old session
+                if (data.wallet_address && address !== data.wallet_address) {
+                    console.log('🔄 [useUserProfile] Identity mismatch: Syncing localStorage wallet');
+                    localStorage.setItem('active_wallet_address', data.wallet_address);
+                }
             } else {
                 console.log('🔍 [useUserProfile] No profile found in DB for user:', session?.user?.id || address);
+                // Identity Guard: Clear unowned wallet from localStorage if logged in but no profile
+                if (session?.user && address && !isConnected) {
+                    console.log('🛡️ [useUserProfile] Identity guard: Clearing unowned wallet');
+                    localStorage.removeItem('active_wallet_address');
+                }
                 setProfile(null);
             }
         } catch (err: any) {
@@ -225,38 +237,37 @@ export function useUserProfile() {
                 throw new Error("You must be logged in to create a profile.");
             }
 
-            const newProfileData: any = {
-                id: user.id, // Mandatory: Links to auth.users
-                auth_user_id: user.id, // Redundant but requested in SQL schema
+            // 2. Prepare update data
+            const updateData: any = {
                 username,
                 emoji,
                 gender,
                 pin,
                 email,
                 avatar_url,
-                created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
 
-            // Optional: Link wallet address if available
-            if (address) {
-                newProfileData.wallet_address = address;
+            // Only update wallet_address if we have one and the profile doesn't already have it
+            if (address && !profile?.authority) {
+                updateData.wallet_address = address;
             }
 
-            // Always upsert since ID is the primary key and matches auth ID
+            // Always update existing row (created by trigger or wallet API)
             const { data, error } = await supabase
                 .from('profiles')
-                .upsert(newProfileData)
+                .update(updateData)
+                .eq('id', user.id)
                 .select()
                 .single();
 
             if (error) {
-                console.error("❌ Profile Upsert Conflict/Error:", {
+                console.error("❌ Profile Update Error:", {
                     code: error.code,
                     message: error.message,
                     details: error.details,
                     hint: error.hint,
-                    data: newProfileData
+                    data: updateData
                 });
                 throw error;
             }
