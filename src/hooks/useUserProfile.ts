@@ -10,6 +10,7 @@ export interface UserProfile {
     pin: string;
     email?: string;
     authority: string; // Wallet address
+    avatar_url?: string; // New field for Google profile picture
     encrypted_private_key?: string; // New field for custodial check
     auth_method?: 'password' | 'biometric';
 }
@@ -102,6 +103,7 @@ export function useUserProfile() {
                     pin: data.pin || '',
                     email: data.email || '',
                     authority: data.wallet_address || '',
+                    avatar_url: data.avatar_url,
                     encrypted_private_key: data.encrypted_private_key,
                     auth_method: data.auth_method
                 });
@@ -211,7 +213,7 @@ export function useUserProfile() {
         };
     }, [address, session, fetchProfile, sessionInitialized]);
 
-    const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
+    const createProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string, avatar_url?: string) => {
         setLoading(true);
         setError(null);
 
@@ -231,6 +233,7 @@ export function useUserProfile() {
                 gender,
                 pin,
                 email,
+                avatar_url,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -258,6 +261,7 @@ export function useUserProfile() {
                     gender: data.gender,
                     pin: data.pin,
                     authority: data.wallet_address,
+                    avatar_url: data.avatar_url,
                     encrypted_private_key: data.encrypted_private_key
                 });
             }
@@ -272,7 +276,7 @@ export function useUserProfile() {
         }
     }, [address]);
 
-    const updateProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string) => {
+    const updateProfile = useCallback(async (username: string, emoji: string, gender: string, pin: string, email?: string, avatar_url?: string) => {
         setLoading(true);
         setError(null);
 
@@ -283,6 +287,7 @@ export function useUserProfile() {
                 gender,
                 pin,
                 email,
+                avatar_url,
                 updated_at: new Date().toISOString()
             };
 

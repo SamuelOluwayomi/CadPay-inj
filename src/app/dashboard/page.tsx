@@ -114,6 +114,7 @@ export default function Dashboard() {
         username: profile?.username || 'User',
         gender: profile?.gender || 'other',
         avatar: profile?.emoji || '👤',
+        avatar_url: profile?.avatar_url || '',
         pin: profile?.pin || '',
         email: profile?.email || ''
     };
@@ -234,17 +235,21 @@ export default function Dashboard() {
     }, [address, loading, profile, profileLoading]);
 
     // Onboarding handlers
-    const handleOnboardingComplete = async (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => {
+    const handleOnboardingComplete = async (data: { 
+        username: string; 
+        pin: string; 
+        gender: string; 
+        avatar: string; 
+        email: string;
+        avatar_url?: string;
+    }) => {
         setIsOnboardingSubmitting(true);
         try {
             // 1. Ensure Wallet Exists (Custodial Only)
-            // Skip if: Injective is connected (has address) OR user is biometric (wallet created on frontend)
             const isBiometricUser = profile?.auth_method === 'biometric';
 
             if (!address && !isBiometricUser) {
-                // Only create a custodial wallet for password-based users who don't have one yet
                 if (!profile?.authority) {
-                    console.log("🔐 Generating Custodial Wallet (Password User)...");
                     const res = await fetch('/api/wallet/create', {
                         method: 'POST',
                         headers: {
@@ -257,12 +262,7 @@ export default function Dashboard() {
                     if (!res.ok || !walletData.success) {
                         throw new Error(walletData.error || "Failed to generate wallet");
                     }
-                    console.log("✅ Custodial Wallet generated:", walletData.address);
-                } else {
-                    console.log("✅ Wallet already exists:", profile.authority);
                 }
-            } else if (isBiometricUser) {
-                console.log("✅ Biometric user — wallet created on frontend, skipping backend creation.");
             }
 
             // 2. Save Profile Details (Upsert will merge with wallet data)
@@ -393,8 +393,12 @@ export default function Dashboard() {
                         {/* Profile Section */}
                         <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setShowProfileEdit(true)}>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl">
-                                    {userProfile.avatar}
+                                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl overflow-hidden border border-white/10">
+                                    {userProfile.avatar_url ? (
+                                        <img src={userProfile.avatar_url} alt={userProfile.username} className="w-full h-full object-cover" />
+                                    ) : (
+                                        userProfile.avatar
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-white">{userProfile.username}</p>
@@ -493,6 +497,8 @@ export default function Dashboard() {
                     {activeSection === 'overview' && (
                         <OverviewSection
                             userName={userProfile.username}
+                            avatar={userProfile.avatar}
+                            avatarUrl={userProfile.avatar_url}
                             balance={displayBalance.toFixed(2)}
                             address={address || ""}
                             refreshBalance={refreshWalletBalance}
@@ -536,12 +542,13 @@ export default function Dashboard() {
             {/* Onboarding Modal - First Time Setup */}
             <OnboardingModal
                 isOpen={showOnboarding}
-                isSubmitting={isOnboardingSubmitting}
+                isSubmitting={isProfileSaving || isOnboardingSubmitting} // Use both loading states
                 walletAddress={walletAddress}
-                initialProfile={profile ? {
-                    username: profile.username,
-                    email: profile.email || session?.user?.email || ''
-                } : undefined}
+                initialProfile={{
+                    username: profile?.username || session?.user?.user_metadata?.full_name || '',
+                    email: profile?.email || session?.user?.email || '',
+                    avatar_url: profile?.avatar_url || session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture || ''
+                }}
                 onComplete={handleOnboardingComplete}
             />
 
@@ -637,12 +644,17 @@ function NavItem({ icon, label, active, onClick }: any) {
 
 // Overview Section
 function OverviewSection({
-    userName, balance, address, loading,
+    userName, avatar, avatarUrl, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
     fetchTransactions, txSpeed, setTxSpeed, pots
 }: {
-    userName: string, balance: string, address: string,
-    loading: boolean, copyToClipboard: () => void,
+    userName: string,
+    avatar: string,
+    avatarUrl?: string,
+    balance: string,
+    address: string,
+    loading: boolean,
+    copyToClipboard: () => void,
     onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
     fetchTransactions: (addr?: string) => Promise<void> | void,
     txSpeed: TxSpeed,
@@ -751,9 +763,18 @@ function OverviewSection({
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Welcome back, {userName}! 👋</h1>
-                    <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-linear-to-br from-orange-500/20 to-orange-600/20 rounded-2xl flex items-center justify-center text-3xl border border-white/10 overflow-hidden shadow-xl shadow-orange-500/5">
+                        {avatarUrl ? (
+                            <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                        ) : (
+                            avatar
+                        )}
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white line-clamp-1">Welcome back, {userName}! 👋</h1>
+                        <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button

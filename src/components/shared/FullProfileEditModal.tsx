@@ -12,8 +12,9 @@ interface FullProfileEditModalProps {
         username: string;
         gender: string;
         avatar: string;
+        avatar_url?: string;
     };
-    onSave: (profile: { username: string; pin?: string; gender: string; avatar: string }) => void;
+    onSave: (profile: { username: string; pin?: string; gender: string; avatar: string; avatar_url?: string }) => void;
 }
 
 const AVATAR_OPTIONS = [
@@ -26,6 +27,8 @@ export default function FullProfileEditModal({ isOpen, isLoading, onClose, curre
     const [username, setUsername] = useState(currentProfile.username);
     const [gender, setGender] = useState(currentProfile.gender);
     const [avatar, setAvatar] = useState(currentProfile.avatar);
+    const [avatarUrl, setAvatarUrl] = useState(currentProfile.avatar_url || '');
+    const [useImageAvatar, setUseImageAvatar] = useState(!!currentProfile.avatar_url);
     const [changePIN, setChangePIN] = useState(false);
     const [currentPIN, setCurrentPIN] = useState('');
     const [newPIN, setNewPIN] = useState('');
@@ -37,6 +40,8 @@ export default function FullProfileEditModal({ isOpen, isLoading, onClose, curre
             setUsername(currentProfile.username);
             setGender(currentProfile.gender);
             setAvatar(currentProfile.avatar);
+            setAvatarUrl(currentProfile.avatar_url || '');
+            setUseImageAvatar(!!currentProfile.avatar_url);
             setChangePIN(false);
             setCurrentPIN('');
             setNewPIN('');
@@ -70,6 +75,7 @@ export default function FullProfileEditModal({ isOpen, isLoading, onClose, curre
             username: username.trim(),
             gender,
             avatar,
+            avatar_url: useImageAvatar ? avatarUrl : '',
             ...(changePIN && { pin: newPIN })
         });
     };
@@ -233,19 +239,60 @@ export default function FullProfileEditModal({ isOpen, isLoading, onClose, curre
                         {/* Avatar Tab */}
                         {activeTab === 'avatar' && (
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="grid grid-cols-4 gap-3 p-1">
-                                    {AVATAR_OPTIONS.map((av) => (
+                                <div className="space-y-6">
+                                    {/* Google Image Option */}
+                                    {avatarUrl && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">Source Image</label>
+                                            <button
+                                                onClick={() => setUseImageAvatar(true)}
+                                                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${useImageAvatar
+                                                        ? 'border-orange-500 bg-orange-500/10'
+                                                        : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                                            >
+                                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500/30">
+                                                    <img src={avatarUrl} alt="Google Avatar" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-white font-bold text-sm">Use Source Picture</p>
+                                                    <p className="text-[10px] text-zinc-500">Your original profile image</p>
+                                                </div>
+                                                {useImageAvatar && <CheckIcon size={20} className="text-orange-500 ml-auto" weight="bold" />}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">
+                                            {avatarUrl ? 'Or select an Emoji' : 'Select an Emoji'}
+                                        </label>
+                                        <div className={`grid grid-cols-4 gap-3 transition-opacity ${useImageAvatar ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                                            {AVATAR_OPTIONS.map((av) => (
+                                                <button
+                                                    key={av}
+                                                    onClick={() => {
+                                                        setAvatar(av);
+                                                        setUseImageAvatar(false);
+                                                    }}
+                                                    className={`aspect-square rounded-2xl border-2 flex items-center justify-center text-4xl transition-all ${!useImageAvatar && avatar === av
+                                                        ? 'border-orange-500 bg-orange-500/10 scale-105 shadow-lg shadow-orange-500/20'
+                                                        : 'border-white/5 bg-white/5 hover:border-white/10 hover:scale-[1.02]'
+                                                        }`}
+                                                >
+                                                    <span className="leading-none select-none">{av}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {useImageAvatar && (
                                         <button
-                                            key={av}
-                                            onClick={() => setAvatar(av)}
-                                            className={`aspect-square rounded-2xl border-2 flex items-center justify-center text-4xl transition-all ${avatar === av
-                                                ? 'border-orange-500 bg-orange-500/10 scale-105 shadow-lg shadow-orange-500/20'
-                                                : 'border-white/5 bg-white/5 hover:border-white/10 hover:scale-[1.02]'
-                                                }`}
+                                            onClick={() => setUseImageAvatar(false)}
+                                            className="w-full py-2 text-xs text-orange-500/70 hover:text-orange-500 font-medium transition-colors"
                                         >
-                                            <span className="leading-none select-none">{av}</span>
+                                            Switch to Emoji
                                         </button>
-                                    ))}
+                                    )}
                                 </div>
                             </motion.div>
                         )}

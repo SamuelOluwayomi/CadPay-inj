@@ -11,8 +11,9 @@ interface OnboardingModalProps {
     initialProfile?: {
         username?: string;
         email?: string;
+        avatar_url?: string;
     };
-    onComplete: (data: { username: string; pin: string; gender: string; avatar: string; email: string }) => void;
+    onComplete: (data: { username: string; pin: string; gender: string; avatar: string; email: string; avatar_url?: string }) => void;
 }
 
 const AVATAR_OPTIONS = [
@@ -21,25 +22,31 @@ const AVATAR_OPTIONS = [
 ];
 
 export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, initialProfile, onComplete }: OnboardingModalProps) {
-    const [step, setStep] = useState(1);
+    // Initial Step: Skip Username if it exists (typical for Google)
+    const initialStep = (initialProfile?.username && initialProfile?.username.length > 2) ? 3 : 1;
+    
+    const [step, setStep] = useState(initialStep);
     const [username, setUsername] = useState(initialProfile?.username || '');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [gender, setGender] = useState('');
     const [avatar, setAvatar] = useState(AVATAR_OPTIONS[0]);
     const [email, setEmail] = useState(initialProfile?.email || '');
+    const [avatarUrl, setAvatarUrl] = useState(initialProfile?.avatar_url || '');
 
-    // Sync initial profile if it arrives late
-    useState(() => {
-        if (initialProfile) {
-            if (initialProfile.username && !username) setUsername(initialProfile.username);
-            if (initialProfile.email && !email) setEmail(initialProfile.email);
-        }
-    });
+    // Choice for Google users: Use Picture or Emoji?
+    const [useImageAvatar, setUseImageAvatar] = useState(!!initialProfile?.avatar_url);
 
     const handleComplete = () => {
-        if (username && pin && pin === confirmPin && gender && avatar) {
-            onComplete({ username, pin, gender, avatar, email });
+        if (username && pin && pin === confirmPin && gender && (avatar || useImageAvatar)) {
+            onComplete({ 
+                username, 
+                pin, 
+                gender, 
+                avatar: useImageAvatar ? '🖼️' : avatar, // Emoji fallback if someone selects 'Emoji' later
+                email, 
+                avatar_url: useImageAvatar ? avatarUrl : undefined 
+            });
         }
     };
 
@@ -74,7 +81,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
 
                     {/* Progress Bar */}
                     <div className="flex gap-2 mt-4">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 3, 4, 5].map((s) => (
                             <div
                                 key={s}
                                 className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${s <= step ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'bg-zinc-800'}`}
@@ -109,44 +116,11 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             </div>
                         </div>
                         <button
-                            onClick={() => username && setStep(2)}
+                            onClick={() => username && setStep(3)}
                             disabled={!username}
                             className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20"
                         >
                             Next Step
-                        </button>
-                    </motion.div>
-                )}
-
-                {/* Step 2: Email */}
-                {step === 2 && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-zinc-400 mb-2 font-medium">Notification Email (Optional)</label>
-                            <div className="relative">
-                                <CheckIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="your@email.com"
-                                    className="w-full pl-12 pr-4 py-4 bg-zinc-800 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-all font-medium"
-                                    autoFocus
-                                />
-                            </div>
-                            <p className="text-[10px] text-zinc-500 mt-2">This will be used for your smart subscriptions</p>
-                        </div>
-                        <button
-                            onClick={() => setStep(3)}
-                            className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20"
-                        >
-                            Continue
-                        </button>
-                        <button
-                            onClick={() => setStep(1)}
-                            className="w-full py-3 text-zinc-500 hover:text-white transition-colors text-sm"
-                        >
-                            Back
                         </button>
                     </motion.div>
                 )}
@@ -188,12 +162,14 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             )}
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => setStep(2)}
-                                className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
-                            >
-                                Back
-                            </button>
+                            {initialStep === 1 && (
+                                <button
+                                    onClick={() => setStep(1)}
+                                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
+                                >
+                                    Back
+                                </button>
+                            )}
                             <button
                                 onClick={() => pin.length === 4 && pin === confirmPin && setStep(4)}
                                 disabled={pin.length !== 4 || pin !== confirmPin}
@@ -260,17 +236,48 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                     </motion.div>
                 )}
 
-                {/* Step 5: Avatar */}
+                {/* Step 5: Avatar selection */}
                 {step === 5 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                         <div>
                             <label className="block text-sm text-zinc-400 mb-4 font-medium">Choose your avatar</label>
-                            <div className="grid grid-cols-4 gap-3 max-h-75 overflow-y-auto p-1 custom-scrollbar">
+                            
+                            {/* Google Image Option */}
+                            {avatarUrl && (
+                                <div className="mb-4">
+                                    <button
+                                        onClick={() => setUseImageAvatar(true)}
+                                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${useImageAvatar 
+                                            ? 'border-orange-500 bg-orange-500/10' 
+                                            : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                                    >
+                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500/30">
+                                            <img src={avatarUrl} alt="Google Avatar" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-white font-bold text-sm">Use Google Picture</p>
+                                            <p className="text-[10px] text-zinc-500">Keep your familiar look</p>
+                                        </div>
+                                        {useImageAvatar && <CheckIcon size={20} className="text-orange-500 ml-auto" weight="bold" />}
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="h-px flex-1 bg-white/5" />
+                                <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">Or pick an emoji</span>
+                                <div className="h-px flex-1 bg-white/5" />
+                            </div>
+
+                            <div className={`grid grid-cols-4 gap-3 max-h-60 overflow-y-auto p-1 custom-scrollbar transition-opacity ${useImageAvatar ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                                 {AVATAR_OPTIONS.map((av) => (
                                     <button
                                         key={av}
-                                        onClick={() => setAvatar(av)}
-                                        className={`aspect-square rounded-2xl border-2 flex items-center justify-center text-3xl transition-all ${avatar === av
+                                        onClick={() => {
+                                            setAvatar(av);
+                                            setUseImageAvatar(false);
+                                        }}
+                                        className={`aspect-square rounded-2xl border-2 flex items-center justify-center text-3xl transition-all ${!useImageAvatar && avatar === av
                                             ? 'border-orange-500 bg-orange-500/10 scale-105 shadow-lg shadow-orange-500/20'
                                             : 'border-white/5 bg-white/5 hover:border-white/10 hover:scale-[1.02]'
                                             }`}
@@ -279,7 +286,17 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                                     </button>
                                 ))}
                             </div>
+
+                            {useImageAvatar && (
+                                <button 
+                                    onClick={() => setUseImageAvatar(false)}
+                                    className="w-full mt-3 py-2 text-xs text-orange-500/70 hover:text-orange-500 font-medium transition-colors"
+                                >
+                                    Choose an emoji instead
+                                </button>
+                            )}
                         </div>
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => setStep(4)}
