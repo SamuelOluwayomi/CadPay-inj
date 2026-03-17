@@ -44,30 +44,30 @@ interface TxSpeed {
 }
 
 export default function Dashboard() {
-    const { 
-        profile, 
-        loading: profileLoading, 
-        session, 
+    const {
+        profile,
+        loading: profileLoading,
+        session,
         sessionInitialized,
-        createProfile, 
-        updateProfile 
+        createProfile,
+        updateProfile
     } = useUserProfile();
 
-    const { 
-        address, 
-        balance: walletBalance, 
-        isLoading: loading, 
-        isConnected, 
-        disconnect, 
-        refreshBalance: refreshWalletBalance, 
-        transactions, 
-        fetchTransactions 
+    const {
+        address,
+        balance: walletBalance,
+        isLoading: loading,
+        isConnected,
+        disconnect,
+        refreshBalance: refreshWalletBalance,
+        transactions,
+        fetchTransactions
     } = useInjective();
 
     const { showToast } = useToast();
     const { pots } = useSavings();
     const router = useRouter();
-    
+
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
     // Calculate display balance (prioritize connected wallet)
     const displayBalance = address ? (walletBalance || 0) : custodialBalance;
@@ -235,11 +235,11 @@ export default function Dashboard() {
     }, [address, loading, profile, profileLoading]);
 
     // Onboarding handlers
-    const handleOnboardingComplete = async (data: { 
-        username: string; 
-        pin: string; 
-        gender: string; 
-        avatar: string; 
+    const handleOnboardingComplete = async (data: {
+        username: string;
+        pin: string;
+        gender: string;
+        avatar: string;
         email: string;
         avatar_url?: string;
     }) => {
@@ -273,7 +273,7 @@ export default function Dashboard() {
                 console.log("✅ Profile saved, finishing onboarding...");
                 setShowOnboarding(false);
                 showToast("Profile created successfully!", "success");
-                
+
                 // Force reload after short delay to ensure DB sync
                 setTimeout(() => window.location.reload(), 1500);
             }
@@ -547,10 +547,10 @@ export default function Dashboard() {
                 isSubmitting={isProfileSaving || isOnboardingSubmitting} // Use both loading states
                 walletAddress={walletAddress}
                 initialProfile={{
-                    username: profile?.username || 
-                             session?.user?.user_metadata?.full_name || 
-                             session?.user?.user_metadata?.name || 
-                             (session?.user?.email ? session.user.email.split('@')[0] : ''),
+                    username: profile?.username ||
+                        session?.user?.user_metadata?.full_name ||
+                        session?.user?.user_metadata?.name ||
+                        (session?.user?.email ? session.user.email.split('@')[0] : ''),
                     email: profile?.email || session?.user?.email || '',
                     avatar_url: profile?.avatar_url || session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture || ''
                 }}
@@ -779,26 +779,6 @@ function OverviewSection({
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white line-clamp-1">Welcome back, {userName}! 👋</h1>
                         <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleFundDemo}
-                        disabled={isFunding}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-bold text-white hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                        {isFunding ? (
-                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                <LightningIcon size={18} />
-                            </motion.div>
-                        ) : (
-                            <LightningIcon size={18} className="text-orange-500" />
-                        )}
-                        {isFunding ? "Funding..." : "Get Testnet INJ"}
-                    </button>
-                    <div className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Network Secure</span>
                     </div>
                 </div>
             </div>
