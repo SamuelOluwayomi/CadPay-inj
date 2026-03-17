@@ -160,10 +160,6 @@ export function useAuth() {
         }
     };
 
-    /**
-     * Get user's wallet address from Supabase (for recovery validation).
-     * Only works when user is already authenticated.
-     */
     const getWalletAddress = async (email: string): Promise<string | null> => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -182,9 +178,6 @@ export function useAuth() {
         }
     };
 
-    /**
-     * Sign in with Injective wallet (Deterministic Auth)
-     */
     const signInWithInjective = async (walletAddress: string): Promise<SignInResult> => {
         setIsLoading(true);
         setError(null);
@@ -235,10 +228,24 @@ export function useAuth() {
         console.log('🔑 [useAuth] Attempting signInWithGoogle');
 
         try {
+            // Get the base URL for redirection
+            // 1. Check if we're on Vercel production
+            // 2. Fallback to current window origin (helpful for preview deploys)
+            const getURL = () => {
+                let url =
+                    process.env.NEXT_PUBLIC_SITE_URL ?? // Set this in Vercel env vars
+                    window.location.origin;
+                // Make sure to include `https://` when not localhost.
+                url = url.includes('http') ? url : `https://${url}`;
+                // Make sure to include a trailing `/`.
+                url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
+                return url;
+            };
+
             const { data, error: authError } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${getURL()}auth/callback`,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
