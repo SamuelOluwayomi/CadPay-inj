@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IconType } from 'react-icons';
+import { supabase } from '@/lib/supabase';
 
 export interface ActiveSubscription {
     id: string;
@@ -11,133 +11,167 @@ export interface ActiveSubscription {
     startDate: string;
     nextBilling: string;
     color: string;
-    icon: IconType;
-    transactionSignature?: string; // Add transaction ID
+    transactionSignature?: string;
 }
 
 interface MonthlyData {
     [month: string]: number;
 }
 
-const STORAGE_KEY = 'cadpay-subscriptions';
-const MONTHLY_DATA_KEY = 'cadpay-monthly-data';
-
 export function useSubscriptions() {
     const [subscriptions, setSubscriptions] = useState<ActiveSubscription[]>([]);
+    const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<MonthlyData>({});
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        const monthlyStored = localStorage.getItem(MONTHLY_DATA_KEY);
+    const fetchSubscriptions = useCallback(async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setSubscriptions([]);
+                setLoading(false);
+                return;
+            }
 
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
 
-        if (stored) {
-            try {
-                const loadedSubs: any[] = JSON.parse(stored);
+            if (error) throw error;
 
-                // Restore subscriptions without icon (component will handle fallback)
-                const restoredSubs = loadedSubs.map(sub => ({
-                    ...sub,
-                    // Don't include icon - let component use fallback
+            if (data) {
+                const mappedSubs = data.map(sub => ({
+                    id: sub.id,
+                    serviceId: sub.service_id,
+                    serviceName: sub.service_name,
+                    plan: sub.plan_name,
+                    priceUSD: Number(sub.price_usd),
+                    email: sub.email,
+                    startDate: sub.start_date,
+                    nextBilling: sub.next_billing,
+                    color: sub.color || '#FF6B35',
+                    transactionSignature: sub.tx_signature
                 })) as ActiveSubscription[];
 
-                setSubscriptions(restoredSubs);
-            } catch (error) {
-                console.error('❌ Failed to load subscriptions:', error);
+                setSubscriptions(mappedSubs);
             }
-        }
-
-        if (monthlyStored) {
-            setMonthlyData(JSON.parse(monthlyStored));
+        } catch (error) {
+            console.error('❌ Failed to fetch subscriptions:', error);
+        } finally {
+            setLoading(false);
         }
     }, []);
 
-    // Update monthly data helper - must be before useEffect that uses it
+    // Load from Supabase on mount
+    useEffect(() => {
+        fetchSubscriptions();
+    }, [fetchSubscriptions]);
+
+    // Update monthly data helper
     const updateMonthlyData = useCallback(() => {
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
         const total = subscriptions.reduce((sum, sub) => sum + sub.priceUSD, 0);
 
-        setMonthlyData(prev => {
-            const updated = { ...prev, [currentMonth]: total };
-            localStorage.setItem(MONTHLY_DATA_KEY, JSON.stringify(updated));
-            return updated;
-        });
+        setMonthlyData(prev => ({
+            ...prev,
+            [currentMonth]: total
+        }));
     }, [subscriptions]);
 
-    // Save to localStorage whenever subscriptions change
-    // 🛑 GUARD: Don't save empty array during initialization - only save when we have data
     useEffect(() => {
-        // Only save if we have subscriptions (prevent wiping during wallet init)
-        if (subscriptions.length > 0) {
-            // Remove icon functions before saving (they can't be JSON serialized)
-            const subsToSave = subscriptions.map(({ icon, ...rest }) => rest);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(subsToSave));
-        }
-        // Clearing only happens explicitly through removeSubscription
-
         updateMonthlyData();
     }, [subscriptions, updateMonthlyData]);
 
-    const addSubscription = useCallback((subscription: Omit<ActiveSubscription, 'id' | 'startDate' | 'nextBilling'>) => {
-        const now = new Date();
-        const nextMonth = new Date(now);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const addSubscription = useCallback(async (subscription: Omit<ActiveSubscription, 'id' | 'startDate' | 'nextBilling'>) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Authentication required");
 
-        const newSub: ActiveSubscription = {
-            ...subscription,
-            id: `${subscription.serviceId}-${Date.now()}`,
-            startDate: now.toISOString(),
-            nextBilling: nextMonth.toISOString()
-        };
+            const now = new Date();
+            const nextMonth = new Date(now);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-        setSubscriptions(prev => [...prev, newSub]);
-        return newSub;
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .insert({
+                    user_id: user.id,
+                    service_id: subscription.serviceId,
+                    service_name: subscription.serviceName,
+                    plan_name: subscription.plan,
+                    price_usd: subscription.priceUSD,
+                    email: subscription.email,
+                    color: subscription.color,
+                    tx_signature: subscription.transactionSignature,
+                    start_date: now.toISOString(),
+                    next_billing: nextMonth.toISOString()
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (data) {
+                const newSub: ActiveSubscription = {
+                    id: data.id,
+                    serviceId: data.service_id,
+                    serviceName: data.service_name,
+                    plan: data.plan_name,
+                    priceUSD: Number(data.price_usd),
+                    email: data.email,
+                    startDate: data.start_date,
+                    nextBilling: data.next_billing,
+                    color: data.color || '#FF6B35',
+                    transactionSignature: data.tx_signature
+                };
+
+                setSubscriptions(prev => [newSub, ...prev]);
+                return newSub;
+            }
+        } catch (error) {
+            console.error('❌ Failed to add subscription:', error);
+            throw error;
+        }
     }, []);
 
-    const removeSubscription = useCallback((id: string) => {
-        setSubscriptions(prev => {
-            const updated = prev.filter(sub => sub.id !== id);
-            // Explicitly clear localStorage if this was the last subscription
-            if (updated.length === 0) {
-                localStorage.removeItem(STORAGE_KEY);
-                // Cleared all subscriptions
-            }
-            return updated;
-        });
+    const removeSubscription = useCallback(async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('subscriptions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+        } catch (error) {
+            console.error('❌ Failed to remove subscription:', error);
+            throw error;
+        }
     }, []);
 
     const getMonthlyTotal = useCallback(() => {
         return subscriptions.reduce((sum, sub) => sum + sub.priceUSD, 0);
     }, [subscriptions]);
 
-
-
-    // Generate simulated historical data for the chart (last 6 months)
     const getHistoricalData = useCallback(() => {
         const months = [];
         const now = new Date();
-        // Start from 5 months ago (to show 6 months total including current)
         const baseDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
         const currentMonthTotal = getMonthlyTotal();
 
-        // Generate data for last 6 months
         for (let i = 0; i < 6; i++) {
             const date = new Date(baseDate);
             date.setMonth(baseDate.getMonth() + i);
             const monthKey = date.toISOString().slice(0, 7);
             const monthName = date.toLocaleDateString('en-US', { month: 'short' });
 
-            // Use stored data if available, otherwise simulate gradual growth
-            let value;
-            if (monthlyData[monthKey]) {
-                value = monthlyData[monthKey];
-            } else if (currentMonthTotal > 0) {
-                // Simulate growth from 40% to 100% of current total  
+            let value = monthlyData[monthKey] || (i === 5 ? currentMonthTotal : 0);
+            
+            // Simulation for demo purposes if no real data
+            if (value === 0 && currentMonthTotal > 0) {
                 const growthFactor = 0.4 + (i / 5) * 0.6;
                 value = currentMonthTotal * growthFactor;
-            } else {
-                // Show dummy data when no subscriptions (for demo purposes)
+            } else if (value === 0) {
                 const dummyValues = [8.00, 10.39, 12.79, 15.19, 17.59, 19.99];
                 value = dummyValues[i] || 0;
             }
@@ -147,7 +181,6 @@ export function useSubscriptions() {
                 amount: parseFloat(value.toFixed(2))
             });
         }
-
         return months;
     }, [monthlyData, getMonthlyTotal]);
 
@@ -157,10 +190,12 @@ export function useSubscriptions() {
 
     return {
         subscriptions,
+        loading,
         addSubscription,
         removeSubscription,
         getMonthlyTotal,
         getHistoricalData,
-        checkDuplicateEmail
+        checkDuplicateEmail,
+        refreshSubscriptions: fetchSubscriptions
     };
 }

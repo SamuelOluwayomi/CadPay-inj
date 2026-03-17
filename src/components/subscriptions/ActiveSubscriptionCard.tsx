@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { TrashIcon, CalendarIcon, StorefrontIcon } from '@phosphor-icons/react';
 import { ActiveSubscription } from '@/hooks/useSubscriptions';
+import { SERVICES } from '@/data/subscriptions';
 
 interface ActiveSubscriptionCardProps {
     subscription: ActiveSubscription;
@@ -10,6 +11,8 @@ interface ActiveSubscriptionCardProps {
 }
 
 export default function ActiveSubscriptionCard({ subscription, onUnsubscribe }: ActiveSubscriptionCardProps) {
+    const ServiceIcon = SERVICES.find(s => s.id === subscription.serviceId)?.icon;
+
     const nextBillingDate = new Date(subscription.nextBilling).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -30,8 +33,8 @@ export default function ActiveSubscriptionCard({ subscription, onUnsubscribe }: 
                     className="text-2xl p-3 rounded-full mb-3 flex items-center justify-center"
                     style={{ backgroundColor: `${subscription.color}20`, color: subscription.color }}
                 >
-                    {typeof subscription.icon === 'function' ? (
-                        <subscription.icon size={28} />
+                    {ServiceIcon ? (
+                        <ServiceIcon size={28} />
                     ) : (
                         <StorefrontIcon size={28} />
                     )}

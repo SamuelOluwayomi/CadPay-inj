@@ -377,7 +377,7 @@ export default function Dashboard() {
                     >
                         <div className="flex items-center justify-between mb-8 mt-2">
                             <div className="flex items-center gap-3">
-                                <img src="/icon.svg" alt="CadPay" className="w-10 h-10 rounded-xl" />
+                                <img src="/icon.ico" alt="CadPay" className="w-10 h-10 rounded-xl" />
                                 <span className="text-xl font-bold tracking-tight">CadPay</span>
                             </div>
                             {/* Close button on the right - visible on all screens */}
@@ -391,7 +391,7 @@ export default function Dashboard() {
 
 
                         {/* Navigation */}
-                        <nav className="flex-1 space-y-6 overflow-y-auto">
+                        <nav className="space-y-6">
                             {/* MAIN Section */}
                             <div>
                                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 px-3">
@@ -661,7 +661,7 @@ function OverviewSection({
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const [injPrice, setInjPrice] = useState<number | null>(null);
-    const { subscriptions } = useSubscriptions();
+    const { subscriptions, loading: loadingSub } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
     const { createReceipt } = useReceipts(address);
@@ -815,7 +815,11 @@ function OverviewSection({
                             <p className="text-sm text-zinc-400 font-medium">Active Subscriptions</p>
                             <StorefrontIcon size={20} className="text-orange-400" />
                         </div>
-                        <h3 className="text-3xl font-bold text-white">{subscriptions.length}</h3>
+                        {loadingSub ? (
+                             <div className="h-9 w-12 bg-white/5 rounded-lg animate-pulse" />
+                        ) : (
+                            <h3 className="text-3xl font-bold text-white transition-all">{subscriptions.length}</h3>
+                        )}
                         <p className="text-xs text-zinc-500 mt-1">Manage recurring payments</p>
                     </div>
 
@@ -1020,7 +1024,6 @@ function SubscriptionsSection({
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
 
-    // Toast notifications
     const { showToast } = useToast();
 
     const { address } = useInjective();
@@ -1028,7 +1031,14 @@ function SubscriptionsSection({
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
 
-    const { subscriptions, addSubscription, removeSubscription, getMonthlyTotal, getHistoricalData } = useSubscriptions();
+    const { 
+        subscriptions, 
+        addSubscription, 
+        removeSubscription, 
+        getMonthlyTotal, 
+        getHistoricalData,
+        loading: loadingSub 
+    } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
     // Merge Static + Dynamic Services (Filter out duplicates)
@@ -1078,14 +1088,13 @@ function SubscriptionsSection({
 
             const actualService = SERVICES.find(s => s.id === serviceId) || dynamicServices.find(s => s.id === serviceId);
 
-            addSubscription({
+            await addSubscription({
                 serviceId,
                 serviceName: actualService ? actualService.name : serviceId,
                 plan: plan.name,
                 priceUSD: plan.priceUSD,
                 email,
                 color: actualService ? actualService.color : '#FF6B35',
-                icon: (actualService ? actualService.icon : StorefrontIcon) as any,
                 transactionSignature: txId
             });
 
@@ -1392,11 +1401,10 @@ function SubscriptionsSection({
                                     {subscriptions.map((sub) => (
                                         <div key={sub.id} className="flex items-center gap-3">
                                             <div className="text-2xl" style={{ color: sub.color }}>
-                                                {typeof sub.icon === 'function' ? (
-                                                    <sub.icon size={24} />
-                                                ) : (
-                                                    <StorefrontIcon size={24} />
-                                                )}
+                                                {(() => {
+                                                    const ServiceIcon = SERVICES.find(s => s.id === sub.serviceId)?.icon;
+                                                    return ServiceIcon ? <ServiceIcon size={24} /> : <StorefrontIcon size={24} />;
+                                                })()}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">{sub.serviceName}</p>
