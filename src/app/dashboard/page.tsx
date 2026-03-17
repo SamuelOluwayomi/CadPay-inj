@@ -57,7 +57,6 @@ export default function Dashboard() {
         address, 
         balance: walletBalance, 
         isLoading: loading, 
-        connect, 
         isConnected, 
         disconnect, 
         refreshBalance: refreshWalletBalance, 
@@ -149,10 +148,10 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [txSpeed.status]);
 
-    // Unified wallet interaction logging
+    // Log active address for debugging
     useEffect(() => {
         if (address) {
-            console.log("Injective Wallet Connected:", address);
+            console.log("Active CadPay Address:", address);
         }
     }, [address]);
 
@@ -404,8 +403,8 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Injective Testnet</span>
-                                <div className="flex items-center gap-1 text-orange-500">
-                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                                <div className="flex items-center gap-1 text-green-500">
+                                    <div className="w-2 h-2 rounded-full bg-green-500" />
                                     Active
                                 </div>
                             </div>
@@ -636,16 +635,6 @@ function NavItem({ icon, label, active, onClick }: any) {
     );
 }
 
-// Injective Pulse Card
-function InjectivePulseCard() {
-    return (
-        <div className="px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center gap-2">
-            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-            <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Injective Mainnet Pulse</span>
-        </div>
-    );
-}
-
 // Overview Section
 function OverviewSection({
     userName, balance, address, loading,
@@ -779,9 +768,12 @@ function OverviewSection({
                         ) : (
                             <LightningIcon size={18} className="text-orange-500" />
                         )}
-                        {isFunding ? "Funding..." : "Get INJ"}
+                        {isFunding ? "Funding..." : "Get Testnet INJ"}
                     </button>
-                    <InjectivePulseCard />
+                    <div className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Network Secure</span>
+                    </div>
                 </div>
             </div>
 
@@ -1707,26 +1699,12 @@ function SavingsSection({ session }: { session: any }) {
 
     const handleFundPot = async (potAddress: string, potName: string, amount?: number) => {
         setIsFunding(true);
-        const fundingAmount = amount || 1000;
-
         try {
             if (!amount) {
                 throw new Error("Please enter an amount to transfer");
             }
-
-            let txId = '';
-
-            // 1. Try Injective Wallet (Keplr/Leap)
-            if (address && typeof window !== 'undefined') {
-                showToast(`Please sign the transaction in your wallet...`, "pending");
-                // For now, we use the transferInj utility for all demo purposes or direct them to use unified modal
-                throw new Error("Please use the 'Send Funds' modal to fund your savings pot securely with client-side signing.");
-            }
-            // 2. Fallback to Client-Side Signing (Use UnifiedSendModal)
-            else {
-                // Direct users to use the Send Funds modal for secure client-side signing
-                throw new Error("Please use the 'Send Funds' modal to fund your savings pot securely with client-side signing.");
-            }
+            // Direct users to use the Send Funds modal for secure client-side signing
+            throw new Error("Please use the 'Send Funds' button in the Overview tab to fund your savings pot securely.");
         } catch (e: any) {
             console.error("Fund pot error:", e);
             showToast(e.message || "Transfer failed", "error");

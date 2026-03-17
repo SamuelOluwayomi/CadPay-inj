@@ -1,13 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  WalletStrategy, 
-  Wallet, 
-  MsgBroadcaster,
-} from '@injectivelabs/wallet-ts';
-import { Network, getNetworkEndpoints } from '@injectivelabs/networks';
-import { ChainId } from '@injectivelabs/ts-types';
 import { INJECTIVE_NETWORK, INJECTIVE_CHAIN_ID } from '@/lib/injective-wallet';
 
 export const useInjective = () => {
@@ -16,11 +9,11 @@ export const useInjective = () => {
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [walletStrategy, setWalletStrategy] = useState<WalletStrategy | null>(null);
 
     const [transactions, setTransactions] = useState<any[]>([]);
 
     const fetchTransactions = useCallback(async (addr: string) => {
+        if (!addr) return;
         try {
             const response = await fetch(`https://testnet.explorer.injective.network/api/v1/accounts/${addr}/transactions`);
             if (response.ok) {
@@ -33,6 +26,7 @@ export const useInjective = () => {
     }, []);
 
     const fetchBalance = useCallback(async (addr: string) => {
+        if (!addr) return;
         try {
             const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${addr}/by_denom?denom=uinj`);
             if (response.ok) {
@@ -45,33 +39,29 @@ export const useInjective = () => {
         }
     }, []);
 
-    // Initialize Wallet Strategy & Sync with localStorage
+    // Sync with localStorage
     useEffect(() => {
-        const endpoints = getNetworkEndpoints(INJECTIVE_NETWORK);
-        const strategy = new WalletStrategy({
-            chainId: INJECTIVE_CHAIN_ID as ChainId,
-        });
-        setWalletStrategy(strategy);
-
-        // Check for cached address
+        // Check for cached address (from Biometric/Google flow)
         const cachedAddress = localStorage.getItem('active_wallet_address');
         if (cachedAddress) {
-            console.log('🔌 [useInjective] Restoring address from localStorage:', cachedAddress);
+            console.log('🔌 [useInjective] Active address detected:', cachedAddress);
             setAddress(cachedAddress);
             setIsConnected(true);
             fetchBalance(cachedAddress);
             fetchTransactions(cachedAddress);
         }
 
-        // Listen for storage changes (for multi-tab sync or useAuth updates)
+        // Listen for storage changes
         const handleStorage = (e: StorageEvent) => {
             if (e.key === 'active_wallet_address') {
                 if (e.newValue) {
                     setAddress(e.newValue);
                     setIsConnected(true);
+                    fetchBalance(e.newValue);
                 } else {
                     setAddress(null);
                     setIsConnected(false);
+                    setBalance(0);
                 }
             }
         };
@@ -79,35 +69,24 @@ export const useInjective = () => {
         return () => window.removeEventListener('storage', handleStorage);
     }, [fetchBalance, fetchTransactions]);
 
-    const connect = async (wallet: Wallet = Wallet.Keplr) => {
-        setError(null);
-        setIsLoading(true);
-
-        try {
-            if (!walletStrategy) throw new Error("Wallet strategy not initialized");
-            
-            walletStrategy.setWallet(wallet);
-            const addresses = await walletStrategy.getAddresses();
-            
-            if (addresses.length === 0) {
-                throw new Error("No accounts found.");
-            }
-            
-            const userAddress = addresses[0];
-            setAddress(userAddress);
+    const connect = async (manualAddress?: string) => {
+        if (manualAddress) {
+            setAddress(manualAddress);
             setIsConnected(true);
-            
-            await fetchBalance(userAddress);
-            await fetchTransactions(userAddress);
-            return userAddress;
-
-        } catch (err: any) {
-            console.error("Injective Connection Error:", err);
-            setError(err.message || "Failed to connect.");
-            setIsConnected(false);
-        } finally {
-            setIsLoading(false);
+            localStorage.setItem('active_wallet_address', manualAddress);
+            await fetchBalance(manualAddress);
+            await fetchTransactions(manualAddress);
+            return manualAddress;
         }
+        
+        // If no manual address, just check storage
+        const storageAddr = localStorage.getItem('active_wallet_address');
+        if (storageAddr) {
+            setAddress(storageAddr);
+            setIsConnected(true);
+            return storageAddr;
+        }
+        return null;
     };
 
     const disconnect = useCallback(() => {
@@ -115,6 +94,7 @@ export const useInjective = () => {
         setBalance(0);
         setTransactions([]);
         setIsConnected(false);
+        localStorage.removeItem('active_wallet_address');
     }, []);
 
     return {

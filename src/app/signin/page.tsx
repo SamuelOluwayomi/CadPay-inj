@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
-import ConnectInjective from '@/components/ConnectInjective';
 import { WarningCircleIcon, LifebuoyIcon } from '@phosphor-icons/react';
 
 export default function SignIn() {
@@ -113,7 +112,7 @@ export default function SignIn() {
                     <h1 className="text-4xl font-bold bg-linear-to-br from-white to-zinc-500 bg-clip-text text-transparent">
                         Welcome Back
                     </h1>
-                    <p className="text-zinc-500 text-sm">Sign in to your CadPay account</p>
+                    <p className="text-zinc-500 text-sm">Secure sign-in for CadPay</p>
                 </div>
 
                 <div className="space-y-4">
@@ -121,10 +120,7 @@ export default function SignIn() {
                     <div className="space-y-3">
                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pl-1">One-Click Login</p>
                         
-                        {/* Option 1: Injective Wallet */}
-                        <ConnectInjective />
-
-                        {/* Option 2: Google Login */}
+                        {/* Option 1: Google Login */}
                         <button 
                             onClick={() => signInWithGoogle()}
                             disabled={isLoading}
@@ -146,7 +142,7 @@ export default function SignIn() {
                             <span className="w-full border-t border-zinc-800"></span>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-black px-2 text-zinc-500">Or Manual Login</span>
+                            <span className="bg-black px-2 text-zinc-500">Or Biometric/Email Login</span>
                         </div>
                     </div>
 
