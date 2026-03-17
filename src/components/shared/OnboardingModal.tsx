@@ -42,9 +42,9 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
             } else {
                 setUsername(initialProfile.username || '');
             }
-            
+
             if (initialProfile.email) setEmail(initialProfile.email);
-            
+
             if (initialProfile.avatar_url) {
                 setAvatarUrl(initialProfile.avatar_url);
                 setUseImageAvatar(true);
@@ -54,13 +54,13 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
 
     const handleComplete = () => {
         if (username && pin && pin === confirmPin && gender && (avatar || useImageAvatar)) {
-            onComplete({ 
-                username, 
-                pin, 
-                gender, 
+            onComplete({
+                username,
+                pin,
+                gender,
                 avatar: useImageAvatar ? '🖼️' : avatar, // Emoji fallback if someone selects 'Emoji' later
-                email, 
-                avatar_url: useImageAvatar ? avatarUrl : undefined 
+                email,
+                avatar_url: useImageAvatar ? avatarUrl : undefined
             });
         }
     };
@@ -72,7 +72,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-zinc-900 border border-white/10 rounded-3xl p-6 md:p-8 max-w-md w-full relative overflow-hidden"
+                className="bg-zinc-900 border border-white/10 rounded-3xl p-6 md:p-8 max-w-md w-full relative overflow-y-auto max-h-[90vh] custom-scrollbar"
             >
                 {/* Submit Loader Overlay */}
                 <AnimatePresence>
@@ -256,14 +256,14 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                         <div>
                             <label className="block text-sm text-zinc-400 mb-4 font-medium">Choose your avatar</label>
-                            
+
                             {/* Google Image Option */}
                             {avatarUrl && (
                                 <div className="mb-4">
                                     <button
                                         onClick={() => setUseImageAvatar(true)}
-                                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${useImageAvatar 
-                                            ? 'border-orange-500 bg-orange-500/10' 
+                                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${useImageAvatar
+                                            ? 'border-orange-500 bg-orange-500/10'
                                             : 'border-white/5 bg-white/5 hover:border-white/10'}`}
                                     >
                                         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500/30">
@@ -284,7 +284,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                                 <div className="h-px flex-1 bg-white/5" />
                             </div>
 
-                            <div className={`grid grid-cols-4 gap-3 max-h-60 overflow-y-auto p-1 custom-scrollbar transition-opacity ${useImageAvatar ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                            <div className={`grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar transition-opacity ${useImageAvatar ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                                 {AVATAR_OPTIONS.map((av) => (
                                     <button
                                         key={av}
@@ -292,9 +292,9 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                                             setAvatar(av);
                                             setUseImageAvatar(false);
                                         }}
-                                        className={`aspect-square rounded-2xl border-2 flex items-center justify-center text-3xl transition-all ${!useImageAvatar && avatar === av
+                                        className={`aspect-square rounded-xl border-2 flex items-center justify-center text-2xl transition-all ${!useImageAvatar && avatar === av
                                             ? 'border-orange-500 bg-orange-500/10 scale-105 shadow-lg shadow-orange-500/20'
-                                            : 'border-white/5 bg-white/5 hover:border-white/10 hover:scale-[1.02]'
+                                            : 'border-white/5 bg-white/5 hover:border-white/10'
                                             }`}
                                     >
                                         <span className="leading-none select-none">{av}</span>
@@ -303,7 +303,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             </div>
 
                             {useImageAvatar && (
-                                <button 
+                                <button
                                     onClick={() => setUseImageAvatar(false)}
                                     className="w-full mt-3 py-2 text-xs text-orange-500/70 hover:text-orange-500 font-medium transition-colors"
                                 >

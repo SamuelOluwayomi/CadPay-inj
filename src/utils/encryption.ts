@@ -4,7 +4,7 @@ const ALGORITHM = 'aes-256-cbc';
 
 export const encrypt = (text: string): string => {
     const key = process.env.ENCRYPTION_KEY;
-    if (!key) throw new Error('Missing ENCRYPTION_KEY environment variable');
+    if (!key) throw new Error('Missing ENCRYPTION_KEY environment variable. Please set it in your .env or server configuration.');
 
     const keyBuffer = crypto.createHash('sha256').update(String(key)).digest();
 

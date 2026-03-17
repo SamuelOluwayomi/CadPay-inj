@@ -15,13 +15,13 @@ export const useInjective = () => {
     const fetchTransactions = useCallback(async (addr: string) => {
         if (!addr) return;
         try {
-            const response = await fetch(`https://testnet.explorer.injective.network/api/v1/accounts/${addr}/transactions`);
+            const response = await fetch(`/api/injective/transactions?address=${addr}`);
             if (response.ok) {
                 const data = await response.json();
                 setTransactions(data.transactions || []);
             }
         } catch (e) {
-            console.error("Failed to fetch transactions", e);
+            console.error("Failed to fetch transactions via proxy", e);
         }
     }, []);
 
