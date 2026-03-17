@@ -428,29 +428,12 @@ export default function Dashboard() {
                                         active={activeSection === 'security'}
                                         onClick={() => { setActiveSection('security'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                                     />
-                                </div>
-                            </div>
-
-                            {/* MERCHANT Section */}
-                            <div>
-                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 px-3">
-                                    Business
-                                </p>
-                                <div className="space-y-1">
                                     <NavItem
                                         icon={<ReceiptIcon size={20} />}
                                         label="Receipts"
                                         active={activeSection === 'receipts'}
                                         onClick={() => { setActiveSection('receipts'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                                     />
-                                    <NavItem
-                                        icon={<KeyIcon size={20} />}
-                                        label="Developer Keys"
-                                        active={activeSection === 'dev-keys'}
-                                        onClick={() => { setActiveSection('dev-keys'); if (window.innerWidth < 768) setSidebarOpen(false); }}
-                                    />
-
-
                                 </div>
                             </div>
                         </nav>
