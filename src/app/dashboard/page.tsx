@@ -375,12 +375,9 @@ export default function Dashboard() {
                         exit={{ x: -300 }}
                         className="fixed left-0 top-0 h-screen w-80 md:w-72 bg-zinc-900/40 backdrop-blur-xl border-r border-white/10 z-40 p-4 md:p-6 flex flex-col overflow-y-auto"
                     >
-                        {/* Header with Logo and Close Button */}
                         <div className="flex items-center justify-between mb-8 mt-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
-                                    C
-                                </div>
+                                <img src="/icon.svg" alt="CadPay" className="w-10 h-10 rounded-xl" />
                                 <span className="text-xl font-bold tracking-tight">CadPay</span>
                             </div>
                             {/* Close button on the right - visible on all screens */}
@@ -392,29 +389,6 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        {/* Profile Section */}
-                        <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => setShowProfileEdit(true)}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl overflow-hidden border border-white/10">
-                                    {userProfile.avatar_url ? (
-                                        <img src={userProfile.avatar_url} alt={userProfile.username} className="w-full h-full object-cover" />
-                                    ) : (
-                                        userProfile.avatar
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-white">{userProfile.username}</p>
-                                    <p className="text-xs text-zinc-400 truncate">{walletAddress.slice(0, 12)}...</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-500">Injective Testnet</span>
-                                <div className="flex items-center gap-1 text-green-500">
-                                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                                    Active
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Navigation */}
                         <nav className="flex-1 space-y-6 overflow-y-auto">
@@ -481,21 +455,40 @@ export default function Dashboard() {
                             </div>
                         </nav>
 
-                        {/* Logout */}
-                        <button
-                            onClick={logout}
-                            className="flex items-center gap-3 px-4 py-3 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-                        >
-                            <SignOutIcon size={20} />
-                            Logout
-                        </button>
+                        {/* Logout & Profile at Bottom */}
+                        <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                            <div className="flex items-center gap-3 px-3 py-2 cursor-pointer group" onClick={() => setShowProfileEdit(true)}>
+                                <div className="w-10 h-10 rounded-full bg-linear-to-br from-orange-500 to-orange-600 flex items-center justify-center text-xl overflow-hidden border border-white/10 transition-transform group-hover:scale-105">
+                                    {userProfile.avatar_url ? (
+                                        <img src={userProfile.avatar_url} alt={userProfile.username} className="w-full h-full object-cover" />
+                                    ) : (
+                                        userProfile.avatar
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-white truncate">{userProfile.username}</p>
+                                    <p className="text-[10px] text-zinc-500 truncate">{userProfile.email || 'No email'}</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={logout}
+                                className="w-full flex items-center gap-3 px-3 py-3 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                            >
+                                <SignOutIcon size={20} />
+                                <span>Logout</span>
+                            </button>
+                        </div>
                     </motion.aside>
                 )}
             </AnimatePresence>
 
             {/* Main Content */}
             <div className={`${sidebarOpen ? 'ml-0 md:ml-72' : 'ml-0'} relative z-10 transition-all duration-300`}>
-                <div className="p-4 sm:p-6 md:p-8 lg:p-12 pt-16 md:pt-20">
+                <div className="p-4 sm:p-6 md:p-8 lg:p-12 pt-20 md:pt-24">
+                    <div className="mb-8">
+                        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+                    </div>
                     {activeSection === 'overview' && (
                         <OverviewSection
                             userName={userProfile.username}
@@ -766,23 +759,7 @@ function OverviewSection({
     const usdValue = injPrice ? (balanceValue * injPrice).toFixed(2) : '...';
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-linear-to-br from-orange-500/20 to-orange-600/20 rounded-2xl flex items-center justify-center text-3xl border border-white/10 overflow-hidden shadow-xl shadow-orange-500/5">
-                        {avatarUrl ? (
-                            <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                        ) : (
-                            avatar
-                        )}
-                    </div>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white line-clamp-1">Welcome back, {userName}! 👋</h1>
-                        <p className="text-zinc-400 mt-1">Here's what's happening with your account today.</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="space-y-8 px-4 md:px-0">
             {/* Stats Grid - Standard Layout */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* Main Balance Card */}
@@ -796,12 +773,6 @@ function OverviewSection({
                     </div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="px-3 py-1 bg-[#70C7BA]/10 border border-[#70C7BA]/20 rounded-full">
-                                <span className="text-[10px] font-bold text-[#70C7BA] uppercase tracking-widest">Private Vault</span>
-                            </div>
-                        </div>
-
                         <div className="space-y-1">
                             <p className="text-sm text-zinc-400 font-medium">Available Balance</p>
                             <div className="flex items-baseline gap-3">
