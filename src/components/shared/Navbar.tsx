@@ -19,7 +19,7 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className={`${isOpen ? 'fixed' : 'absolute'} top-6 w-full z-60 transition-all duration-300`}>
+            <nav className={`${isOpen ? 'fixed inset-0' : 'relative'} w-full z-60 py-6 transition-all duration-300`}>
 
                 <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 

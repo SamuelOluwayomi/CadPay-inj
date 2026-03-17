@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/providers/Providers";
 import ClickBirdEffect from "@/components/shared/ClickBirdEffect";
 import BackgroundLogos from "@/components/shared/BackgroundLogos";
+import BackToTop from "@/components/shared/BackToTop";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           <BackgroundLogos />
           <div className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
             {children}
+            <BackToTop />
           </div>
         </Providers>
       </body>
