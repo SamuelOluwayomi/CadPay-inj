@@ -545,7 +545,10 @@ export default function Dashboard() {
                 isSubmitting={isProfileSaving || isOnboardingSubmitting} // Use both loading states
                 walletAddress={walletAddress}
                 initialProfile={{
-                    username: profile?.username || session?.user?.user_metadata?.full_name || '',
+                    username: profile?.username || 
+                             session?.user?.user_metadata?.full_name || 
+                             session?.user?.user_metadata?.name || 
+                             (session?.user?.email ? session.user.email.split('@')[0] : ''),
                     email: profile?.email || session?.user?.email || '',
                     avatar_url: profile?.avatar_url || session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture || ''
                 }}

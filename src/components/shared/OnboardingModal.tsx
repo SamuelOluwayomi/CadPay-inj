@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, UserIcon, LockKeyIcon, GenderMaleIcon, GenderFemaleIcon, CheckIcon, WalletIcon } from '@phosphor-icons/react';
 
@@ -22,10 +22,8 @@ const AVATAR_OPTIONS = [
 ];
 
 export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, initialProfile, onComplete }: OnboardingModalProps) {
-    // Initial Step: Skip Username if it exists (typical for Google)
-    const initialStep = (initialProfile?.username && initialProfile?.username.length > 2) ? 3 : 1;
-    
-    const [step, setStep] = useState(initialStep);
+    const isPreFilled = !!(initialProfile?.username && initialProfile?.username.length > 2);
+    const [step, setStep] = useState(isPreFilled ? 3 : 1);
     const [username, setUsername] = useState(initialProfile?.username || '');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -33,9 +31,26 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
     const [avatar, setAvatar] = useState(AVATAR_OPTIONS[0]);
     const [email, setEmail] = useState(initialProfile?.email || '');
     const [avatarUrl, setAvatarUrl] = useState(initialProfile?.avatar_url || '');
-
-    // Choice for Google users: Use Picture or Emoji?
     const [useImageAvatar, setUseImageAvatar] = useState(!!initialProfile?.avatar_url);
+
+    // Sync state when initialProfile changes or modal opens
+    useEffect(() => {
+        if (isOpen && initialProfile) {
+            if (initialProfile.username && initialProfile.username.length > 2) {
+                if (step < 3) setStep(3);
+                setUsername(initialProfile.username);
+            } else {
+                setUsername(initialProfile.username || '');
+            }
+            
+            if (initialProfile.email) setEmail(initialProfile.email);
+            
+            if (initialProfile.avatar_url) {
+                setAvatarUrl(initialProfile.avatar_url);
+                setUseImageAvatar(true);
+            }
+        }
+    }, [isOpen, initialProfile]);
 
     const handleComplete = () => {
         if (username && pin && pin === confirmPin && gender && (avatar || useImageAvatar)) {
@@ -162,7 +177,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             )}
                         </div>
                         <div className="flex gap-3">
-                            {initialStep === 1 && (
+                            {!isPreFilled && (
                                 <button
                                     onClick={() => setStep(1)}
                                     className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
