@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /create/
+Disallow: /merchant/
+Disallow: /signin/
+
+Sitemap: https://cadpay.io/sitemap.xml

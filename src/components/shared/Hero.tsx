@@ -56,7 +56,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           transition={{ delay: 0.3 }}
           className="text-4xl md:text-8xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
         >
-          Built on Injective.
+          CadPay: Next-Gen Subscriptions Built on Injective.
         </motion.h1>
 
         <div className="relative mt-8 max-w-2xl mx-auto">
