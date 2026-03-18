@@ -19,13 +19,13 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 w-full z-60 py-4 transition-all duration-300">
+            <nav className="fixed top-0 left-0 w-full z-100 py-4 transition-all duration-300">
 
                 <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
                     {/* LEFT SIDE: LOGO */}
                     <Link href="/" className="font-black italic tracking-tighter text-xl text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 z-10 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-orange-500 text-black flex items-center justify-center rounded-lg not-italic text-lg shadow-lg shadow-orange-500/20">C</div>
+                        <img src="/icon.ico" alt="CadPay" className="w-8 h-8 rounded-lg shadow-lg shadow-orange-500/20 object-contain bg-orange-500" />
                         CADPAY
                         <div className="h-4 w-px bg-white/20 mx-1" />
                         <img src="/features/injective-logo.svg" alt="Injective" className="h-8 w-auto object-contain" />
@@ -109,8 +109,8 @@ function NavLink({ href, children, active }: { href: string; children: React.Rea
         <Link
             href={href}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${active
-                    ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
         >
             {children}
