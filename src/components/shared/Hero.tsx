@@ -41,7 +41,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   };
 
   return (
-    <section className="relative z-50 min-h-[75vh] w-full text-white pt-24 md:pt-32 pb-0 bg-black shadow-2xl">
+    <section className="relative z-40 min-h-[75vh] w-full text-white pt-24 md:pt-32 pb-0 bg-black shadow-2xl">
 
       {/* VANTA BACKGROUND */}
       <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-20 md:translate-y-0" />

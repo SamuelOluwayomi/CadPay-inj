@@ -46,9 +46,12 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
     creator: "@CadPay",
   },
-  icons: {
-    icon: "/icon.ico",
-    shortcut: "/icon.svg",
+    icons: {
+    icon: [
+      { url: "/icon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" }
+    ],
+    shortcut: "/icon.ico",
     apple: "/icon.svg",
   },
   manifest: "/site.webmanifest",
