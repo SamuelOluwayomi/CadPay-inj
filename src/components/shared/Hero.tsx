@@ -21,7 +21,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
           gyroControls: true,
           minHeight: 200.00,
           minWidth: 200.00,
-          scale: 1.1,
+          scale: 1.0,
           scaleMobile: 0.6,
           color: 0xff8800,
           color2: 0xff4400,
@@ -41,19 +41,20 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
   };
 
   return (
-    <section className="relative z-40 min-h-[75vh] w-full text-white pt-24 md:pt-32 pb-0 bg-black shadow-2xl">
+    <section className="relative z-50 min-h-[70vh] w-full text-white pt-4 md:pt-2 pb-0 bg-black shadow-2xl">
 
       {/* VANTA BACKGROUND */}
       <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-20 md:translate-y-0" />
 
+
       {/* CONTENT CONTAINER */}
-      <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-12 md:mt-20 drop-shadow-2xl">
+      <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-12 md:mt-16 drop-shadow-2xl">
         <motion.h1
           variants={fadeInUp}
           initial="hidden"
           animate={startAnimation ? "visible" : "hidden"}
           transition={{ delay: 0.3 }}
-          className="text-4xl md:text-7xl font-black tracking-tighter leading-none text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
+          className="text-3xl md:text-6xl font-black tracking-tighter leading-[1.1] text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 max-w-4xl drop-shadow-xl"
         >
           CadPay: Next-Gen Subscriptions Built on Injective.
         </motion.h1>
@@ -64,7 +65,7 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
             initial="hidden"
             animate={startAnimation ? "visible" : "hidden"}
             transition={{ delay: 0.2 }}
-            className="text-base md:text-2xl text-zinc-100 leading-loose md:leading-relaxed font-medium"
+            className="text-base md:text-xl text-zinc-100 leading-loose md:leading-relaxed font-medium"
           >
             The fastest and most interoperable L1 blockchain optimized for Web3 finance. <br className="hidden md:block" />
             CadPay leverages Injective's revolutionary
