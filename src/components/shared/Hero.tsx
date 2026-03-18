@@ -46,7 +46,6 @@ export default function Hero({ startAnimation = true }: { startAnimation?: boole
       {/* VANTA BACKGROUND */}
       <div ref={vantaRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden translate-y-20 md:translate-y-0" />
 
-
       {/* CONTENT CONTAINER */}
       <div className="relative z-30 max-w-7xl mx-auto px-6 flex flex-col items-center justify-center h-full text-center mt-12 md:mt-20 drop-shadow-2xl">
         <motion.h1
