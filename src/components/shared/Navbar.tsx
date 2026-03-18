@@ -11,16 +11,35 @@ import {
     Phone,
     SignIn
 } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NavBar() {
     const [isOpen, setIsOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    // Detect scrolling to change navbar background
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 20) {
+                setScrolled(true);
+            } else {
+                setScrolled(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
         <>
-            <nav className="fixed top-0 left-0 w-full z-[999] bg-transparent">
-                <div className="relative max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+            {/* 1. Fixed z-[999] so it stays on top.
+                2. Added dynamic background based on scroll state.
+            */}
+            <nav className={`fixed top-0 left-0 w-full z-999 transition-all duration-300 ${scrolled ? 'bg-zinc-950/80 backdrop-blur-md border-b border-white/5 py-3' : 'bg-transparent py-5'
+                }`}>
+                <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     {/* LEFT SIDE: LOGO */}
                     <Link href="/" className="font-black italic tracking-tighter text-xl text-transparent bg-clip-text bg-linear-to-b from-white via-white to-zinc-400 z-10 flex items-center gap-2">
                         <img src="/icon.ico" alt="CadPay" className="w-8 h-8 rounded-lg shadow-lg shadow-orange-500/20 object-contain bg-orange-500" />
@@ -78,7 +97,7 @@ export default function NavBar() {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="fixed inset-0 z-55 bg-black/95 backdrop-blur-2xl pt-24 px-6 md:hidden"
+                        className="fixed inset-0 z-990 bg-black/95 backdrop-blur-2xl pt-24 px-6 md:hidden"
                     >
                         <div className="flex flex-col gap-4 text-lg font-medium">
                             <MobileLink href="/" onClick={() => setIsOpen(false)} icon={<House size={20} />}>Home</MobileLink>
@@ -102,13 +121,14 @@ export default function NavBar() {
         </>
     );
 }
+
 function NavLink({ href, children, active }: { href: string; children: React.ReactNode; active?: boolean }) {
     return (
         <Link
             href={href}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${active
-                    ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
         >
             {children}
