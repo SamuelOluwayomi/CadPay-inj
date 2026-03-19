@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
     try {
         const { address, amount } = await request.json();
-        const faucetMnemonic = process.env.FAUCET_MNEMONIC;
+        const faucetMnemonic = process.env.MASTER_FAUCET_MNEMONIC;
 
         if (!address) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });

@@ -377,7 +377,7 @@ export default function Dashboard() {
                     >
                         <div className="flex items-center justify-between mb-8 mt-2">
                             <div className="flex items-center gap-3">
-                                <img src="/icon.ico" alt="CadPay" className="w-10 h-10 rounded-xl" />
+                                <img src="/icon.ico" alt="CadPay" className="w-10 h-10 rounded-xl object-contain" />
                                 <span className="text-xl font-bold tracking-tight">CadPay</span>
                             </div>
                             {/* Close button on the right - visible on all screens */}

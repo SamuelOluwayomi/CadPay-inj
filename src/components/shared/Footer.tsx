@@ -112,8 +112,8 @@ export default function Footer() {
                         <FooterColumn title="The Tech">
                             <FooterLink href="https://docs.injective.network/">Injective Docs</FooterLink>
                             <FooterLink href="https://github.com/injectivelabs">Injective GitHub</FooterLink>
-                            <FooterLink href="https://hub.injective.network/">Injective Hub</FooterLink>
-                            <FooterLink href="https://explorer.injective.network/">Injective Explorer</FooterLink>
+                            <FooterLink href="https://testnet.hub.injective.network/">Injective Hub</FooterLink>
+                            <FooterLink href="https://testnet.explorer.injective.network/">Injective Explorer</FooterLink>
                         </FooterColumn>
                     </motion.div>
 

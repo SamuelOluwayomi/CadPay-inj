@@ -30,7 +30,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
     };
 
     const openExplorer = () => {
-        window.open(`https://explorer.injective.network/transaction/${transaction.signature}`, '_blank');
+        window.open(`https://testnet.explorer.injective.network/transaction/${transaction.signature}`, '_blank');
     };
 
     const formatDate = (timestamp: number | null) => {
