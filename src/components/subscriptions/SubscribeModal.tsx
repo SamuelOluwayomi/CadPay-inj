@@ -137,7 +137,7 @@ export default function SubscribeModal({
             // Step 2: Send INJ payment
             const { transferInj } = await import('@/lib/injective-wallet');
             const txId = await transferInj({
-                privateKeyOrMnemonic: unlockResult.mnemonic,
+                mnemonic: unlockResult.mnemonic,
                 recipient: MERCHANT_WALLET,
                 amount: priceINJ,
             });

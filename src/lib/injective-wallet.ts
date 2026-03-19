@@ -27,27 +27,14 @@ export function generateInjectiveWallet(): { mnemonic: string; address: string }
 }
 
 export async function transferInj(params: {
-    privateKeyOrMnemonic: string;
+    mnemonic: string;
     recipient: string;
     amount: number; // in INJ
 }): Promise<string> {
-    const { privateKeyOrMnemonic, recipient, amount } = params;
+    const { mnemonic, recipient, amount } = params;
     
     try {
-        let privateKey: PrivateKey;
-        
-        // Check if it's a mnemonic (contains spaces) or a hex key
-        if (privateKeyOrMnemonic.includes(' ')) {
-            privateKey = PrivateKey.fromMnemonic(privateKeyOrMnemonic);
-        } else {
-            // Ensure hex key has 0x prefix for Injective SDK if it's missing, 
-            // although fromHex handles both usually
-            const cleanKey = privateKeyOrMnemonic.startsWith('0x') 
-                ? privateKeyOrMnemonic 
-                : `0x${privateKeyOrMnemonic}`;
-            privateKey = PrivateKey.fromHex(cleanKey);
-        }
-
+        const privateKey = PrivateKey.fromMnemonic(mnemonic);
         const injectiveAddress = privateKey.toBech32();
         
         // 1. Prepare the MsgSend
@@ -62,6 +49,7 @@ export async function transferInj(params: {
         });
 
         // 2. Initialize Broadcaster with Private Key
+        // This handles account fetching, sequence management, and signing in one step
         const broadcaster = new MsgBroadcasterWithPk({
             network: INJECTIVE_NETWORK,
             privateKey: privateKey.toHex()

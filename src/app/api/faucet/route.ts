@@ -6,23 +6,23 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
     try {
         const { address, amount } = await request.json();
-        const faucetSecret = process.env.MASTER_FAUCET_PRIVATE_KEY?.trim() || process.env.MASTER_FAUCET_MNEMONIC?.trim();
+        const faucetMnemonic = process.env.MASTER_FAUCET_MNEMONIC?.trim();
 
         if (!address) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });
         }
-        if (!faucetSecret) {
-            console.error("❌ Missing MASTER_FAUCET_PRIVATE_KEY or MNEMONIC in environment");
-            return NextResponse.json({ error: 'Faucet configuration error: Missing credentials' }, { status: 500 });
+        if (!faucetMnemonic) {
+            console.error("❌ Missing MASTER_FAUCET_MNEMONIC in environment");
+            return NextResponse.json({ error: 'Faucet configuration error: Missing mnemonic' }, { status: 500 });
         }
 
         console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 5}`);
 
         const requestedAmount = amount ? Number(amount) : 5;
 
-        // Perform transfer using the faucet secret (key or mnemonic)
+        // Perform transfer using the faucet mnemonic
         const txHash = await transferInj({
-            privateKeyOrMnemonic: faucetSecret,
+            mnemonic: faucetMnemonic,
             recipient: address,
             amount: requestedAmount
         });
