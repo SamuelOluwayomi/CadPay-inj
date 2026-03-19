@@ -32,17 +32,21 @@ export async function transferInj(params: {
     amount: number; // in INJ
 }): Promise<string> {
     const { mnemonicOrKey, recipient, amount } = params;
-    // 0. Sanitization: Remove quotes, 0x prefix, and extra whitespace
-    const sanitized = mnemonicOrKey.replace(/['"]/g, '').trim();
+    // 0. Sanitization: Remove ALL quotes, whitespace, and newlines
+    const ultraClean = mnemonicOrKey.replace(/['"\s\n\r]/g, '');
     
     try {
         let privateKey: PrivateKey;
-        if (sanitized.includes(' ')) {
-            // Mnemonic path
-            privateKey = PrivateKey.fromMnemonic(sanitized);
+        // If the original had spaces, it's likely a mnemonic (don't use ultraClean yet)
+        if (mnemonicOrKey.trim().includes(' ')) {
+            const cleanMnemonic = mnemonicOrKey.replace(/['"]/g, '').trim();
+            privateKey = PrivateKey.fromMnemonic(cleanMnemonic);
         } else {
-            // Hex key path: ensure no 0x prefix for SDK
-            const cleanHex = sanitized.startsWith('0x') ? sanitized.substring(2) : sanitized;
+            // Hex key path: must be exactly 64 chars after removing 0x
+            const cleanHex = ultraClean.replace(/^0x/, '');
+            if (cleanHex.length !== 64) {
+                throw new Error(`Invalid hex key length: ${cleanHex.length} characters (expected 64)`);
+            }
             privateKey = PrivateKey.fromHex(cleanHex);
         }
         const injectiveAddress = privateKey.toBech32();

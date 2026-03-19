@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { transferInj } from '@/lib/injective-wallet';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
     try {
         const { address, amount } = await request.json();
         const rawKey = process.env.MASTER_FAUCET_PRIVATE_KEY || process.env.MASTER_FAUCET_MNEMONIC;
-        const faucetKey = rawKey?.replace(/['"]/g, '').trim();
+        const faucetKey = rawKey?.replace(/['"\s\n\r]/g, '').trim();
 
         if (!address) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });
