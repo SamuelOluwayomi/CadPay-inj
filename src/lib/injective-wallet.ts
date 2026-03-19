@@ -50,7 +50,6 @@ export async function transferInj(params: {
             privateKey = PrivateKey.fromHex(cleanHex);
         }
         const injectiveAddress = privateKey.toBech32();
-        console.log("🔥 MY REAL FAUCET ADDRESS:", injectiveAddress);
         
         // 1. Prepare the MsgSend
         const amountInBase = new BigNumberInBase(amount).toWei();
@@ -67,7 +66,8 @@ export async function transferInj(params: {
         // This handles account fetching, sequence management, and signing in one step
         const broadcaster = new MsgBroadcasterWithPk({
             network: INJECTIVE_NETWORK,
-            privateKey: privateKey
+            privateKey: privateKey,
+            endpoints: INJECTIVE_ENDPOINTS
         });
 
         // 3. Broadcast Transaction
