@@ -6,13 +6,14 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
     try {
         const { address, amount } = await request.json();
-        const faucetKey = process.env.MASTER_FAUCET_PRIVATE_KEY?.trim() || process.env.MASTER_FAUCET_MNEMONIC?.trim();
+        const rawKey = process.env.MASTER_FAUCET_PRIVATE_KEY || process.env.MASTER_FAUCET_MNEMONIC;
+        const faucetKey = rawKey?.replace(/['"]/g, '').trim();
 
         if (!address) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });
         }
         if (!faucetKey) {
-            console.error("❌ Missing MASTER_FAUCET_PRIVATE_KEY or MASTER_FAUCET_MNEMONIC in environment");
+            console.error("❌ Missing or empty MASTER_FAUCET_PRIVATE_KEY/MNEMONIC in environment");
             return NextResponse.json({ error: 'Faucet configuration error: Missing credentials' }, { status: 500 });
         }
 

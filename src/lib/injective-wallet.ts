@@ -32,15 +32,18 @@ export async function transferInj(params: {
     amount: number; // in INJ
 }): Promise<string> {
     const { mnemonicOrKey, recipient, amount } = params;
+    // 0. Sanitization: Remove quotes, 0x prefix, and extra whitespace
+    const sanitized = mnemonicOrKey.replace(/['"]/g, '').trim();
     
     try {
         let privateKey: PrivateKey;
-        if (mnemonicOrKey.includes(' ')) {
-            privateKey = PrivateKey.fromMnemonic(mnemonicOrKey);
+        if (sanitized.includes(' ')) {
+            // Mnemonic path
+            privateKey = PrivateKey.fromMnemonic(sanitized);
         } else {
-            // Remove 0x prefix if present as some Injective SDK versions prefer it without
-            const cleanKey = mnemonicOrKey.startsWith('0x') ? mnemonicOrKey.substring(2) : mnemonicOrKey;
-            privateKey = PrivateKey.fromHex(cleanKey);
+            // Hex key path: ensure no 0x prefix for SDK
+            const cleanHex = sanitized.startsWith('0x') ? sanitized.substring(2) : sanitized;
+            privateKey = PrivateKey.fromHex(cleanHex);
         }
         const injectiveAddress = privateKey.toBech32();
         
