@@ -34,7 +34,6 @@ import { useSavings } from '@/hooks/useSavings';
 import { useToast } from '@/context/ToastContext';
 import { useReceipts } from '@/hooks/useReceipts';
 import { supabase } from '@/lib/supabase';
-import { PrivateKey } from '@injectivelabs/sdk-ts';
 
 type NavSection = 'overview' | 'subscriptions' | 'wallet' | 'security' | 'payment-link' | 'receipts' | 'dev-keys' | 'savings';
 
@@ -681,17 +680,6 @@ function OverviewSection({
             fetchTransactions(address);
         }
     }, [address, fetchTransactions]);
-
-    // ⚠️ TEMPORARY KEY EXTRACTION SCRIPT - DELETE AFTER USE
-    useEffect(() => {
-        try {
-            const phrase = "icon cloud daughter jeans office net kid ostrich refuse meadow veteran escape";
-            const pk = PrivateKey.fromMnemonic(phrase);
-            console.log("🔥 YOUR RAW HEX KEY (Add to .env.local as MASTER_FAUCET_PRIVATE_KEY):", pk.toHex());
-        } catch (error) {
-            console.error("Failed to parse phrase:", error);
-        }
-    }, []);
 
     const handleFundDemo = async () => {
         if (!address) return;
