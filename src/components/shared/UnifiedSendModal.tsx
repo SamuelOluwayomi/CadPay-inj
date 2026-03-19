@@ -112,7 +112,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
 
             // 3. For Injective, we use the transferInj utility with the derived mnemonic
             const txId = await transferInj({
-                mnemonic: unlockResult.mnemonic,
+                mnemonicOrKey: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount
             });
@@ -169,7 +169,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
 
             // 3. Sign and broadcast transaction directly to Injective network
             const txId = await transferInj({
-                mnemonic: unlockResult.mnemonic,
+                mnemonicOrKey: unlockResult.mnemonic,
                 recipient: targetRecipient!,
                 amount: numAmount,
             });

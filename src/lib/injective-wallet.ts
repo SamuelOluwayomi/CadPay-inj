@@ -27,14 +27,21 @@ export function generateInjectiveWallet(): { mnemonic: string; address: string }
 }
 
 export async function transferInj(params: {
-    mnemonic: string;
+    mnemonicOrKey: string;
     recipient: string;
     amount: number; // in INJ
 }): Promise<string> {
-    const { mnemonic, recipient, amount } = params;
+    const { mnemonicOrKey, recipient, amount } = params;
     
     try {
-        const privateKey = PrivateKey.fromMnemonic(mnemonic);
+        let privateKey: PrivateKey;
+        if (mnemonicOrKey.includes(' ')) {
+            privateKey = PrivateKey.fromMnemonic(mnemonicOrKey);
+        } else {
+            // Remove 0x prefix if present as some Injective SDK versions prefer it without
+            const cleanKey = mnemonicOrKey.startsWith('0x') ? mnemonicOrKey.substring(2) : mnemonicOrKey;
+            privateKey = PrivateKey.fromHex(cleanKey);
+        }
         const injectiveAddress = privateKey.toBech32();
         
         // 1. Prepare the MsgSend
