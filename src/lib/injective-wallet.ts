@@ -50,6 +50,7 @@ export async function transferInj(params: {
             privateKey = PrivateKey.fromHex(cleanHex);
         }
         const injectiveAddress = privateKey.toBech32();
+        console.log("🔥 MY REAL FAUCET ADDRESS:", injectiveAddress);
         
         // 1. Prepare the MsgSend
         const amountInBase = new BigNumberInBase(amount).toWei();
