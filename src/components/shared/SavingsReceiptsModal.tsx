@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon, ReceiptIcon, ArrowDownIcon, ArrowUpIcon, CalendarBlankIcon } from '@phosphor-icons/react';
+import { XIcon, ReceiptIcon, ArrowDownIcon, ArrowUpIcon, CalendarBlankIcon, LinkIcon } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { SavingsPot, SavingsTransaction } from '@/hooks/useSavings';
 
@@ -106,16 +106,49 @@ export default function SavingsReceiptsModal({ isOpen, onClose, pot }: SavingsRe
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className={`font-bold ${tx.type === 'deposit' ? 'text-green-400' : 'text-orange-400'
-                                                    }`}>
-                                                    {tx.type === 'deposit' ? '+' : '-'}{tx.amount} {tx.currency}
-                                                </p>
-                                                <p className="text-[10px] text-zinc-600 font-mono truncate max-w-[80px]">
-                                                    {tx.tx_hash}
-                                                </p>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (tx.tx_hash) {
+                                                                    window.open(`https://testnet.explorer.injective.network/transaction/${tx.tx_hash}`, '_blank');
+                                                                }
+                                                            }}
+                                                            className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+                                                            title="View on Explorer"
+                                                        >
+                                                            <LinkIcon size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const { generateReceiptPDF } = require('@/utils/pdfGenerator');
+                                                                generateReceiptPDF({
+                                                                    id: tx.id,
+                                                                    wallet_address: '', // Will be filled by shim
+                                                                    service_name: 'Savings Vault',
+                                                                    plan_name: tx.type === 'deposit' ? 'Deposit' : 'Withdrawal',
+                                                                    amount_inj: tx.amount,
+                                                                    amount_usd: tx.amount * 25, // Mock price
+                                                                    tx_signature: tx.tx_hash || '',
+                                                                    timestamp: tx.created_at,
+                                                                    status: 'completed'
+                                                                } as any);
+                                                            }}
+                                                            className="p-1.5 bg-orange-500/80 hover:bg-orange-500 rounded-lg text-white transition-all"
+                                                            title="Download Receipt"
+                                                        >
+                                                            <ReceiptIcon size={14} />
+                                                        </button>
+                                                    </div>
+                                                <div className="text-right">
+                                                    <p className={`font-bold ${tx.type === 'deposit' ? 'text-green-400' : 'text-orange-400'
+                                                        }`}>
+                                                        {tx.type === 'deposit' ? '+' : '-'}{tx.amount} {tx.currency}
+                                                    </p>
+                                                    <p className="text-[10px] text-zinc-600 font-mono truncate max-w-[80px]">
+                                                        {tx.tx_hash}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
                                     ))
                                 )}
                             </div>

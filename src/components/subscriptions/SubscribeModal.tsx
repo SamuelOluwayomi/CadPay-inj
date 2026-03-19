@@ -12,7 +12,7 @@ import { useReceipts } from '@/hooks/useReceipts';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { CaretDownIcon, EnvelopeSimpleIcon, UserIcon } from '@phosphor-icons/react';
 
-const MERCHANT_WALLET = 'inj1qzrr3jngvdkh4pupuqn0y2rrwg5x9g2tlwshygsql4d8vekc0nnewcec5rjay';
+const MERCHANT_WALLET = 'inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te';
 
 interface SubscribeModalProps {
     isOpen: boolean;
@@ -155,7 +155,9 @@ export default function SubscribeModal({
                 amount_usd: selectedPlan!.priceUSD,
                 tx_signature: txId,
                 status: 'completed',
-                merchant_wallet: MERCHANT_WALLET
+                merchant_wallet: MERCHANT_WALLET,
+                sender_address: address!,
+                receiver_address: MERCHANT_WALLET
             });
 
             // Step 4: Add to local subscriptions

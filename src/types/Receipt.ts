@@ -8,5 +8,7 @@ export interface Receipt {
     tx_signature: string;
     timestamp: string;
     status: 'completed' | 'failed';
-    merchant_wallet: string;
+    merchant_wallet?: string;
+    sender_address?: string;
+    receiver_address?: string;
 }

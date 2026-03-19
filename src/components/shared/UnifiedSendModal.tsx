@@ -10,6 +10,8 @@ import { useInjective } from '@/hooks/useInjective';
 import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { transferInj } from '@/lib/injective-wallet';
 import { supabase } from '@/lib/supabase';
+import { useReceipts } from '@/hooks/useReceipts';
+import { LinkIcon, DownloadIcon } from '@phosphor-icons/react';
 
 
 interface UnifiedSendModalProps {
@@ -23,7 +25,8 @@ interface UnifiedSendModalProps {
 export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balance }: UnifiedSendModalProps) {
     const { address: userAddress, connect, isConnected, balance: injBalance } = useInjective();
     const [mode, setMode] = useState<'external' | 'savings'>('external');
-    const [step, setStep] = useState<'details' | 'password' | 'signing'>('details');
+    const [step, setStep] = useState<'details' | 'password' | 'signing' | 'success'>('details');
+    const [lastTxHash, setLastTxHash] = useState<string | null>(null);
     const [recipient, setRecipient] = useState('');
     const [selectedPot, setSelectedPot] = useState<any>(null);
     const [amount, setAmount] = useState('');
@@ -34,6 +37,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
     const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet } = useBiometricWallet();
+    const { createReceipt } = useReceipts(userAddress);
 
     // Get user email from Supabase session and check biometric support
     useEffect(() => {
@@ -113,13 +117,27 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 amount: numAmount
             });
 
+            // Create receipt
+            await createReceipt({
+                wallet_address: userAddress!,
+                service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
+                plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer',
+                amount_inj: numAmount,
+                amount_usd: numAmount * 25, // Fallback price or use a prop if available
+                tx_signature: txId,
+                status: 'completed',
+                sender_address: userAddress!,
+                receiver_address: targetRecipient!
+            });
+
             console.log('🚀 Injective Transaction complete! TxHash:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');
 
-            // Close modal
-            onClose();
+            // Success step
+            setLastTxHash(txId);
+            setStep('success');
         } catch (err: any) {
             console.error('Biometric unlock error:', err);
             setError(err.message || 'Biometric authentication failed');
@@ -156,18 +174,31 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 amount: numAmount,
             });
 
+            // Create receipt
+            await createReceipt({
+                wallet_address: userAddress!,
+                service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
+                plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer',
+                amount_inj: numAmount,
+                amount_usd: numAmount * 25, // Fallback price or use a prop if available
+                tx_signature: txId,
+                status: 'completed',
+                sender_address: userAddress!,
+                receiver_address: targetRecipient!
+            });
+
             console.log('🚀 Injective Transaction complete! TxHash:', txId);
 
             // Success! Call the original onSend callback for UI updates
             await onSend(targetRecipient!, numAmount, mode === 'savings');
 
-            // Reset and close
-            setStep('details');
+            // Success step
+            setLastTxHash(txId);
+            setStep('success');
             setAmount('');
             setPassword('');
             setSelectedPot(null);
             setRecipient('');
-            onClose();
 
         } catch (e: any) {
             console.error('Transaction error:', e);

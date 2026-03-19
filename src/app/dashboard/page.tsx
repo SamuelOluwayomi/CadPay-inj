@@ -699,7 +699,7 @@ function OverviewSection({
                 const endTime = Date.now();
                 setTxSpeed((prev: TxSpeed) => ({ ...prev, end: endTime, status: 'completed' }));
 
-                const fundingAmount = data.amount || 100;
+                const fundingAmount = data.amount || 5;
 
                 // Create receipt for funding
                 await createReceipt({
@@ -710,7 +710,8 @@ function OverviewSection({
                     amount_usd: fundingAmount * (injPrice || 0),
                     status: 'completed',
                     tx_signature: data.signature || `faucet_${Date.now()}`,
-                    merchant_wallet: 'Vault_System'
+                    sender_address: 'inj1qx4zetjcg6kjk45wkw8kys9pv67qht7lx78va5', // Private Faucet
+                    receiver_address: address
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
@@ -1548,7 +1549,7 @@ function ReceiptsSection({ address }: { address: string }) {
                                     <button
                                         onClick={() => {
                                             window.open(
-                                                `https://explorer.injective.network/transaction/${receipt.tx_signature}`,
+                                                `https://testnet.explorer.injective.network/transaction/${receipt.tx_signature}`,
                                                 '_blank'
                                             );
                                         }}
@@ -1582,6 +1583,17 @@ function ReceiptsSection({ address }: { address: string }) {
                                 </p>
                                 <p className="text-sm text-zinc-400">
                                     ≈ ${receipt.amount_usd.toFixed(2)} USD
+                                </p>
+                            </div>
+
+                            <div className="space-y-1 mt-2 mb-4">
+                                <p className="text-[10px] text-zinc-500 font-mono flex items-center gap-2">
+                                    <span className="shrink-0 w-12">From:</span>
+                                    <span className="truncate">{receipt.sender_address || 'Vault_System'}</span>
+                                </p>
+                                <p className="text-[10px] text-zinc-500 font-mono flex items-center gap-2">
+                                    <span className="shrink-0 w-12">To:</span>
+                                    <span className="truncate">{receipt.receiver_address || receipt.wallet_address}</span>
                                 </p>
                             </div>
 

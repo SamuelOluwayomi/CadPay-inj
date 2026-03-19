@@ -10,27 +10,31 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     const margin = 20;
 
     // Colors
-    const blueColor = '#00acee';
+    const primaryColor = '#f97316'; // Orange
     const grayColor = '#71717A';
     const darkColor = '#18181B';
 
     let yPos = 20;
 
-    // Header: CadPay Logo (circular badge) + Name
-    // Draw blue circle as logo
-    doc.setFillColor(blueColor);
-    doc.circle(margin + 4, yPos, 4, 'F'); // Blue circle logo
+    // Header: CadPay Logo (orange badge with 'C') + Name
+    doc.setFillColor(primaryColor);
+    doc.roundedRect(margin, yPos - 6, 12, 12, 3, 3, 'F'); 
+    
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('C', margin + 4.5, yPos + 2);
 
     // CadPay text next to logo
     doc.setFontSize(28);
-    doc.setTextColor(blueColor);
+    doc.setTextColor(primaryColor);
     doc.setFont('helvetica', 'bold');
-    doc.text('CadPay', margin + 12, yPos + 2);
+    doc.text('CadPay', margin + 16, yPos + 3);
 
-    yPos += 8;
+    yPos += 12;
     doc.setFontSize(10);
     doc.setTextColor(grayColor);
-    doc.text('Payment Receipt', margin, yPos);
+    doc.text('Official Payment Receipt', margin, yPos);
 
     // Add horizontal line
     yPos += 10;
@@ -69,7 +73,7 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     // Amount (INJ)
     doc.setTextColor(grayColor);
     doc.text('Amount:', margin, yPos);
-    doc.setTextColor(blueColor);
+    doc.setTextColor(primaryColor);
     doc.setFont('helvetica', 'bold');
     doc.text(`${receipt.amount_inj.toFixed(2)} INJ`, margin + 50, yPos);
 
@@ -106,42 +110,53 @@ export const generateReceiptPDF = (receipt: Receipt) => {
     doc.setDrawColor(200, 200, 200);
     doc.line(margin, yPos, pageWidth - margin, yPos);
 
+    // Sender/Receiver Details
+    doc.setFontSize(12);
+    doc.setTextColor(darkColor);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Transfer Details', margin, yPos);
+
+    yPos += 10;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    
+    // Sender
+    doc.setTextColor(grayColor);
+    doc.text('Sender:', margin, yPos);
+    doc.setTextColor(darkColor);
+    doc.text(receipt.sender_address || receipt.wallet_address || 'N/A', margin + 30, yPos);
+    
+    yPos += 6;
+    
+    // Receiver
+    doc.setTextColor(grayColor);
+    doc.text('Receiver:', margin, yPos);
+    doc.setTextColor(darkColor);
+    doc.text(receipt.receiver_address || receipt.merchant_wallet || 'N/A', margin + 30, yPos);
+
+    // Add separator
+    yPos += 10;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+
     // Transaction ID Section
     yPos += 15;
     doc.setFontSize(12);
     doc.setTextColor(darkColor);
     doc.setFont('helvetica', 'bold');
-    doc.text('Transaction ID', margin, yPos);
+    doc.text('Transaction ID (Hash)', margin, yPos);
 
     yPos += 10;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(grayColor);
 
-    // Split transaction ID into multiple lines if too long
     const txId = receipt.tx_signature || 'N/A';
     const maxWidth = pageWidth - (2 * margin);
     const lines = doc.splitTextToSize(txId, maxWidth);
     doc.text(lines, margin, yPos);
 
     yPos += lines.length * 5 + 10;
-
-    // Merchant Wallet Section
-    doc.setFontSize(12);
-    doc.setTextColor(darkColor);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Merchant Wallet', margin, yPos);
-
-    yPos += 10;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(grayColor);
-
-    const merchantWallet = receipt.merchant_wallet || 'N/A';
-    const merchantLines = doc.splitTextToSize(merchantWallet, maxWidth);
-    doc.text(merchantLines, margin, yPos);
-
-    yPos += merchantLines.length * 5 + 10;
 
     // Footer
     yPos += 20;

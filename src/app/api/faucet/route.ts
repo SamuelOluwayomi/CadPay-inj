@@ -16,9 +16,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Faucet configuration error' }, { status: 500 });
         }
 
-        console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 1}`);
+        console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 5}`);
 
-        const requestedAmount = amount ? Number(amount) : 1;
+        const requestedAmount = amount ? Number(amount) : 5;
 
         // Perform transfer using the faucet mnemonic
         const txHash = await transferInj({
