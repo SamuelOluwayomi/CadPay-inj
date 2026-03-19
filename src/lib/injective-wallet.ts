@@ -66,7 +66,7 @@ export async function transferInj(params: {
         // This handles account fetching, sequence management, and signing in one step
         const broadcaster = new MsgBroadcasterWithPk({
             network: INJECTIVE_NETWORK,
-            privateKey: privateKey.toHex()
+            privateKey: privateKey
         });
 
         // 3. Broadcast Transaction

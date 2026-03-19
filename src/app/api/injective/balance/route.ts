@@ -9,8 +9,8 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Using LCD endpoint but via server to avoid CORS/SSL issues in browser
-        const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}`);
+        // Using Sentry LCD endpoint to avoid SSL/TLS alerts on Windows
+        const response = await fetch(`https://testnet.sentry.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}`);
         
         if (!response.ok) {
             if (response.status === 404) {
