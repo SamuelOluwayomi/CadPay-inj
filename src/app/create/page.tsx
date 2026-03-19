@@ -108,15 +108,13 @@ export default function CreateAccount() {
             if (authData.user) {
                 const { error: credError } = await supabase
                     .from('profiles')
-                    .insert([
-                        {
-                            id: authData.user.id,
-                            email: cleanEmail,
-                            wallet_address: wallet.address,
-                            auth_method: 'biometric',
-                            updated_at: new Date().toISOString()
-                        }
-                    ]);
+                    .update({
+                        email: cleanEmail,
+                        wallet_address: wallet.address,
+                        auth_method: 'biometric',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', authData.user.id);
 
                 if (credError) {
                     console.error('Failed to store credentials:', credError);
