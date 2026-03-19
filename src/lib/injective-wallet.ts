@@ -1,10 +1,7 @@
 import { 
   PrivateKey, 
   MsgSend,
-  TxGrpcApi,
-  createTransaction,
-  ChainRestBankApi,
-  ChainRestAuthApi
+  MsgBroadcasterWithPk
 } from '@injectivelabs/sdk-ts';
 import { Network, getNetworkEndpoints } from '@injectivelabs/networks';
 import { BigNumberInBase } from '@injectivelabs/utils';
@@ -26,7 +23,7 @@ export function generateInjectiveWallet(): { mnemonic: string; address: string }
     // @ts-ignore
     const pk = result.privateKey || result;
     const address = pk.toBech32();
-    return { mnemonic: "random-mnemonic-not-recoverable-fix-with-bip39", address };
+    return { mnemonic: "random-mnemonic-not-recoverable", address };
 }
 
 export async function transferInj(params: {
@@ -37,9 +34,7 @@ export async function transferInj(params: {
     const { mnemonic, recipient, amount } = params;
     
     try {
-        const result = PrivateKey.fromMnemonic(mnemonic);
-        // @ts-ignore
-        const privateKey = result.privateKey || result;
+        const privateKey = PrivateKey.fromMnemonic(mnemonic);
         const injectiveAddress = privateKey.toBech32();
         
         // 1. Prepare the MsgSend
@@ -53,42 +48,17 @@ export async function transferInj(params: {
             dstInjectiveAddress: recipient
         });
 
-        // 2. Initialize Clients
-        const chainRestAuthApi = new ChainRestAuthApi(INJECTIVE_ENDPOINTS.rest);
-        const txGrpcApi = new TxGrpcApi(INJECTIVE_ENDPOINTS.grpc);
-
-        // 3. Get Account Details
-        const accountDetails = await chainRestAuthApi.fetchAccount(injectiveAddress);
-        const account = accountDetails.account as any;
-        
-        // Handle different account structures
-        const sequence = account.base_account ? account.base_account.sequence : (account.sequence || 0);
-        const accountNumber = account.base_account ? account.base_account.account_number : (account.account_number || 0);
-
-        // 4. Create Transaction
-        const { signDoc, txRaw } = createTransaction({
-            pubKey: privateKey.toPublicKey().toBase64(),
-            chainId: INJECTIVE_CHAIN_ID,
-            fee: {
-                amount: [{
-                    amount: '500000000000000', // 0.0005 INJ
-                    denom: 'uinj'
-                }],
-                gas: '200000'
-            },
-            message: msg,
-            sequence: parseInt(sequence.toString(), 10),
-            accountNumber: parseInt(accountNumber.toString(), 10),
+        // 2. Initialize Broadcaster with Private Key
+        // This handles account fetching, sequence management, and signing in one step
+        const broadcaster = new MsgBroadcasterWithPk({
+            network: INJECTIVE_NETWORK,
+            privateKey: privateKey.toHex()
         });
 
-        // 5. Sign Transaction
-        // @ts-ignore
-        const sig = await privateKey.sign(Buffer.from(signDoc.toBinary ? signDoc.toBinary() : signDoc.serializeBinary()));
-        
-        // 6. Broadcast Transaction
-        txRaw.signatures = [sig];
-        
-        const response = await txGrpcApi.broadcast(txRaw);
+        // 3. Broadcast Transaction
+        const response = await broadcaster.broadcast({
+            msgs: msg
+        });
         
         if (response.code !== 0) {
             throw new Error(`Transaction failed with code ${response.code}: ${response.rawLog}`);

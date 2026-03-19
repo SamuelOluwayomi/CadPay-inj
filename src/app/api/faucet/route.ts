@@ -6,14 +6,14 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
     try {
         const { address, amount } = await request.json();
-        const faucetMnemonic = process.env.MASTER_FAUCET_MNEMONIC;
+        const faucetMnemonic = process.env.MASTER_FAUCET_MNEMONIC?.trim();
 
         if (!address) {
             return NextResponse.json({ error: 'No address provided' }, { status: 400 });
         }
         if (!faucetMnemonic) {
-            console.error("❌ Missing FAUCET_MNEMONIC in environment");
-            return NextResponse.json({ error: 'Faucet configuration error' }, { status: 500 });
+            console.error("❌ Missing MASTER_FAUCET_MNEMONIC in environment");
+            return NextResponse.json({ error: 'Faucet configuration error: Missing mnemonic' }, { status: 500 });
         }
 
         console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 5}`);
