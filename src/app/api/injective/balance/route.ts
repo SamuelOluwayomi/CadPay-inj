@@ -10,13 +10,14 @@ export async function GET(request: Request) {
 
     try {
         // Using LCD endpoint but via server to avoid CORS/SSL issues in browser
-        const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=uinj`);
+        const response = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${address}`);
         
         if (!response.ok) {
-            // If the account doesn't exist yet, return 0 balance
             if (response.status === 404) {
-                return NextResponse.json({ balance: { amount: "0" } });
+                return NextResponse.json({ balances: [] });
             }
+            const errorText = await response.text();
+            console.error('Balance fetching failed:', errorText);
             return NextResponse.json({ error: 'Failed to fetch balance' }, { status: response.status });
         }
 
