@@ -7,7 +7,7 @@ import { Network, getNetworkEndpoints } from '@injectivelabs/networks';
 import { BigNumberInBase } from '@injectivelabs/utils';
 
 
-export const INJECTIVE_NETWORK = Network.Testnet;
+export const INJECTIVE_NETWORK = Network.TestnetSentry;
 export const INJECTIVE_ENDPOINTS = getNetworkEndpoints(INJECTIVE_NETWORK);
 export const INJECTIVE_CHAIN_ID = 'injective-888'; // Injective Testnet
 
