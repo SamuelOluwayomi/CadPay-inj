@@ -15,7 +15,10 @@ export const useInjective = () => {
 
     const fetchTransactions = useCallback(async (addr: string) => {
         if (!addr) return;
-        setIsLoading(true);
+        // Only show full-screen loader if we have NO data yet to prevent flickering
+        if (transactions.length === 0) {
+            setIsLoading(true);
+        }
         try {
             const response = await fetch(`/api/injective/transactions?address=${addr}`);
             if (response.ok) {
@@ -27,7 +30,7 @@ export const useInjective = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [transactions.length]);
 
     const fetchBalance = useCallback(async (addr: string) => {
         if (!addr) return;

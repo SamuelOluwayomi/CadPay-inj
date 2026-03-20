@@ -28,14 +28,29 @@ export async function GET(request: Request) {
         });
 
         // The response structure is { txs: [], pagination: {} }
-        const transactions = (txs.txs || []).map((tx: any) => ({
-            signature: tx.hash,
-            hash: tx.hash,
-            timestamp: tx.blockTimestamp ? new Date(tx.blockTimestamp).getTime() : Date.now(),
-            amount: 0, 
-            err: tx.code !== 0,
-            slot: tx.blockNumber || 0
-        }));
+        const transactions = (txs.txs || []).map((tx: any) => {
+            // Attempt to parse amount from messages (MsgSend)
+            let amount = 0;
+            try {
+                const message = tx.messages?.[0];
+                if (message && (message.type === 'cosmos-sdk/MsgSend' || message.type?.includes('MsgSend'))) {
+                    const amountStr = message.value?.amount?.[0]?.amount || "0";
+                    amount = Number(amountStr) / 1e18; // Convert from uinj to INJ
+                }
+            } catch (e) {
+                console.warn("Failed to parse amount for tx:", tx.hash);
+            }
+
+            return {
+                signature: tx.hash,
+                hash: tx.hash,
+                timestamp: tx.blockTimestamp ? new Date(tx.blockTimestamp).getTime() : Date.now(),
+                amount: amount,
+                err: tx.code !== 0,
+                slot: tx.blockNumber || 0,
+                viewUrl: `https://testnet.explorer.injective.network/transaction/${tx.hash}`
+            };
+        });
 
         return NextResponse.json({ 
             success: true,

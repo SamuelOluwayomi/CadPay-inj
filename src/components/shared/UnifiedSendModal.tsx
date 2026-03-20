@@ -167,39 +167,58 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error('Incorrect Security PIN. Please try again.');
             }
 
-            // 2. Check if wallet needs sync (for custodial/Gmail users)
-            const exists = await checkWalletExists(userEmail);
-            if (!exists && profile?.encrypted_private_key) {
-                console.log('🔄 Wallet not found in local storage. Syncing from Supabase...');
+            // 2. Decide: Server-Side (Custodial) vs Local (Biometric) signing
+            let txId = '';
+            
+            // If it's a custodial wallet (has encrypted key on server), use the new secure send API
+            if (profile?.encrypted_private_key) {
+                console.log('🔐 [UnifiedSendModal] Using Server-Side Signing for custodial wallet...');
                 const { data: { session } } = await supabase.auth.getSession();
-                const res = await fetch('/api/wallet/export', {
+                const response = await fetch('/api/wallet/send', {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session?.access_token}`
-                    }
+                    },
+                    body: JSON.stringify({
+                        recipient: targetRecipient,
+                        amount: numAmount,
+                        pin: password // The user's PIN is verified on the server
+                    })
                 });
-                const exportData = await res.json();
-                if (exportData.success && exportData.mnemonic) {
-                    // Store locally encrypted with PIN
-                    await createWalletWithPassword(userEmail, exportData.mnemonic, password);
-                } else {
-                    throw new Error('Failed to sync security credentials from server.');
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Server-side transaction failed');
                 }
+                txId = result.txHash;
+            } else {
+                // 3. Local signing for Non-Custodial / Biometric wallets
+                console.log('🔑 [UnifiedSendModal] Using Local Signing (Biometric/Passkey)...');
+                
+                // Unlock with biometric/local key
+                const unlockResult = await unlockWallet(userEmail); // Try biometric first
+                
+                if (!unlockResult.success) {
+                    // Fallback to password (if they have one)
+                    const pwUnlock = await unlockWalletWithPassword(userEmail, password);
+                    if (!pwUnlock.success || !pwUnlock.mnemonic) {
+                        throw new Error(pwUnlock.error || 'Failed to unlock wallet for signing');
+                    }
+                    unlockResult.mnemonic = pwUnlock.mnemonic;
+                }
+
+                if (!unlockResult.mnemonic) {
+                    throw new Error('Could not retrieve signing key');
+                }
+
+                // Sign and broadcast directly
+                txId = await transferInj({
+                    mnemonicOrKey: unlockResult.mnemonic,
+                    recipient: targetRecipient!,
+                    amount: numAmount,
+                });
             }
-
-            // 3. Unlock with PIN/password
-            const unlockResult = await unlockWalletWithPassword(userEmail, password);
-
-            if (!unlockResult.success || !unlockResult.mnemonic) {
-                throw new Error(unlockResult.error || 'Failed to unlock wallet for signing');
-            }
-
-            // 3. Sign and broadcast transaction directly to Injective network
-            const txId = await transferInj({
-                mnemonicOrKey: unlockResult.mnemonic,
-                recipient: targetRecipient!,
-                amount: numAmount,
-            });
 
             // Create receipt
             await createReceipt({
