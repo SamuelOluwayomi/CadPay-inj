@@ -1688,8 +1688,8 @@ function ReceiptsSection({ address }: { address: string }) {
     useEffect(() => {
         if (address) {
             fetchReceipts();
-            // Poll for new receipts every 5 seconds to ensure we catch updates
-            const interval = setInterval(fetchReceipts, 5000);
+            // Poll for new receipts silently every 5 seconds to ensure we catch updates without flashing loaders
+            const interval = setInterval(() => fetchReceipts(true), 5000);
             return () => clearInterval(interval);
         }
     }, [address, fetchReceipts]);

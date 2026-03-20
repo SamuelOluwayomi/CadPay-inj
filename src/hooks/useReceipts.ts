@@ -11,18 +11,17 @@ export function useReceipts(walletAddress: string | null) {
     const { showToast } = useToast();
 
     // Fetch receipts for the current wallet
-    const fetchReceipts = useCallback(async () => {
+    const fetchReceipts = useCallback(async (background = false) => {
         if (!walletAddress) {
             setReceipts([]);
             return;
         }
 
-        setLoading(true);
-        setError(null);
+        if (!background) setLoading(true);
+        if (!background) setError(null);
 
         try {
             const normalizedAddr = walletAddress.toLowerCase();
-            console.log('🔍 [useReceipts] Fetching receipts for:', normalizedAddr);
             const { data, error: fetchError } = await supabase
                 .from('receipts')
                 .select('*')
@@ -34,9 +33,9 @@ export function useReceipts(walletAddress: string | null) {
             setReceipts(data || []);
         } catch (err: any) {
             console.error('Error fetching receipts:', err);
-            setError(err.message);
+            if (!background) setError(err.message);
         } finally {
-            setLoading(false);
+            if (!background) setLoading(false);
         }
     }, [walletAddress]);
 
