@@ -525,6 +525,54 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     </p>
                                 </motion.div>
                             )}
+
+                            {step === 'success' && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-center py-8"
+                                >
+                                    <div className="w-20 h-20 mx-auto mb-6 bg-green-500/10 rounded-full flex items-center justify-center border-2 border-green-500/30">
+                                        <CheckCircleIcon size={48} className="text-green-500" weight="fill" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">Transaction Successful!</h3>
+                                    <p className="text-zinc-400 mb-6 px-4">
+                                        Your {mode === 'savings' ? 'savings deposit' : 'transfer'} of <span className="text-white font-bold">{amount} INJ</span> has been processed on the Injective Network.
+                                    </p>
+                                    
+                                    {lastTxHash && (
+                                        <div className="bg-black/30 p-4 border border-white/5 rounded-2xl mb-8 mx-4">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-2">Network Receipt</p>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <p className="text-xs font-mono text-zinc-300 truncate opacity-70">
+                                                    tx: {lastTxHash.substring(0, 8)}...{lastTxHash.substring(lastTxHash.length - 8)}
+                                                </p>
+                                                <a 
+                                                    href={`https://testnet.explorer.injective.network/transaction/${lastTxHash.startsWith('0x') ? lastTxHash : '0x' + lastTxHash}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-orange-500 hover:text-orange-400 transition-colors shrink-0 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1 rounded"
+                                                >
+                                                    <LinkIcon weight="bold" /> Explorer
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            setStep('details');
+                                            setAmount('');
+                                            setRecipient('');
+                                            setLastTxHash(null);
+                                            onClose();
+                                        }}
+                                        className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98]"
+                                    >
+                                        Done
+                                    </button>
+                                </motion.div>
+                            )}
                         </div>
                     </motion.div>
                 </>

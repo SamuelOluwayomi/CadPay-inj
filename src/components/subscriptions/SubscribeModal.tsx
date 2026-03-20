@@ -89,6 +89,12 @@ export default function SubscribeModal({
         setStep('verify');
     };
 
+    useEffect(() => {
+        if (step === 'verify' && profile?.auth_method) {
+            setVerificationMethod(profile.auth_method);
+        }
+    }, [step, profile?.auth_method]);
+
     const handleVerification = async () => {
         if (!verificationMethod) {
             setError('Please select a verification method');
@@ -99,70 +105,73 @@ export default function SubscribeModal({
         setStep('processing');
 
         try {
-            let unlockResult;
-            if (verificationMethod === 'password') {
-                if (!password) {
-                    setError('Please enter your password');
-                    setStep('verify');
-                    return;
+            let txId = '';
+
+            // SERVER-SIDE CUSTODIAL SIGNING
+            if (profile?.encrypted_private_key && verificationMethod === 'password') {
+                if (!password) { throw new Error('Please enter your Security PIN'); }
+                if (profile?.pin && password !== profile.pin) {
+                    throw new Error('Incorrect Security PIN. Please try again.');
+                }
+                
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                const response = await fetch('/api/wallet/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+                    body: JSON.stringify({
+                        recipient: MERCHANT_WALLET,
+                        amount: priceINJ,
+                        pin: password, // Server verifies this again to be safe
+                        service_name: service.name,
+                        plan_name: selectedPlan!.name
+                    })
+                });
+
+                const result = await response.json();
+                if (!result.success) { throw new Error(result.error || 'Server-side transaction failed'); }
+                txId = result.txHash;
+            } 
+            // LOCAL BIOMETRIC SIGNING
+            else {
+                let unlockResult;
+                if (verificationMethod === 'password') {
+                    if (!password) { throw new Error('Please enter your password/PIN'); }
+                    unlockResult = await unlockWalletWithPassword(profile?.email || address!, password);
+                } else {
+                    unlockResult = await unlockWallet(profile?.email || address!);
                 }
 
-                // Verify password against stored hash
-                const { data: credData } = await supabase
-                    .from('profiles')
-                    .select('password_hash')
-                    .eq('wallet_address', address)
-                    .single();
-
-                if (!credData || !credData.password_hash) {
-                    throw new Error('No password found for this account');
+                if (!unlockResult.success || !unlockResult.mnemonic) {
+                    throw new Error(unlockResult.error || 'Failed to unlock wallet');
                 }
 
-                const isValid = await verifyPassword(password, credData.password_hash);
-                if (!isValid) {
-                    throw new Error('Invalid password');
-                }
+                const { transferInj } = await import('@/lib/injective-wallet');
+                txId = await transferInj({
+                    mnemonicOrKey: unlockResult.mnemonic,
+                    recipient: MERCHANT_WALLET,
+                    amount: priceINJ,
+                });
 
-                // Use profile email for wallet unlock
-                unlockResult = await unlockWalletWithPassword(profile?.email || address!, password);
-            } else {
-                // Biometric verification
-                unlockResult = await unlockWallet(profile?.email || address!);
+                if (!txId) throw new Error('Transaction failed or was rejected');
+                
+                // CREATE RECEIPT LOCALLY
+                await createReceipt({
+                    wallet_address: address!,
+                    service_name: service.name,
+                    plan_name: selectedPlan!.name,
+                    amount_inj: priceINJ,
+                    amount_usd: selectedPlan!.priceUSD,
+                    tx_signature: txId,
+                    status: 'completed',
+                    merchant_wallet: MERCHANT_WALLET,
+                    sender_address: address!,
+                    receiver_address: MERCHANT_WALLET
+                });
             }
-
-            if (!unlockResult.success || !unlockResult.mnemonic) {
-                throw new Error(unlockResult.error || 'Failed to unlock wallet');
-            }
-
-            // Step 2: Send INJ payment
-            const { transferInj } = await import('@/lib/injective-wallet');
-            const txId = await transferInj({
-                mnemonicOrKey: unlockResult.mnemonic,
-                recipient: MERCHANT_WALLET,
-                amount: priceINJ,
-            });
-
-            if (!txId) throw new Error('Transaction failed or was rejected');
 
             setTxSignature(txId);
-
-            // Step 3: Create receipt
-            await createReceipt({
-                wallet_address: address!,
-                service_name: service.name,
-                plan_name: selectedPlan!.name,
-                amount_inj: priceINJ,
-                amount_usd: selectedPlan!.priceUSD,
-                tx_signature: txId,
-                status: 'completed',
-                merchant_wallet: MERCHANT_WALLET,
-                sender_address: address!,
-                receiver_address: MERCHANT_WALLET
-            });
-
-            // Step 4: Add to local subscriptions
             onSubscribe(service.id, selectedPlan!, email, priceINJ, txId);
-
             setStep('success');
         } catch (err: any) {
             console.error('Subscription payment failed:', err);
@@ -368,43 +377,49 @@ export default function SubscribeModal({
                                     </div>
 
                                     <div className="space-y-3">
-                                        <button
-                                            onClick={() => setVerificationMethod('password')}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${verificationMethod === 'password'
-                                                ? 'border-orange-500 bg-orange-500/10'
-                                                : 'border-white/10 bg-white/5 hover:border-white/20'
-                                                }`}
-                                        >
-                                            <LockKeyIcon size={24} />
-                                            <div className="text-left flex-1">
-                                                <p className="font-bold">Password</p>
-                                                <p className="text-sm text-zinc-400">Use your account password</p>
-                                            </div>
-                                        </button>
+                                        {profile?.auth_method !== 'biometric' && (
+                                            <button
+                                                onClick={() => setVerificationMethod('password')}
+                                                className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${verificationMethod === 'password'
+                                                    ? 'border-orange-500 bg-orange-500/10'
+                                                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <LockKeyIcon size={24} />
+                                                <div className="text-left flex-1">
+                                                    <p className="font-bold">Security PIN</p>
+                                                    <p className="text-sm text-zinc-400">Use your 4-digit 
+                                                    PIN</p>
+                                                </div>
+                                            </button>
+                                        )}
 
-                                        <button
-                                            onClick={() => setVerificationMethod('biometric')}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${verificationMethod === 'biometric'
-                                                ? 'border-orange-500 bg-orange-500/10'
-                                                : 'border-white/10 bg-white/5 hover:border-white/20'
-                                                }`}
-                                        >
-                                            <FingerprintIcon size={24} />
-                                            <div className="text-left flex-1">
-                                                <p className="font-bold">Biometric</p>
-                                                <p className="text-sm text-zinc-400">Use fingerprint or face ID</p>
-                                            </div>
-                                        </button>
+                                        {profile?.auth_method !== 'password' && (
+                                            <button
+                                                onClick={() => setVerificationMethod('biometric')}
+                                                className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${verificationMethod === 'biometric'
+                                                    ? 'border-orange-500 bg-orange-500/10'
+                                                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <FingerprintIcon size={24} />
+                                                <div className="text-left flex-1">
+                                                    <p className="font-bold">Biometric</p>
+                                                    <p className="text-sm text-zinc-400">Use fingerprint or face ID</p>
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
 
                                     {verificationMethod === 'password' && (
                                         <div className="mt-4">
                                             <input
                                                 type="password"
+                                                maxLength={4}
                                                 value={password}
                                                 onChange={e => setPassword(e.target.value)}
-                                                placeholder="Enter your password"
-                                                className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
+                                                placeholder="Enter 4-digit PIN"
+                                                className="w-full px-4 py-3 text-center tracking-[1em] text-2xl font-black bg-black/30 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-all"
                                             />
                                         </div>
                                     )}
@@ -439,7 +454,7 @@ export default function SubscribeModal({
                                     </button>
                                     <button
                                         onClick={handleVerification}
-                                        disabled={!verificationMethod || (verificationMethod === 'password' && !password)}
+                                        disabled={!verificationMethod || (verificationMethod === 'password' && password.length < 4)}
                                         className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-colors"
                                     >
                                         {verificationMethod === 'biometric' ? 'Authenticate & Pay' : 'Confirm & Pay'}
