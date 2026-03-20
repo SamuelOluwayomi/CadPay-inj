@@ -1,46 +1,48 @@
 import { NextResponse } from 'next/server';
+import { IndexerGrpcExplorerApi } from '@injectivelabs/sdk-ts';
+import { getNetworkEndpoints, Network } from '@injectivelabs/networks';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const address = searchParams.get('address');
-
-    if (!address) {
-        return NextResponse.json({ error: 'Address is required' }, { status: 400 });
-    }
-
     try {
-        console.log(`🔍 [Transactions] Fetching history for: ${address}`);
+        const { searchParams } = new URL(request.url);
+        const address = searchParams.get('address');
 
-        // Use Injective Explorer API for Testnet
-        const explorerUrl = `https://testnet.explorer.injective.network/api/v1/addresses/${address}/transactions`;
-        
-        const response = await fetch(explorerUrl, {
-            headers: { 'Accept': 'application/json' },
-            next: { revalidate: 10 } // Cache for 10 seconds
-        });
-
-        if (!response.ok) {
-            throw new Error(`Explorer API failed with status: ${response.status}`);
+        if (!address) {
+            return NextResponse.json({ error: 'Address is required' }, { status: 400 });
         }
 
-        const data = await response.json();
-        const txs = data.data || [];
+        console.log(`🔍 [Transactions] Fetching history via SDK for: ${address}`);
 
-        // Map Explorer data to our internal format
-        const transactions = txs.map((tx: any) => ({
+        // 1. Grab the official Testnet endpoints
+        const endpoints = getNetworkEndpoints(Network.TestnetSentry);
+
+        // 2. Initialize the official Explorer API wrapper
+        const explorerApi = new IndexerGrpcExplorerApi(endpoints.explorer);
+
+        // 3. Fetch the transaction history
+        const txs = await explorerApi.fetchAccountTx({
+            account: address,
+            limit: 15,
+        });
+
+        const transactions = (txs.items || []).map((tx: any) => ({
             signature: tx.hash,
             hash: tx.hash,
-            timestamp: tx.block_timestamp ? new Date(tx.block_timestamp).getTime() : Date.now(),
-            amount: 0, // Finding amounts in raw txs is complex, but signature is enough for list
+            timestamp: tx.blockTimestamp ? new Date(tx.blockTimestamp).getTime() : Date.now(),
+            amount: 0, 
             err: tx.code !== 0,
-            slot: tx.block_number || 0
+            slot: tx.blockNumber || 0
         }));
 
-        const sortedTxs = transactions.sort((a: any, b: any) => b.timestamp - a.timestamp);
+        return NextResponse.json({ 
+            success: true,
+            transactions: transactions 
+        });
 
-        return NextResponse.json({ transactions: sortedTxs });
     } catch (error: any) {
-        console.error('Injective Proxy Error:', error);
+        console.error('❌ Explorer API Error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -43,7 +43,8 @@ export async function transferInj(params: {
             // Hex key path: must be exactly 64 chars after removing 0x
             const cleanHex = ultraClean.replace(/^0x/, '');
             if (cleanHex.length !== 64) {
-                throw new Error(`Invalid hex key length: ${cleanHex.length} characters (expected 64)`);
+                console.error(`[Injective] Invalid key length: ${cleanHex.length}. Starts with: ${ultraClean.substring(0, 8)}...`);
+                throw new Error(`Invalid hex key length: ${cleanHex.length} characters (expected 64). Please ensure you have synced your wallet in security settings.`);
             }
             privateKey = PrivateKey.fromHex(cleanHex);
         }
