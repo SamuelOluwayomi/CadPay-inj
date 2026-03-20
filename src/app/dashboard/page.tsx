@@ -796,47 +796,55 @@ function OverviewSection({
         <div className="space-y-8 px-4 md:px-0">
             {/* Stats Grid - Standard Layout */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* Main Balance Card */}
+                {/* Main Balance Card - Sophisticated Redesign */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="md:col-span-8 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden group"
+                    className="md:col-span-8 relative overflow-hidden rounded-[2rem] p-8 md:p-10 shadow-2xl border border-white/5 group"
                 >
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                        <CurrencyDollarIcon size={160} />
-                    </div>
+                    {/* Sophisticated Dark gradient background */}
+                    <div className="absolute inset-0 bg-linear-to-br from-zinc-900 to-black"></div>
+                    
+                    {/* Sleek metallic/glass glow effects */}
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 blur-[100px] -translate-y-1/2 translate-x-1/3 rounded-full pointer-events-none transition-transform duration-700 group-hover:scale-110"></div>
+                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-orange-500/10 blur-[80px] translate-y-1/3 -translate-x-1/4 rounded-full pointer-events-none"></div>
 
-                    <div className="relative z-10">
-                        <div className="space-y-1">
-                            <p className="text-sm text-zinc-400 font-medium">Available Balance</p>
-                            <div className="flex items-baseline gap-3">
-                                <h2 className="text-4xl md:text-5xl font-black text-white">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8 h-full">
+                        <div className="space-y-3">
+                            <p className="text-sm text-zinc-500 font-bold uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]"></span>
+                                Total Balance
+                            </p>
+                            <div className="flex items-baseline gap-2">
+                                <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-linear-to-b from-white to-zinc-400">
                                     {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </h2>
-                                <span className="text-xl font-bold text-zinc-500 uppercase">INJ</span>
+                                <span className="text-2xl font-bold text-zinc-500">INJ</span>
                             </div>
-                            <p className="text-lg text-[#70C7BA] font-medium">≈ ${usdValue} USD</p>
+                            <p className="text-lg text-zinc-400 font-medium">
+                                ≈ ${usdValue} USD
+                            </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-4 mt-8">
+                        <div className="flex gap-3 md:min-w-[320px] w-full md:w-auto">
                             <button
                                 onClick={handleFundDemo}
                                 disabled={loading || isFunding}
-                                className="px-8 py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-lg shadow-white/5 active:scale-95"
+                                className="flex-1 px-6 py-4 bg-zinc-800/40 hover:bg-zinc-800/80 border border-white/5 text-white rounded-2xl font-bold text-sm transition-all flex justify-center items-center gap-2 backdrop-blur-md disabled:opacity-50 active:scale-[0.98]"
                             >
                                 {isFunding ? (
-                                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                 ) : (
-                                    <LightningIcon weight="bold" />
+                                    <LightningIcon weight="fill" className="text-zinc-400" size={18} />
                                 )}
-                                {isFunding ? 'Funding...' : 'Fund Wallet'}
+                                <span className="tracking-wide">Fund</span>
                             </button>
                             <button
                                 onClick={onOpenSend}
-                                className="px-8 py-3 bg-orange-600 text-white rounded-xl font-bold text-sm hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
+                                className="flex-[1.5] px-6 py-4 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.05)] active:scale-[0.98]"
                             >
-                                <PaperPlaneTiltIcon size={18} weight="bold" />
-                                Send Funds
+                                <PaperPlaneTiltIcon size={18} weight="fill" />
+                                <span className="tracking-wide">Send Funds</span>
                             </button>
                         </div>
                     </div>
