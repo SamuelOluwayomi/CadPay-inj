@@ -19,15 +19,16 @@ export async function GET(request: Request) {
         const endpoints = getNetworkEndpoints(Network.TestnetSentry);
 
         // 2. Initialize the official Explorer API wrapper
-        const explorerApi = new IndexerGrpcExplorerApi(endpoints.explorer);
+        const explorerApi = new IndexerGrpcExplorerApi(endpoints.explorer || 'https://testnet.explorer.grpc-web.injective.network');
 
         // 3. Fetch the transaction history
         const txs = await explorerApi.fetchAccountTx({
-            account: address,
+            address: address, // Corrected from account
             limit: 15,
         });
 
-        const transactions = (txs.items || []).map((tx: any) => ({
+        // The response structure is { txs: [], pagination: {} }
+        const transactions = (txs.txs || []).map((tx: any) => ({
             signature: tx.hash,
             hash: tx.hash,
             timestamp: tx.blockTimestamp ? new Date(tx.blockTimestamp).getTime() : Date.now(),
