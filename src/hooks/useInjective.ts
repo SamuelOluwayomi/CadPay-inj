@@ -13,12 +13,15 @@ export const useInjective = () => {
 
     const [transactions, setTransactions] = useState<any[]>([]);
 
-    const fetchTransactions = useCallback(async (addr: string) => {
+    const fetchTransactions = useCallback(async (addr: string, isManual = false) => {
         if (!addr) return;
-        // Only show full-screen loader if we have NO data yet to prevent flickering
-        if (transactions.length === 0) {
-            setIsLoading(true);
-        }
+        // Only show full-screen loader if we have NO data yet or if it's a manual refresh
+        setIsLoading(prev => {
+            // If we have transactions and it's not manual, don't show the big loader
+            if (transactions.length > 0 && !isManual) return prev;
+            return true;
+        });
+
         try {
             const response = await fetch(`/api/injective/transactions?address=${addr}`);
             if (response.ok) {
@@ -30,7 +33,7 @@ export const useInjective = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [transactions.length]);
+    }, []); // Stabilized to prevent infinite loops
 
     const fetchBalance = useCallback(async (addr: string) => {
         if (!addr) return;
@@ -47,35 +50,48 @@ export const useInjective = () => {
         }
     }, []);
 
-    // Sync with localStorage
+    // 1. Initial Load & Address Sync
     useEffect(() => {
-        // Check for cached address (from Biometric/Google flow)
         const cachedAddress = localStorage.getItem('active_wallet_address');
         if (cachedAddress) {
-            console.log('🔌 [useInjective] Active address detected:', cachedAddress);
             setAddress(cachedAddress);
             setIsConnected(true);
-            fetchBalance(cachedAddress);
-            fetchTransactions(cachedAddress);
         }
 
-        // Listen for storage changes
         const handleStorage = (e: StorageEvent) => {
             if (e.key === 'active_wallet_address') {
                 if (e.newValue) {
                     setAddress(e.newValue);
                     setIsConnected(true);
-                    fetchBalance(e.newValue);
                 } else {
                     setAddress(null);
                     setIsConnected(false);
                     setBalance(0);
+                    setTransactions([]);
                 }
             }
         };
         window.addEventListener('storage', handleStorage);
         return () => window.removeEventListener('storage', handleStorage);
-    }, [fetchBalance, fetchTransactions]);
+    }, []);
+
+    // 2. Data Fetching & Auto-Refresh
+    useEffect(() => {
+        if (!address || !isConnected) return;
+
+        // Initial fetch
+        fetchBalance(address);
+        fetchTransactions(address);
+
+        // Background polling every 30 seconds
+        const interval = setInterval(() => {
+            console.log('🔄 [useInjective] Background Refresh...');
+            fetchBalance(address);
+            fetchTransactions(address);
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [address, isConnected]); // Only re-run when address or connection status changes
 
     const connect = async (manualAddress?: string) => {
         setIsConnecting(true);
@@ -84,12 +100,9 @@ export const useInjective = () => {
                 setAddress(manualAddress);
                 setIsConnected(true);
                 localStorage.setItem('active_wallet_address', manualAddress);
-                await fetchBalance(manualAddress);
-                await fetchTransactions(manualAddress);
                 return manualAddress;
             }
             
-            // If no manual address, just check storage
             const storageAddr = localStorage.getItem('active_wallet_address');
             if (storageAddr) {
                 setAddress(storageAddr);
@@ -121,6 +134,8 @@ export const useInjective = () => {
         connect,
         disconnect,
         refreshBalance: () => address && fetchBalance(address),
-        fetchTransactions: (addr?: string) => fetchTransactions(addr || address || ''),
+        fetchTransactions: (manual = false): void | Promise<void> => {
+            if (address) return fetchTransactions(address, manual);
+        },
     };
 };

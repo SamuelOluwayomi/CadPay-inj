@@ -21,7 +21,9 @@ export function getAddressFromMnemonic(mnemonic: string): string {
 export function generateInjectiveWallet(): { mnemonic: string; address: string } {
     const result = PrivateKey.generate() as any;
     const pk = result.privateKey || result;
-    return { mnemonic: pk.toHex(), address: pk.toBech32() };
+    // We name it 'mnemonic' to maintain compatibility with existing flows, 
+    // but it contains the 64-character private key hex.
+    return { mnemonic: pk.toPrivateKeyHex(), address: pk.toBech32() };
 }
 
 export async function transferInj(params: {

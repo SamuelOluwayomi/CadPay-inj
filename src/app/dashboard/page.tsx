@@ -11,7 +11,7 @@ import {
     StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
     PaperPlaneTiltIcon, CheckCircleIcon, ArrowSquareOutIcon,
     DownloadIcon, LightningIcon, ActivityIcon, TimerIcon, MagnifyingGlassIcon,
-    CheckIcon
+    CheckIcon, ArrowsClockwiseIcon
 } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import LogoField from '@/components/shared/LogoField';
@@ -233,15 +233,17 @@ export default function Dashboard() {
     };
 
     // Unified Send Handler - Call this when a transaction is COMPLETED
-    const onTransactionSuccess = async (recipient: string, amount: number, isSavings: boolean) => {
+    const onTransactionSuccess = async (recipient: string, amount: number, isSavings: boolean, silent = false) => {
         try {
             // End speed tracking
             setTxSpeed({ start: txSpeed.start, end: Date.now(), status: 'completed' });
 
-            showToast(
-                isSavings ? `Successfully deposited ${amount.toFixed(2)} INJ to savings pot!` : `Successfully sent ${amount.toFixed(2)} INJ!`,
-                "success"
-            );
+            if (!silent) {
+                showToast(
+                    isSavings ? `Successfully deposited ${amount.toFixed(2)} INJ to savings pot!` : `Successfully sent ${amount.toFixed(2)} INJ!`,
+                    "success"
+                );
+            }
 
             // Refresh balance and transactions after completion
             setTimeout(() => {
@@ -543,6 +545,7 @@ export default function Dashboard() {
                             onTransactionSuccess={onTransactionSuccess}
                             transactions={mergedTransactions} // Use merged list!
                             fetchTransactions={fetchTransactions}
+                            isConnected={isConnected}
                             txSpeed={txSpeed}
                             setTxSpeed={setTxSpeed}
                             pots={pots}
@@ -686,7 +689,7 @@ function OverviewSection({
     userName, avatar, avatarUrl, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
     fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess,
-    loadingTransactions
+    loadingTransactions, isConnected
 }: {
     userName: string,
     avatar: string,
@@ -696,12 +699,13 @@ function OverviewSection({
     loading: boolean,
     copyToClipboard: () => void,
     onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
-    fetchTransactions: (addr?: string) => Promise<void> | void,
+    fetchTransactions: (manual?: boolean) => Promise<void> | void,
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
     pots: any[],
-    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean) => Promise<void>,
-    loadingTransactions: boolean
+    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean, silent?: boolean) => Promise<void>,
+    loadingTransactions: boolean,
+    isConnected: boolean
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const [injPrice, setInjPrice] = useState<number | null>(null);
@@ -738,7 +742,7 @@ function OverviewSection({
     // Initial fetch for transactions
     useEffect(() => {
         if (address && fetchTransactions) {
-            fetchTransactions(address);
+            fetchTransactions();
         }
     }, [address, fetchTransactions]);
 
@@ -778,9 +782,9 @@ function OverviewSection({
 
                 showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
 
-                // Use unified success handler for consistent UI refresh
+                // Refresh UI silently (don't show "Successfully sent" toast on top of "Funding Successful")
                 if (onTransactionSuccess) {
-                    await onTransactionSuccess(address, fundingAmount, false);
+                    await onTransactionSuccess(address, fundingAmount, false, true);
                 }
             } else {
                 setTxSpeed({ start: null, end: null, status: 'idle' });
@@ -884,10 +888,25 @@ function OverviewSection({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Recent Activity */}
                 <div className="lg:col-span-8 bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <ListIcon size={20} className="text-orange-500" />
-                        Recent Activity
-                    </h3>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <ListIcon size={20} className="text-orange-500" />
+                            Recent Activity
+                        </h3>
+                        {isConnected && (
+                            <button 
+                                onClick={() => fetchTransactions(true)}
+                                disabled={loadingTransactions}
+                                className={`p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 ${loadingTransactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title="Refresh Transactions"
+                            >
+                                <ArrowsClockwiseIcon 
+                                    size={16} 
+                                    className={`text-zinc-400 ${loadingTransactions ? 'animate-spin' : ''}`} 
+                                />
+                            </button>
+                        )}
+                    </div>
                     <div className="space-y-3">
                         {loadingTransactions ? (
                             <div className="flex flex-col items-center justify-center py-12 space-y-4">

@@ -514,18 +514,13 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     <div className="w-20 h-20 mx-auto mb-6 bg-orange-500/20 rounded-full flex items-center justify-center">
                                         <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Signing Transaction</h3>
-                                    <p className="text-zinc-400 mb-6">
-                                        Securely signing your transaction locally...
+                                    <h3 className="text-xl font-bold text-white mb-2">Processing Transaction</h3>
+                                    <p className="text-zinc-400 mb-2">
+                                        Securely transmitting to Injective Network...
                                     </p>
-                                    <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: '100%' }}
-                                            transition={{ duration: 3, repeat: Infinity }}
-                                            className="h-full bg-linear-to-r from-orange-500 to-orange-600"
-                                        />
-                                    </div>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest animate-pulse">
+                                        Please do not close this window
+                                    </p>
                                 </motion.div>
                             )}
                         </div>
