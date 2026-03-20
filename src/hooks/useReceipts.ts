@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Receipt } from '@/types/Receipt';
+import { useToast } from '@/context/ToastContext';
 
 export function useReceipts(walletAddress: string | null) {
     const [receipts, setReceipts] = useState<Receipt[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { showToast } = useToast();
 
     // Fetch receipts for the current wallet
     const fetchReceipts = useCallback(async () => {
@@ -38,14 +41,19 @@ export function useReceipts(walletAddress: string | null) {
     // Create a new receipt
     const createReceipt = async (receipt: Omit<Receipt, 'id' | 'timestamp'>): Promise<Receipt | null> => {
         try {
+            console.log('📝 Creating receipt in Supabase:', receipt);
             const { data, error: insertError } = await supabase
                 .from('receipts')
                 .insert([receipt])
                 .select()
                 .single();
 
-            if (insertError) throw insertError;
+            if (insertError) {
+                console.error('Supabase Insert Error:', insertError);
+                throw insertError;
+            }
 
+            console.log('✅ Receipt created successfully:', data);
             // Refresh receipts list
             await fetchReceipts();
 
@@ -53,6 +61,7 @@ export function useReceipts(walletAddress: string | null) {
         } catch (err: any) {
             console.error('Error creating receipt:', err);
             setError(err.message);
+            showToast(`Failed to save receipt: ${err.message}`, "error");
             return null;
         }
     };

@@ -124,8 +124,42 @@ export default function Dashboard() {
     const [isOnboardingSubmitting, setIsOnboardingSubmitting] = useState(false);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
     const [txSpeed, setTxSpeed] = useState<TxSpeed>({ start: null, end: null, status: 'idle' });
-    const { createReceipt } = useReceipts(address); // Pass the connected wallet address
+    const { receipts, createReceipt } = useReceipts(address); // Pass the connected wallet address
     const [injPrice, setInjPrice] = useState<number | null>(null);
+
+    // Merge on-chain transactions with local receipts for immediate visibility
+    const mergedTransactions = (() => {
+        const onChain = transactions || [];
+        const local = (receipts || []).map(r => ({
+            signature: r.tx_signature,
+            amount: r.amount_inj,
+            timestamp: new Date(r.timestamp).getTime(),
+            err: r.status === 'failed',
+            isLocal: true // Help UI distinguish
+        }));
+
+        // Use a Map to deduplicate by signature (hash)
+        const combined = new Map();
+        
+        // Add on-chain first (they are our source of truth)
+        onChain.forEach((tx: any) => {
+            // Normalize explorer fields if needed (e.g. if signature is called hash)
+            const signature = tx.signature || tx.hash || tx.tx_hash;
+            if (signature) {
+                combined.set(signature, { ...tx, signature });
+            }
+        });
+
+        // Add local receipts (will overwrite if hash matches, but receipts are usually faster)
+        local.forEach(tx => {
+            if (!combined.has(tx.signature)) {
+                combined.set(tx.signature, tx);
+            }
+        });
+
+        return Array.from(combined.values())
+            .sort((a, b) => b.timestamp - a.timestamp);
+    })();
 
     useEffect(() => {
         const fetchPrice = async () => {
@@ -234,6 +268,7 @@ export default function Dashboard() {
         return () => clearTimeout(timer);
     }, [address, loading, profile, profileLoading]);
 
+    const activeAddress = address || profile?.authority || "";
     // Onboarding handlers
     const handleOnboardingComplete = async (data: {
         username: string;
@@ -472,30 +507,31 @@ export default function Dashboard() {
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
                     </div>
-                    {activeSection === 'overview' && (
-                        <OverviewSection
-                            userName={userProfile.username}
-                            avatar={userProfile.avatar}
-                            avatarUrl={userProfile.avatar_url}
-                            balance={displayBalance.toFixed(2)}
-                            address={address || ""}
-                            refreshBalance={refreshWalletBalance}
-                            loading={loading}
-                            copyToClipboard={copyToClipboard}
-                            onOpenSend={() => setShowSendModal(true)}
-                            transactions={transactions}
-                            fetchTransactions={fetchTransactions}
-                            txSpeed={txSpeed}
-                            setTxSpeed={setTxSpeed}
-                            pots={pots}
-                        />
-                    )}
+        {activeSection === 'overview' && (
+            <OverviewSection
+                userName={userProfile.username}
+                avatar={userProfile.avatar}
+                avatarUrl={userProfile.avatar_url}
+                balance={displayBalance.toFixed(2)}
+                address={address || ""}
+                refreshBalance={refreshWalletBalance}
+                loading={loading}
+                copyToClipboard={copyToClipboard}
+                onOpenSend={() => setShowSendModal(true)}
+                onTransactionSuccess={onTransactionSuccess}
+                transactions={mergedTransactions} // Use merged list!
+                fetchTransactions={fetchTransactions}
+                txSpeed={txSpeed}
+                setTxSpeed={setTxSpeed}
+                pots={pots}
+            />
+        )}
 
                     {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} injPrice={injPrice} />}
 
                     {activeSection === 'wallet' && <WalletSection
                         balance={displayBalance.toFixed(2)}
-                        address={walletAddress} copyToClipboard={copyToClipboard} />}
+                        address={walletAddress} />}
                     {activeSection === 'security' && <SecuritySettings />}
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
                     {activeSection === 'receipts' && <ReceiptsSection address={address || ""} />}
@@ -627,7 +663,7 @@ function NavItem({ icon, label, active, onClick }: any) {
 function OverviewSection({
     userName, avatar, avatarUrl, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
-    fetchTransactions, txSpeed, setTxSpeed, pots
+    fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess
 }: {
     userName: string,
     avatar: string,
@@ -640,7 +676,8 @@ function OverviewSection({
     fetchTransactions: (addr?: string) => Promise<void> | void,
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
-    pots: any[]
+    pots: any[],
+    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean) => Promise<void>
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const [injPrice, setInjPrice] = useState<number | null>(null);
@@ -699,7 +736,8 @@ function OverviewSection({
                 const endTime = Date.now();
                 setTxSpeed((prev: TxSpeed) => ({ ...prev, end: endTime, status: 'completed' }));
 
-                const fundingAmount = data.amount || 5;
+                const fundingAmount = data.amount || 2;
+                const txHash = data.txId || `faucet_${Date.now()}`;
 
                 // Create receipt for funding
                 await createReceipt({
@@ -709,24 +747,17 @@ function OverviewSection({
                     amount_inj: fundingAmount,
                     amount_usd: fundingAmount * (injPrice || 0),
                     status: 'completed',
-                    tx_signature: data.signature || `faucet_${Date.now()}`,
+                    tx_signature: txHash,
                     sender_address: 'inj1qx4zetjcg6kjk45wkw8kys9pv67qht7lx78va5', // Private Faucet
                     receiver_address: address
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
-                const currentBal = parseFloat(localStorage.getItem(`demo_balance_${address}`) || '0');
-                const newBal = currentBal + fundingAmount;
-                localStorage.setItem(`demo_balance_${address}`, newBal.toString());
-
-                // Immediate UI updates
-                if (refreshBalance) refreshBalance();
-
-                // Background sync
-                setTimeout(() => {
-                    if (refreshBalance) refreshBalance();
-                    if (fetchTransactions) fetchTransactions();
-                }, 2000);
+                
+                // Use unified success handler for consistent UI refresh
+                if (onTransactionSuccess) {
+                    await onTransactionSuccess(address, fundingAmount, false);
+                }
             } else {
                 setTxSpeed({ start: null, end: null, status: 'idle' });
                 showToast(data.error || "Faucet failed", "error");
@@ -1446,20 +1477,117 @@ function SubscriptionsSection({
     );
 }
 
+// Premium Wallet Card Component
+function WalletCard({ balance = "0.00", address = "" }: { balance: string, address: string }) {
+    const [copied, setCopied] = useState(false);
+
+    // Formats the address to look cleaner: inj163p...zduhp
+    const truncateAddress = (addr: string) => {
+        if (!addr) return '';
+        return `${addr.slice(0, 9)}...${addr.slice(-5)}`;
+    };
+
+    const handleCopy = () => {
+        if (!address) return;
+        navigator.clipboard.writeText(address);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="relative w-full max-w-md aspect-[1.58/1] rounded-2xl p-6 text-white overflow-hidden shadow-2xl transition-transform hover:scale-[1.02] duration-300 border border-white/10 group">
+
+            {/* --- Background Effects --- */}
+            {/* Base dark gradient */}
+            <div className="absolute inset-0 bg-linear-to-br from-zinc-800 via-zinc-900 to-black"></div>
+
+            {/* CadPay Orange Glowing Orbs */}
+            <div className="absolute -right-10 -top-10 w-48 h-48 bg-orange-500/20 blur-3xl rounded-full transition-all duration-500 group-hover:bg-orange-500/30"></div>
+            <div className="absolute -left-12 -bottom-12 w-32 h-32 bg-orange-600/10 blur-2xl rounded-full"></div>
+
+            {/* --- Card Content --- */}
+            <div className="relative z-10 flex flex-col justify-between h-full">
+
+                {/* Top Row: Brand & NFC Icon */}
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-2">
+                        <div className="bg-linear-to-br from-orange-400 to-orange-600 p-1.5 rounded-lg shadow-lg">
+                            <WalletIcon size={20} weight="duotone" className="text-white" />
+                        </div>
+                        <span className="font-bold tracking-wider text-lg">CadPay</span>
+                    </div>
+                    {/* NFC/Contactless Icon */}
+                    <div className="flex flex-col items-center gap-0.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <div className="w-6 h-6 flex items-center justify-center">
+                            <div className="flex gap-0.5 items-end">
+                                <div className="w-0.5 h-2 bg-white rounded-full opacity-40"></div>
+                                <div className="w-0.5 h-3 bg-white rounded-full opacity-60"></div>
+                                <div className="w-0.5 h-4 bg-white rounded-full opacity-80"></div>
+                                <div className="w-0.5 h-5 bg-white rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Middle Row: Balance */}
+                <div className="mt-2">
+                    <p className="text-zinc-400 text-xs sm:text-sm font-medium mb-1 uppercase tracking-widest">
+                        Main Wallet
+                    </p>
+                    <div className="flex items-baseline space-x-2">
+                        <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+                            {balance}
+                        </h2>
+                        <span className="text-xl sm:text-2xl font-semibold text-orange-500">
+                            INJ
+                        </span>
+                    </div>
+                </div>
+
+                {/* Bottom Row: Address & Copy Action */}
+                <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3 backdrop-blur-md">
+                    <p className="font-mono text-sm sm:text-base text-zinc-300 tracking-widest">
+                        {truncateAddress(address)}
+                    </p>
+
+                    <button
+                        onClick={handleCopy}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors flex items-center justify-center"
+                        title="Copy Address"
+                    >
+                        {copied ? (
+                            <CheckIcon size={20} weight="bold" className="text-green-400" />
+                        ) : (
+                            <CopyIcon size={20} weight="duotone" className="text-zinc-400 hover:text-white transition-colors" />
+                        )}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
 // Wallet Section
-function WalletSection({ balance, address, copyToClipboard }: any) {
+function WalletSection({ balance, address }: { balance: string, address: string }) {
     return (
         <div className="space-y-6">
             <h1 className="text-4xl font-bold">Wallet & Cards</h1>
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-linear-to-br from-zinc-900/80 to-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-8">
-                    <h3 className="text-lg font-bold mb-6">Main Wallet</h3>
-                    <p className="text-4xl font-bold mb-6">{balance} INJ</p>
-                    <div className="flex items-center justify-between bg-black/30 p-3 rounded-xl border border-white/5 text-sm">
-                        <span className="font-mono text-zinc-300 truncate">{address}</span>
-                        <button onClick={copyToClipboard} className="text-orange-500 ml-3">
-                            <CopyIcon size={18} />
-                        </button>
+            <div className="grid md:grid-cols-2 gap-8">
+                <WalletCard balance={balance} address={address} />
+
+                {/* Virtual Card Info */}
+                <div className="flex flex-col justify-center space-y-4">
+                    <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+                        <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Card Status</h4>
+                        <div className="flex items-center gap-2 text-green-400">
+                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                            <span className="font-bold">Active & Secure</span>
+                        </div>
+                    </div>
+                    <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+                        <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Network</h4>
+                        <p className="text-white font-bold">Injective Testnet (Sentry)</p>
                     </div>
                 </div>
             </div>
