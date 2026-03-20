@@ -902,34 +902,34 @@ function OverviewSection({
                         ) : (
                             transactions.slice(0, 5).map((tx: any) => (
                                 <div key={tx.signature} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group">
-                                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                                            {tx.err ? <ArrowDownIcon size={18} /> : <CheckCircleIcon size={18} />}
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                                            {tx.err ? <ArrowDownIcon size={16} /> : <CheckCircleIcon size={16} />}
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-white truncate max-w-[200px] md:max-w-none">
-                                                {tx.signature.slice(0, 12)}...{tx.signature.slice(-8)}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-bold text-white truncate pr-2">
+                                                {tx.signature.slice(0, 8)}...{tx.signature.slice(-6)}
                                             </p>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-xs text-zinc-500">
-                                                    {new Date(tx.timestamp).toLocaleString()}
+                                                <p className="text-[10px] sm:text-xs text-zinc-500 truncate">
+                                                    {new Date(tx.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                                 </p>
                                                 <a
                                                     href={tx.viewUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-orange-500 hover:text-orange-400 transition-colors"
+                                                    className="text-orange-500 hover:text-orange-400 transition-colors shrink-0"
                                                 >
                                                     <ArrowSquareOutIcon size={12} weight="bold" />
                                                 </a>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right shrink-0 ml-2">
                                         <p className={`text-sm font-bold ${tx.err ? 'text-red-400' : 'text-zinc-100'}`}>
-                                            {tx.amount > 0 ? tx.amount.toFixed(2) : "0.00"} INJ
+                                            {tx.amount > 0 ? tx.amount.toFixed(2) : "0.00"} <span className="text-[10px] opacity-60">INJ</span>
                                         </p>
-                                        <p className="text-[10px] text-zinc-500 uppercase font-black">
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black tracking-tighter">
                                             {tx.err ? 'Failed' : 'Completed'}
                                         </p>
                                     </div>
