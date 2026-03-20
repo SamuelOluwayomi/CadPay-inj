@@ -185,8 +185,14 @@ export default function Dashboard() {
         const fetchPrice = async () => {
             try {
                 const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
-                const data = await res.json();
-                setInjPrice(data['injective-protocol'].usd);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.['injective-protocol']?.usd) {
+                        setInjPrice(data['injective-protocol'].usd);
+                    }
+                } else {
+                    console.warn(`Coingecko API failed with status: ${res.status}`);
+                }
             } catch (error) {
                 console.error('Failed to fetch INJ price:', error);
             }
@@ -542,6 +548,7 @@ export default function Dashboard() {
                             txSpeed={txSpeed}
                             setTxSpeed={setTxSpeed}
                             pots={pots}
+                            injPrice={injPrice}
                         />
                     )}
 
@@ -554,7 +561,7 @@ export default function Dashboard() {
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
                     {activeSection === 'receipts' && <ReceiptsSection address={address || ""} />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
-                    {activeSection === 'savings' && <SavingsSection session={session} />}
+                    {activeSection === 'savings' && <SavingsSection session={session} injPrice={injPrice} />}
                 </div>
             </div>
 
@@ -683,7 +690,7 @@ function OverviewSection({
     userName, avatar, avatarUrl, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
     fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess,
-    loadingTransactions, isConnected
+    loadingTransactions, isConnected, injPrice
 }: {
     userName: string,
     avatar: string,
@@ -699,10 +706,10 @@ function OverviewSection({
     pots: any[],
     onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean, silent?: boolean) => Promise<void>,
     loadingTransactions: boolean,
-    isConnected: boolean
+    isConnected: boolean,
+    injPrice: number | null
 }) {
     const [showUSD, setShowUSD] = useState(true);
-    const [injPrice, setInjPrice] = useState<number | null>(null);
     const { subscriptions, loading: loadingSub } = useSubscriptions();
     const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
@@ -718,20 +725,6 @@ function OverviewSection({
         }
         return () => clearInterval(interval);
     }, [txSpeed.status]);
-
-    // Fetch INJ price
-    useEffect(() => {
-        const fetchPrice = async () => {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
-                const data = await response.json();
-                setInjPrice(data['injective-protocol'].usd);
-            } catch (error) {
-                console.error('Failed to fetch INJ price:', error);
-            }
-        };
-        fetchPrice();
-    }, []);
 
     // Initial fetch for transactions
     useEffect(() => {
@@ -1839,7 +1832,7 @@ function DevKeysSection() {
 }
 
 // Savings Section
-function SavingsSection({ session }: { session: any }) {
+function SavingsSection({ session, injPrice }: { session: any, injPrice: number | null }) {
     const { pots, isLoading, createPot, withdrawFromPot, depositToPot } = useSavings();
     const { address, refreshBalance, fetchTransactions } = useInjective(); // Need address for receipts
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1847,23 +1840,8 @@ function SavingsSection({ session }: { session: any }) {
     const [selectedPot, setSelectedPot] = useState<any>(null);
     const [showReceipts, setShowReceipts] = useState(false);
     const [isFunding, setIsFunding] = useState(false);
-    const [injPrice, setInjPrice] = useState<number | null>(null);
     const { showToast } = useToast();
     const { createReceipt } = useReceipts(address);
-
-    // Fetch INJ price
-    useEffect(() => {
-        const fetchPrice = async () => {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
-                const data = await response.json();
-                setInjPrice(data['injective-protocol'].usd);
-            } catch (error) {
-                console.error('Failed to fetch INJ price:', error);
-            }
-        };
-        fetchPrice();
-    }, []);
 
     const handleCreatePot = async (name: string, durationMonths: number) => {
         setIsCreating(true);
