@@ -19,11 +19,9 @@ export function getAddressFromMnemonic(mnemonic: string): string {
 }
 
 export function generateInjectiveWallet(): { mnemonic: string; address: string } {
-    const result = PrivateKey.generate();
-    // @ts-ignore
+    const result = PrivateKey.generate() as any;
     const pk = result.privateKey || result;
-    const address = pk.toBech32();
-    return { mnemonic: "random-mnemonic-not-recoverable", address };
+    return { mnemonic: pk.toHex(), address: pk.toBech32() };
 }
 
 export async function transferInj(params: {

@@ -255,11 +255,14 @@ export default function Dashboard() {
     useEffect(() => {
         // Debounce the onboarding check to prevent flashing during loading states
         const timer = setTimeout(() => {
-            if (loadingTransactions || profileLoading) return;
+            // Wait for all loading states to be definitively resolved
+            if (loadingTransactions || profileLoading || !sessionInitialized) {
+                console.log("⏳ Dashboard still initializing data...");
+                return;
+            }
 
             // Trigger Onboarding if:
             // 1. Profile exists but is incomplete (No Username OR No PIN) 
-            //    -> Covers Google users (have username but no PIN) & Custodial
             if (profile && (!profile.username || !profile.pin)) {
                 console.log("⚠️ Profile incomplete, triggering Onboarding...");
                 setShowOnboarding(true);
@@ -269,10 +272,10 @@ export default function Dashboard() {
             } else {
                 setShowOnboarding(false);
             }
-        }, 800);
+        }, 1200); // Increased cooldown for safety
 
         return () => clearTimeout(timer);
-    }, [address, loadingTransactions, profile, profileLoading]);
+    }, [address, loadingTransactions, profile, profileLoading, sessionInitialized, session]);
 
     const activeAddress = address || profile?.authority || "";
     // Onboarding handlers

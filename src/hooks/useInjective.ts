@@ -15,6 +15,7 @@ export const useInjective = () => {
 
     const fetchTransactions = useCallback(async (addr: string) => {
         if (!addr) return;
+        setIsLoading(true);
         try {
             const response = await fetch(`/api/injective/transactions?address=${addr}`);
             if (response.ok) {
@@ -23,6 +24,8 @@ export const useInjective = () => {
             }
         } catch (e) {
             console.error("Failed to fetch transactions via proxy", e);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 

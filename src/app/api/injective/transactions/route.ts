@@ -9,33 +9,36 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Using Sentry LCD endpoint which is more reliable for L1 events
-        // Fetching both sent and received transactions
-        const [sentRes, receivedRes] = await Promise.all([
-            fetch(`https://testnet.sentry.lcd.injective.network/cosmos/tx/v1beta1/txs?events=message.sender='${address}'`),
-            fetch(`https://testnet.sentry.lcd.injective.network/cosmos/tx/v1beta1/txs?events=transfer.recipient='${address}'`)
-        ]);
+        console.log(`🔍 [Transactions] Fetching history for: ${address}`);
 
-        const sentData = sentRes.ok ? await sentRes.json() : { tx_responses: [] };
-        const receivedData = receivedRes.ok ? await receivedRes.json() : { tx_responses: [] };
-
-        const allTxs = [...(sentData.tx_responses || []), ...(receivedData.tx_responses || [])];
+        // Use Injective Explorer API for Testnet
+        const explorerUrl = `https://testnet.explorer.injective.network/api/v1/addresses/${address}/transactions`;
         
-        // Map to uniform structure
-        const transactions = allTxs.map((tx: any) => ({
-            signature: tx.txhash,
-            hash: tx.txhash,
-            timestamp: tx.timestamp ? new Date(tx.timestamp).getTime() : Date.now(),
-            amount: 0, // Injective LCD doesn't give simple amount in the list, would need parsing
+        const response = await fetch(explorerUrl, {
+            headers: { 'Accept': 'application/json' },
+            next: { revalidate: 10 } // Cache for 10 seconds
+        });
+
+        if (!response.ok) {
+            throw new Error(`Explorer API failed with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const txs = data.data || [];
+
+        // Map Explorer data to our internal format
+        const transactions = txs.map((tx: any) => ({
+            signature: tx.hash,
+            hash: tx.hash,
+            timestamp: tx.block_timestamp ? new Date(tx.block_timestamp).getTime() : Date.now(),
+            amount: 0, // Finding amounts in raw txs is complex, but signature is enough for list
             err: tx.code !== 0,
-            slot: parseInt(tx.height) || 0
+            slot: tx.block_number || 0
         }));
 
-        // Deduplicate and sort
-        const uniqueTxs = Array.from(new Map(transactions.map(item => [item.signature, item])).values())
-            .sort((a: any, b: any) => b.timestamp - a.timestamp);
+        const sortedTxs = transactions.sort((a: any, b: any) => b.timestamp - a.timestamp);
 
-        return NextResponse.json({ transactions: uniqueTxs });
+        return NextResponse.json({ transactions: sortedTxs });
     } catch (error: any) {
         console.error('Injective Proxy Error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
