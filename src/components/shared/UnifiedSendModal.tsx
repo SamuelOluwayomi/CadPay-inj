@@ -169,7 +169,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
 
             // 2. Decide: Server-Side (Custodial) vs Local (Biometric) signing
             let txId = '';
-            
+
             // If it's a custodial wallet (has encrypted key on server), use the new secure send API
             if (profile?.encrypted_private_key) {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -197,7 +197,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 // 3. Local signing for Non-Custodial / Biometric wallets
                 // Unlock with biometric/local key
                 const unlockResult = await unlockWallet(userEmail); // Try biometric first
-                
+
                 if (!unlockResult.success) {
                     // Fallback to password (if they have one)
                     const pwUnlock = await unlockWalletWithPassword(userEmail, password);
@@ -288,8 +288,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                     >
                         <div className="bg-[#1a1b1f] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
                             <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-2xl font-bold text-white">
-                                    {step === 'password' ? 'Confirm with Password' : step === 'signing' ? 'Signing Transaction' : 'Send Funds'}
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    {step === 'password' ? (profile?.auth_method === 'biometric' ? 'Approve Signature' : 'Security Check') : step === 'signing' ? 'Signing Transaction' : 'Send Funds'}
                                 </h2>
                                 <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
                                     <XIcon size={24} />
@@ -415,93 +415,116 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     animate={{ opacity: 1, x: 0 }}
                                     className="space-y-6"
                                 >
-                                    {/* Transaction Summary */}
-                                    <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-6 space-y-4">
-                                        <div className="flex justify-between">
-                                            <span className="text-zinc-500 text-sm">To:</span>
-                                            <span className="text-white font-mono text-sm">
-                                                {mode === 'savings' ? selectedPot?.name : `${recipient.substring(0, 12)}...`}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-zinc-500 text-sm">Amount:</span>
-                                            <span className="text-orange-400 font-bold text-lg">{amount} INJ</span>
+                                    {/* Transaction Summary Card */}
+                                    <div className="relative overflow-hidden rounded-2xl p-6 border border-white/10 bg-linear-to-br from-zinc-900/80 to-black backdrop-blur-xl shadow-lg group">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity duration-500 opacity-50 group-hover:opacity-100" />
+
+                                        <div className="space-y-4 relative z-10">
+                                            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                                                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">To Recipient</span>
+                                                <span className="text-white font-mono text-[11px] md:text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 shadow-sm truncate max-w-[180px] md:max-w-none">
+                                                    {mode === 'savings' ? selectedPot?.name : `${recipient.substring(0, 16)}...`}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-1">
+                                                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">Amount</span>
+                                                <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-orange-500 font-black text-2xl tracking-tight drop-shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                                                    {amount} <span className="text-lg">INJ</span>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Password Input */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
-                                            <LockKeyIcon size={14} className="inline mr-1" />
-                                            Security PIN
-                                        </label>
-                                        <input
-                                            type="password"
-                                            placeholder="Enter your 4-digit PIN"
-                                            className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white focus:outline-none focus:border-orange-500/50 transition-all"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            autoFocus
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && password) {
-                                                    handleSignAndSend();
-                                                }
-                                            }}
-                                        />
-                                        <p className="text-[10px] text-zinc-500 mt-2">
-                                            Your password unlocks your wallet to sign this transaction locally. It never leaves your device.
-                                        </p>
-                                    </div>
-
-                                    {/* Biometric Unlock Option */}
-                                    {isBiometricAvailable && (
-                                        <div className="relative">
-                                            <div className="absolute inset-0 flex items-center">
-                                                <div className="w-full border-t border-white/10"></div>
+                                    {/* Authentication UI */}
+                                    {profile?.auth_method === 'biometric' ? (
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="text-center space-y-2 mb-2">
+                                                <div className="w-16 h-16 mx-auto bg-orange-500/10 border border-orange-500/20 rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+                                                    <FingerprintIcon size={32} className="text-orange-500 drop-shadow-md" />
+                                                </div>
+                                                <h3 className="text-white font-bold text-lg">Biometric Verification</h3>
+                                                <p className="text-xs text-zinc-400 leading-relaxed max-w-[280px] mx-auto">
+                                                    Use your device's secure enclave to cryptographically sign this transaction.
+                                                </p>
                                             </div>
-                                            <div className="relative flex justify-center text-xs uppercase">
-                                                <span className="bg-zinc-950 px-2 text-zinc-600">Or</span>
-                                            </div>
+                                            <button
+                                                onClick={handleBiometricUnlockAndSign}
+                                                disabled={isSubmitting}
+                                                className="w-full flex items-center justify-center gap-2 p-5 bg-linear-to-r from-orange-500 to-orange-600 border border-orange-400/50 rounded-2xl font-bold shadow-[0_0_30px_rgba(249,115,22,0.2)] hover:shadow-[0_0_40px_rgba(249,115,22,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                                            >
+                                                {isSubmitting ? (
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <FingerprintIcon size={24} weight="bold" />
+                                                )}
+                                                <span>{isSubmitting ? 'Signing...' : 'Approve with Passkey'}</span>
+                                            </button>
                                         </div>
-                                    )}
+                                    ) : (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div>
+                                                <label className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                                                    <LockKeyIcon size={16} className="text-orange-500" />
+                                                    Security PIN
+                                                </label>
+                                                <div className="relative group">
+                                                    <div className="absolute inset-0 bg-linear-to-r from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-2xl transition-opacity duration-500" />
+                                                    <input
+                                                        type="password"
+                                                        placeholder="••••"
+                                                        maxLength={4}
+                                                        className="w-full bg-zinc-900/80 backdrop-blur-sm border border-white/10 focus:border-orange-500 p-4 rounded-2xl text-white text-center text-3xl tracking-[1em] font-black focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all shadow-inner relative z-10"
+                                                        value={password}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (val.length <= 4 && /^\d*$/.test(val)) {
+                                                                setPassword(val);
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && password.length === 4) {
+                                                                handleSignAndSend();
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    {isBiometricAvailable && (
-                                        <button
-                                            onClick={handleBiometricUnlockAndSign}
-                                            disabled={isSubmitting}
-                                            className="w-full flex items-center justify-center gap-2 p-4 bg-linear-to-r from-orange-500 to-orange-400 rounded-2xl font-bold hover:from-orange-300 hover:to-orange-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            <FingerprintIcon size={20} weight="bold" />
-                                            Unlock with Biometrics
-                                        </button>
+                                            <button
+                                                onClick={handleSignAndSend}
+                                                disabled={password.length !== 4 || isSubmitting}
+                                                className="w-full mt-2 py-5 bg-linear-to-r from-orange-500 to-orange-600 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] disabled:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-3 border border-orange-400/30 disabled:border-transparent"
+                                            >
+                                                {isSubmitting ? (
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <LockKeyIcon size={20} weight="bold" />
+                                                )}
+                                                <span>{isSubmitting ? 'Authenticating...' : 'Sign & Transact'}</span>
+                                            </button>
+                                        </div>
                                     )}
 
                                     {error && (
                                         <motion.div
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3"
+                                            className="p-4 bg-red-500/10 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)] rounded-2xl flex items-start gap-3 relative overflow-hidden"
                                         >
-                                            <WarningIcon size={20} className="text-red-400 shrink-0" weight="bold" />
-                                            <p className="text-xs text-red-400 font-medium">{error}</p>
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/80" />
+                                            <WarningIcon size={20} className="text-red-400 shrink-0 mt-0.5" weight="bold" />
+                                            <p className="text-xs text-red-200 font-medium leading-relaxed">{error}</p>
                                         </motion.div>
                                     )}
 
-                                    <div className="flex gap-3">
+                                    <div className="pt-2">
                                         <button
                                             onClick={handleBack}
                                             disabled={isSubmitting}
-                                            className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white font-medium rounded-2xl transition-all"
+                                            className="w-full py-4 bg-transparent hover:bg-white/5 border border-white/10 disabled:opacity-50 text-zinc-400 hover:text-white font-medium rounded-2xl transition-all"
                                         >
-                                            Back
-                                        </button>
-                                        <button
-                                            onClick={handleSignAndSend}
-                                            disabled={!password || isSubmitting}
-                                            className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-                                        >
-                                            <LockKeyIcon size={20} weight="bold" />
-                                            <span>Sign & Send</span>
+                                            Cancel & Go Back
                                         </button>
                                     </div>
                                 </motion.div>
@@ -539,7 +562,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     <p className="text-zinc-400 mb-6 px-4">
                                         Your {mode === 'savings' ? 'savings deposit' : 'transfer'} of <span className="text-white font-bold">{amount} INJ</span> has been processed on the Injective Network.
                                     </p>
-                                    
+
                                     {lastTxHash && (
                                         <div className="bg-black/30 p-4 border border-white/5 rounded-2xl mb-8 mx-4">
                                             <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-2">Network Receipt</p>
@@ -547,7 +570,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                 <p className="text-xs font-mono text-zinc-300 truncate opacity-70">
                                                     tx: {lastTxHash.substring(0, 8)}...{lastTxHash.substring(lastTxHash.length - 8)}
                                                 </p>
-                                                <a 
+                                                <a
                                                     href={`https://testnet.explorer.injective.network/transaction/${lastTxHash.startsWith('0x') ? lastTxHash : '0x' + lastTxHash}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"

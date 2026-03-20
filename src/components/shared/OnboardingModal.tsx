@@ -8,12 +8,13 @@ interface OnboardingModalProps {
     isOpen: boolean;
     isSubmitting?: boolean;
     walletAddress?: string;
+    needsPin?: boolean;
     initialProfile?: {
         username?: string;
         email?: string;
         avatar_url?: string;
     };
-    onComplete: (data: { username: string; pin: string; gender: string; avatar: string; email: string; avatar_url?: string }) => void;
+    onComplete: (data: { username: string; pin?: string; gender: string; avatar: string; email: string; avatar_url?: string }) => void;
 }
 
 const AVATAR_OPTIONS = [
@@ -21,9 +22,9 @@ const AVATAR_OPTIONS = [
     '👨‍💻', '👩‍💻', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧑‍🚀', '👨‍🚀'
 ];
 
-export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, initialProfile, onComplete }: OnboardingModalProps) {
+export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, needsPin = true, initialProfile, onComplete }: OnboardingModalProps) {
     const isPreFilled = !!(initialProfile?.username && initialProfile?.username.length > 2);
-    const [step, setStep] = useState(isPreFilled ? 3 : 1);
+    const [step, setStep] = useState(isPreFilled ? (needsPin ? 3 : 4) : 1);
     const [username, setUsername] = useState(initialProfile?.username || '');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -53,10 +54,11 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
     }, [isOpen, initialProfile]);
 
     const handleComplete = () => {
-        if (username && pin && pin === confirmPin && gender && (avatar || useImageAvatar)) {
+        const isPinValid = needsPin ? (pin && pin === confirmPin) : true;
+        if (username && isPinValid && gender && (avatar || useImageAvatar)) {
             onComplete({
                 username,
-                pin,
+                ...(needsPin ? { pin } : {}),
                 gender,
                 avatar: useImageAvatar ? '🖼️' : avatar, // Emoji fallback if someone selects 'Emoji' later
                 email,
@@ -131,7 +133,7 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             </div>
                         </div>
                         <button
-                            onClick={() => username && setStep(3)}
+                            onClick={() => username && setStep(needsPin ? 3 : 4)}
                             disabled={!username}
                             className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20"
                         >
@@ -234,12 +236,14 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, i
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => setStep(3)}
-                                className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
-                            >
-                                Back
-                            </button>
+                            {(!isPreFilled || needsPin) && (
+                                <button
+                                    onClick={() => setStep(needsPin ? 3 : 1)}
+                                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
+                                >
+                                    Back
+                                </button>
+                            )}
                             <button
                                 onClick={() => gender && setStep(5)}
                                 disabled={!gender}

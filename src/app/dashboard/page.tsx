@@ -273,9 +273,11 @@ export default function Dashboard() {
                 return;
             }
 
+            const needsPin = profile?.auth_method !== 'biometric';
+
             // Trigger Onboarding if:
-            // 1. Profile exists but is incomplete (No Username OR No PIN) 
-            if (profile && (!profile.username || !profile.pin)) {
+            // 1. Profile exists but is incomplete (No Username OR (Needs PIN and has no PIN)) 
+            if (profile && (!profile.username || (needsPin && !profile.pin))) {
                 setShowOnboarding(true);
             } else if (!profile && (address || session)) {
                 setShowOnboarding(true);
@@ -291,7 +293,7 @@ export default function Dashboard() {
     // Onboarding handlers
     const handleOnboardingComplete = async (data: {
         username: string;
-        pin: string;
+        pin?: string;
         gender: string;
         avatar: string;
         email: string;
@@ -320,7 +322,7 @@ export default function Dashboard() {
             }
 
             // 2. Save Profile Details (Upsert will merge with wallet data)
-            const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email, data.avatar_url);
+            const result = await createProfile(data.username, data.avatar, data.gender, data.pin || "", data.email, data.avatar_url);
 
             if (result) {
                 setShowOnboarding(false);
@@ -574,6 +576,7 @@ export default function Dashboard() {
                 isOpen={showOnboarding}
                 isSubmitting={isProfileSaving || isOnboardingSubmitting} // Use both loading states
                 walletAddress={walletAddress}
+                needsPin={profile?.auth_method !== 'biometric'}
                 initialProfile={{
                     username: profile?.username ||
                         session?.user?.user_metadata?.full_name ||
@@ -815,18 +818,18 @@ function OverviewSection({
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]"></span>
                                 Total Balance
                             </p>
-                            <div className="flex items-baseline gap-2">
-                                <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-linear-to-b from-white to-zinc-400">
+                            <div className="flex flex-wrap sm:flex-nowrap items-baseline gap-2 w-full max-w-full overflow-hidden">
+                                <h2 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-linear-to-b from-white to-zinc-400 truncate">
                                     {balanceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </h2>
-                                <span className="text-2xl font-bold text-zinc-500">INJ</span>
+                                <span className="text-xl sm:text-2xl font-bold text-zinc-500 shrink-0">INJ</span>
                             </div>
                             <p className="text-lg text-zinc-400 font-medium">
                                 ≈ ${usdValue} USD
                             </p>
                         </div>
 
-                        <div className="flex gap-3 md:min-w-[320px] w-full md:w-auto">
+                        <div className="flex flex-col sm:flex-row gap-3 md:min-w-[320px] w-full md:w-auto">
                             <button
                                 onClick={handleFundDemo}
                                 disabled={loading || isFunding}
@@ -924,14 +927,14 @@ function OverviewSection({
                                 const displaySig = cleanSig ? `${cleanSig.slice(0, 8)}...${cleanSig.slice(-6)}` : 'UNKNOWN';
 
                                 return (
-                                <div key={rawSig} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group relative">
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div key={rawSig} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group relative gap-3 sm:gap-2">
+                                    <div className="flex items-center gap-3 min-w-0 w-full sm:flex-1">
                                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
                                             {tx.err ? <ArrowDownIcon size={16} /> : <CheckCircleIcon size={16} />}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-bold text-white truncate font-mono">
+                                                <p className="text-xs sm:text-sm font-bold text-white truncate font-mono">
                                                     {displaySig}
                                                 </p>
                                                 <button
@@ -939,13 +942,13 @@ function OverviewSection({
                                                         navigator.clipboard.writeText(cleanSig);
                                                         showToast("Transaction ID copied!", "success");
                                                     }}
-                                                    className="text-zinc-500 hover:text-white transition-colors"
+                                                    className="text-zinc-500 hover:text-white transition-colors shrink-0"
                                                     title="Copy Transaction ID"
                                                 >
                                                     <CopyIcon size={12} weight="bold" />
                                                 </button>
                                                 {tx.isLocal && (
-                                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest">
+                                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest shrink-0 hidden sm:inline-block">
                                                         Local
                                                     </span>
                                                 )}
@@ -965,7 +968,7 @@ function OverviewSection({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right shrink-0 ml-2">
+                                    <div className="text-left sm:text-right shrink-0 sm:ml-2 pl-12 sm:pl-0 w-full sm:w-auto flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center">
                                         <p className={`text-sm font-bold ${tx.err ? 'text-red-400' : 'text-zinc-100'}`}>
                                             {tx.amount > 0 ? tx.amount.toFixed(2) : "0.00"} <span className="text-[10px] opacity-60">INJ</span>
                                         </p>
