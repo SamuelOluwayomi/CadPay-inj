@@ -21,10 +21,12 @@ export function useReceipts(walletAddress: string | null) {
         setError(null);
 
         try {
+            const normalizedAddr = walletAddress.toLowerCase();
+            console.log('🔍 [useReceipts] Fetching receipts for:', normalizedAddr);
             const { data, error: fetchError } = await supabase
                 .from('receipts')
                 .select('*')
-                .eq('wallet_address', walletAddress)
+                .eq('wallet_address', normalizedAddr)
                 .order('timestamp', { ascending: false });
 
             if (fetchError) throw fetchError;
@@ -41,10 +43,14 @@ export function useReceipts(walletAddress: string | null) {
     // Create a new receipt
     const createReceipt = async (receipt: Omit<Receipt, 'id' | 'timestamp'>): Promise<Receipt | null> => {
         try {
-            console.log('📝 Creating receipt in Supabase:', receipt);
+            const normalizedReceipt = {
+                ...receipt,
+                wallet_address: receipt.wallet_address.toLowerCase()
+            };
+            console.log('📝 Creating receipt in Supabase:', normalizedReceipt);
             const { data, error: insertError } = await supabase
                 .from('receipts')
-                .insert([receipt])
+                .insert([normalizedReceipt])
                 .select()
                 .single();
 

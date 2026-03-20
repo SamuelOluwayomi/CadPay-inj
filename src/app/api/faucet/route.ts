@@ -18,9 +18,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Faucet configuration error: Missing credentials' }, { status: 500 });
         }
 
-        console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 5}`);
+        console.log(`💧 Injective Faucet request for: ${address}, Amount: ${amount || 2}`);
 
-        const requestedAmount = amount ? Number(amount) : 5;
+        const requestedAmount = amount ? Number(amount) : 2;
 
         // Perform transfer using the faucet key (hex or mnemonic)
         const txHash = await transferInj({

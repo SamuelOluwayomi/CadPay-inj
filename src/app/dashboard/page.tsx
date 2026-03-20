@@ -140,7 +140,7 @@ export default function Dashboard() {
 
         // Use a Map to deduplicate by signature (hash)
         const combined = new Map();
-        
+
         // Add on-chain first (they are our source of truth)
         onChain.forEach((tx: any) => {
             // Normalize explorer fields if needed (e.g. if signature is called hash)
@@ -150,15 +150,19 @@ export default function Dashboard() {
             }
         });
 
-        // Add local receipts (will overwrite if hash matches, but receipts are usually faster)
+        // Add local receipts
         local.forEach(tx => {
             if (!combined.has(tx.signature)) {
                 combined.set(tx.signature, tx);
             }
         });
 
-        return Array.from(combined.values())
-            .sort((a, b) => b.timestamp - a.timestamp);
+        // Force results to be sorted by timestamp
+        const finalResults = Array.from(combined.values())
+            .sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        console.log(`📊 [mergedTransactions] Merged ${finalResults.length} txs (${onChain.length} on-chain, ${local.length} local)`);
+        return finalResults;
     })();
 
     useEffect(() => {
@@ -507,25 +511,25 @@ export default function Dashboard() {
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
                     </div>
-        {activeSection === 'overview' && (
-            <OverviewSection
-                userName={userProfile.username}
-                avatar={userProfile.avatar}
-                avatarUrl={userProfile.avatar_url}
-                balance={displayBalance.toFixed(2)}
-                address={address || ""}
-                refreshBalance={refreshWalletBalance}
-                loading={loading}
-                copyToClipboard={copyToClipboard}
-                onOpenSend={() => setShowSendModal(true)}
-                onTransactionSuccess={onTransactionSuccess}
-                transactions={mergedTransactions} // Use merged list!
-                fetchTransactions={fetchTransactions}
-                txSpeed={txSpeed}
-                setTxSpeed={setTxSpeed}
-                pots={pots}
-            />
-        )}
+                    {activeSection === 'overview' && (
+                        <OverviewSection
+                            userName={userProfile.username}
+                            avatar={userProfile.avatar}
+                            avatarUrl={userProfile.avatar_url}
+                            balance={displayBalance.toFixed(2)}
+                            address={address || ""}
+                            refreshBalance={refreshWalletBalance}
+                            loading={loading}
+                            copyToClipboard={copyToClipboard}
+                            onOpenSend={() => setShowSendModal(true)}
+                            onTransactionSuccess={onTransactionSuccess}
+                            transactions={mergedTransactions} // Use merged list!
+                            fetchTransactions={fetchTransactions}
+                            txSpeed={txSpeed}
+                            setTxSpeed={setTxSpeed}
+                            pots={pots}
+                        />
+                    )}
 
                     {activeSection === 'subscriptions' && <SubscriptionsSection txSpeed={txSpeed} setTxSpeed={setTxSpeed} balance={displayBalance} injPrice={injPrice} />}
 
@@ -724,11 +728,11 @@ function OverviewSection({
         setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
         try {
-            showToast("Requesting funds from Private Vault...", "pending");
+            // Removed pending toast to reduce excess notifications
             const res = await fetch('/api/faucet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address: address })
+                body: JSON.stringify({ address: address, amount: 2 })
             });
             const data = await res.json();
 
@@ -753,7 +757,7 @@ function OverviewSection({
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
-                
+
                 // Use unified success handler for consistent UI refresh
                 if (onTransactionSuccess) {
                     await onTransactionSuccess(address, fundingAmount, false);
@@ -831,7 +835,7 @@ function OverviewSection({
                             <StorefrontIcon size={20} className="text-orange-400" />
                         </div>
                         {loadingSub ? (
-                             <div className="h-9 w-12 bg-white/5 rounded-lg animate-pulse" />
+                            <div className="h-9 w-12 bg-white/5 rounded-lg animate-pulse" />
                         ) : (
                             <h3 className="text-3xl font-bold text-white transition-all">{subscriptions.length}</h3>
                         )}
@@ -844,7 +848,7 @@ function OverviewSection({
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(address);
-                                    showToast("Address copied!", "success");
+                                    // Removed toast to reduce excess notifications
                                 }}
                                 className="text-zinc-500 hover:text-white transition-colors"
                             >
@@ -1046,13 +1050,13 @@ function SubscriptionsSection({
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
 
-    const { 
-        subscriptions, 
-        addSubscription, 
-        removeSubscription, 
-        getMonthlyTotal, 
+    const {
+        subscriptions,
+        addSubscription,
+        removeSubscription,
+        getMonthlyTotal,
         getHistoricalData,
-        loading: loadingSub 
+        loading: loadingSub
     } = useSubscriptions();
     const { services: dynamicServices, merchants } = useMerchant();
 
@@ -1511,8 +1515,8 @@ function WalletCard({ balance = "0.00", address = "" }: { balance: string, addre
                 {/* Top Row: Brand & NFC Icon */}
                 <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-2">
-                        <div className="bg-linear-to-br from-orange-400 to-orange-600 p-1.5 rounded-lg shadow-lg">
-                            <WalletIcon size={20} weight="duotone" className="text-white" />
+                        <div className="bg-zinc-800 p-1 rounded-lg shadow-lg overflow-hidden flex items-center justify-center">
+                            <img src="/icon.ico" alt="CadPay" className="w-6 h-6 object-contain" />
                         </div>
                         <span className="font-bold tracking-wider text-lg">CadPay</span>
                     </div>
