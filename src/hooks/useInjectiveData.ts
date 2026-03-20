@@ -78,8 +78,9 @@ export const useInjectiveData = (address: string | null, onApiRecovered?: () => 
             const balanceRes = await fetch(`/api/injective/balance?address=${address}`);
             if (balanceRes.ok) {
                 const balanceData = await balanceRes.json();
-                // Injective balance is usually in uinj, but let's assume the API returns INJ for consistency or handle uinj here
-                setBalance(balanceData.balance || 0);
+                const injBal = balanceData.balances?.find((b: any) => b.denom === 'uinj' || b.denom === 'inj');
+                const amount = injBal?.amount || '0';
+                setBalance(parseInt(amount) / 1e18);
             }
 
             // 2. Fetch Transactions
@@ -96,7 +97,7 @@ export const useInjectiveData = (address: string | null, onApiRecovered?: () => 
                 return {
                     id: tx.tx_hash,
                     timestamp: new Date(tx.timestamp).getTime(),
-                    amount: parseFloat(amount) / 1000000, // Convert uinj to INJ
+                    amount: parseFloat(amount) / 1e18, // Convert inj/uinj to INJ
                     sender: tx.body.messages[0].from_address,
                     isIncoming: isIncoming,
                     status: 'Success'

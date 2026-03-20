@@ -72,7 +72,7 @@ export const useSavings = () => {
             const updatedPots = await Promise.all(currentPots.map(async (pot) => {
                 try {
                     // Update to Injective LCD endpoint for balance
-                    const res = await fetch(`https://testnet.lcd.injective.network/cosmos/bank/v1beta1/balances/${pot.address}/by_denom?denom=uinj`);
+                    const res = await fetch(`https://testnet.sentry.lcd.injective.network/cosmos/bank/v1beta1/balances/${pot.address}/by_denom?denom=inj`);
                     if (res.ok) {
                         const balanceData = await res.json();
                         const amount = balanceData.balance?.amount || '0';

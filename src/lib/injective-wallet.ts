@@ -51,21 +51,11 @@ export async function transferInj(params: {
         }
         const injectiveAddress = privateKey.toBech32();
         
-        // Debug: Check balance before transfer
-        try {
-            const restEndpoint = (INJECTIVE_ENDPOINTS as any).rest || (INJECTIVE_ENDPOINTS as any).lcd;
-            const balRes = await fetch(`${restEndpoint}/cosmos/bank/v1beta1/balances/${injectiveAddress}`);
-            const balData = await balRes.json();
-            console.log(`🔍 [DEBUG] Faucet Balance on ${INJECTIVE_NETWORK}:`, JSON.stringify(balData));
-        } catch (e) {
-            console.error("🔍 [DEBUG] Failed to fetch balance for debug:", e);
-        }
-
         // 1. Prepare the MsgSend
         const amountInBase = new BigNumberInBase(amount).toWei();
         const msg = MsgSend.fromJSON({
             amount: {
-                denom: 'uinj',
+                denom: 'inj',
                 amount: amountInBase.toString()
             },
             srcInjectiveAddress: injectiveAddress,

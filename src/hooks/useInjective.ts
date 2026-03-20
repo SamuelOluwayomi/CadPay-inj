@@ -31,7 +31,7 @@ export const useInjective = () => {
             const response = await fetch(`/api/injective/balance?address=${addr}`);
             if (response.ok) {
                 const data = await response.json();
-                const uinjBalance = data.balances?.find((b: any) => b.denom === 'uinj');
+                const uinjBalance = data.balances?.find((b: any) => b.denom === 'uinj' || b.denom === 'inj');
                 const amount = uinjBalance?.amount || '0';
                 setBalance(parseInt(amount) / 1e18);
             }
