@@ -52,7 +52,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('auth_method')
-                    .eq('auth_user_id', user.id)
+                    .eq('id', user.id)
                     .single();
 
                 // Show biometric button only if auth_method is 'biometric' AND device supports it
@@ -172,7 +172,6 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
             
             // If it's a custodial wallet (has encrypted key on server), use the new secure send API
             if (profile?.encrypted_private_key) {
-                console.log('🔐 [UnifiedSendModal] Using Server-Side Signing for custodial wallet...');
                 const { data: { session } } = await supabase.auth.getSession();
                 const response = await fetch('/api/wallet/send', {
                     method: 'POST',
@@ -194,8 +193,6 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 txId = result.txHash;
             } else {
                 // 3. Local signing for Non-Custodial / Biometric wallets
-                console.log('🔑 [UnifiedSendModal] Using Local Signing (Biometric/Passkey)...');
-                
                 // Unlock with biometric/local key
                 const unlockResult = await unlockWallet(userEmail); // Try biometric first
                 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { INJECTIVE_NETWORK, INJECTIVE_CHAIN_ID } from '@/lib/injective-wallet';
 
 export const useInjective = () => {
@@ -12,28 +12,32 @@ export const useInjective = () => {
     const [isConnecting, setIsConnecting] = useState(false);
 
     const [transactions, setTransactions] = useState<any[]>([]);
+    const txCountRef = useRef(0);
+    const initialFetchDone = useRef(false);
 
     const fetchTransactions = useCallback(async (addr: string, isManual = false) => {
         if (!addr) return;
-        // Only show full-screen loader if we have NO data yet or if it's a manual refresh
-        setIsLoading(prev => {
-            // If we have transactions and it's not manual, don't show the big loader
-            if (transactions.length > 0 && !isManual) return prev;
-            return true;
-        });
+        
+        // Loader logic: Only show if it matches manual refresh OR if it's the absolute first fetch
+        if (isManual || !initialFetchDone.current) {
+            setIsLoading(true);
+        }
 
         try {
             const response = await fetch(`/api/injective/transactions?address=${addr}`);
             if (response.ok) {
                 const data = await response.json();
-                setTransactions(data.transactions || []);
+                const newTxs = data.transactions || [];
+                setTransactions(newTxs);
+                txCountRef.current = newTxs.length;
             }
         } catch (e) {
-            console.error("Failed to fetch transactions via proxy", e);
+            // Error
         } finally {
+            initialFetchDone.current = true;
             setIsLoading(false);
         }
-    }, []); // Stabilized to prevent infinite loops
+    }, []);
 
     const fetchBalance = useCallback(async (addr: string) => {
         if (!addr) return;
@@ -85,7 +89,6 @@ export const useInjective = () => {
 
         // Background polling every 30 seconds
         const interval = setInterval(() => {
-            console.log('🔄 [useInjective] Background Refresh...');
             fetchBalance(address);
             fetchTransactions(address);
         }, 30000);
@@ -134,8 +137,8 @@ export const useInjective = () => {
         connect,
         disconnect,
         refreshBalance: () => address && fetchBalance(address),
-        fetchTransactions: (manual = false): void | Promise<void> => {
-            if (address) return fetchTransactions(address, manual);
+        fetchTransactions: (isManual = false): void | Promise<void> => {
+            if (address) return fetchTransactions(address, isManual);
         },
     };
 };

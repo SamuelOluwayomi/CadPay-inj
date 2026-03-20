@@ -109,14 +109,12 @@ export default function Dashboard() {
 
         // If we HAVE a session or address, we are good. Stop waiting.
         if (session || address) {
-            console.log('🛡️ [Dashboard Guard] Access granted');
             return;
         }
 
         // Only if we definitively have NEITHER after loading, do we wait a tiny bit to be sure
         const timer = setTimeout(() => {
             if (!session && !address) {
-                console.error("🚫 [Dashboard Guard] Auth definitively not found. Redirecting to home...");
                 router.push('/');
             }
         }, 800); // Reduced to 800ms now that session-clearing is fixed
@@ -175,7 +173,6 @@ export default function Dashboard() {
         const finalResults = Array.from(combined.values())
             .sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
 
-        console.log(`📊 [mergedTransactions] Merged ${finalResults.length} txs (${onChain.length} on-chain, ${local.length} local)`);
         return finalResults;
     })();
 
@@ -324,11 +321,9 @@ export default function Dashboard() {
             }
 
             // 2. Save Profile Details (Upsert will merge with wallet data)
-            console.log("💾 Saving profile with data:", data);
             const result = await createProfile(data.username, data.avatar, data.gender, data.pin, data.email, data.avatar_url);
 
             if (result) {
-                console.log("✅ Profile saved, finishing onboarding...");
                 setShowOnboarding(false);
                 showToast("Profile created successfully!", "success");
 
@@ -336,7 +331,6 @@ export default function Dashboard() {
                 setTimeout(() => window.location.reload(), 1500);
             }
         } catch (e: any) {
-            console.error("Onboarding failed", e);
             showToast(e.message || "Failed to create profile. Try again.", "error");
         } finally {
             setIsOnboardingSubmitting(false);
