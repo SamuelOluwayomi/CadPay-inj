@@ -182,7 +182,9 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                     body: JSON.stringify({
                         recipient: targetRecipient,
                         amount: numAmount,
-                        pin: password // The user's PIN is verified on the server
+                        pin: password, // The user's PIN is verified on the server
+                        service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
+                        plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer'
                     })
                 });
 
@@ -217,18 +219,21 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 });
             }
 
-            // Create receipt
-            await createReceipt({
-                wallet_address: userAddress!,
-                service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
-                plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer',
-                amount_inj: numAmount,
-                amount_usd: numAmount * 25, // Fallback price or use a prop if available
-                tx_signature: txId,
-                status: 'completed',
-                sender_address: userAddress!,
-                receiver_address: targetRecipient!
-            });
+            if (!profile?.encrypted_private_key) {
+                // 3. Create receipt only for Biometric/Local signing.
+                // Custodial transfers are now handled by the backend atomically.
+                await createReceipt({
+                    wallet_address: userAddress!,
+                    service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
+                    plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer',
+                    amount_inj: numAmount,
+                    amount_usd: numAmount * 25,
+                    tx_signature: txId,
+                    status: 'completed',
+                    sender_address: userAddress!,
+                    receiver_address: targetRecipient!
+                });
+            }
 
             console.log('🚀 Injective Transaction complete! TxHash:', txId);
 

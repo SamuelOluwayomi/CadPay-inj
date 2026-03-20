@@ -13,31 +13,34 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { recipient, amount, pin } = await request.json();
+        const { recipient, amount, pin, service_name, plan_name } = await request.json();
 
         if (!recipient || !amount || !pin) {
             return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
         }
 
-        // Initialize Supabase with the user's auth context
-        const supabase = createClient(
+        // Initialize Supabase with service role for administrative tasks
+        const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: { headers: { Authorization: authHeader } }
-            }
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // 1. Get current user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
+        // Verify session using user's token
+        const authUser = await createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        ).auth.getUser(authHeader.replace('Bearer ', ''));
+
+        if (authUser.error || !authUser.data.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Fetch profile data (encrypted key and stored pin)
-        const { data: profile, error: dbError } = await supabase
+        const user = authUser.data.user;
+
+        // 2. Fetch profile data (encrypted key, stored pin, AND wallet address)
+        const { data: profile, error: dbError } = await supabaseAdmin
             .from('profiles')
-            .select('encrypted_private_key, pin')
+            .select('encrypted_private_key, pin, wallet_address')
             .eq('id', user.id)
             .single();
 
@@ -54,25 +57,41 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Custodial wallet not found for this account' }, { status: 404 });
         }
 
-        // 4. Decrypt the private key hex (stored as mnemonic field in creation)
+        // 4. Decrypt the private key
         const mnemonicOrKey = decrypt(profile.encrypted_private_key);
 
-        // Safety check for legacy broken wallets
         if (mnemonicOrKey === "random-mnemonic-not-recoverable") {
             return NextResponse.json({ 
-                error: 'Legacy wallet detected. Please reset your account data in Security settings to generate a valid wallet.' 
+                error: 'Legacy wallet detected. Please reset your account data in Security settings.' 
             }, { status: 400 });
         }
 
         console.log(`🚀 [Server-Side Send] Executing transfer for: ${user.email}`);
 
         // 5. Execute transfer
-        // transferInj handles both mnemonic (sentences) and hex keys (64 chars)
         const txHash = await transferInj({
             mnemonicOrKey,
             recipient,
             amount: Number(amount)
         });
+
+        // 6. Create Receipt (Securely on backend)
+        try {
+            const injPrice = 25; // Fallback or fetch if needed
+            await supabaseAdmin.from('receipts').insert({
+                wallet_address: profile.wallet_address,
+                service_name: service_name || 'External Transfer',
+                plan_name: plan_name || 'Direct Transfer',
+                amount_inj: Number(amount),
+                amount_usd: Number(amount) * injPrice,
+                tx_signature: txHash,
+                status: 'completed',
+                sender_address: profile.wallet_address,
+                receiver_address: recipient
+            });
+        } catch (receiptErr) {
+            console.error('⚠️ Transaction sent but receipt failed:', receiptErr);
+        }
 
         return NextResponse.json({
             success: true,

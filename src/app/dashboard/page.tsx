@@ -152,20 +152,25 @@ export default function Dashboard() {
 
         // Use a Map to deduplicate by signature (hash)
         const combined = new Map();
+        
+        const normalizeSig = (sig: string) => sig.replace(/^0x/i, '').toLowerCase();
 
         // Add on-chain first (they are our source of truth)
         onChain.forEach((tx: any) => {
-            // Normalize explorer fields if needed (e.g. if signature is called hash)
+            // Normalize explorer fields if needed
             const signature = tx.signature || tx.hash || tx.tx_hash;
             if (signature) {
-                combined.set(signature, { ...tx, signature });
+                combined.set(normalizeSig(signature), { ...tx, signature });
             }
         });
 
         // Add local receipts
-        local.forEach(tx => {
-            if (!combined.has(tx.signature)) {
-                combined.set(tx.signature, tx);
+        local.forEach((tx: any) => {
+            if (tx.signature) {
+                const normSig = normalizeSig(tx.signature);
+                if (!combined.has(normSig)) {
+                    combined.set(normSig, tx);
+                }
             }
         });
 
@@ -198,11 +203,8 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [txSpeed.status]);
 
-    // Log active address for debugging
+    // Keep empty or remove if no other side effects needed.
     useEffect(() => {
-        if (address) {
-            console.log("Active CadPay Address:", address);
-        }
     }, [address]);
 
     // Fetch Custodial Balance if not connected to Injective
@@ -268,17 +270,14 @@ export default function Dashboard() {
         const timer = setTimeout(() => {
             // Wait for all loading states to be definitively resolved
             if (loadingTransactions || profileLoading || !sessionInitialized) {
-                console.log("⏳ Dashboard still initializing data...");
                 return;
             }
 
             // Trigger Onboarding if:
             // 1. Profile exists but is incomplete (No Username OR No PIN) 
             if (profile && (!profile.username || !profile.pin)) {
-                console.log("⚠️ Profile incomplete, triggering Onboarding...");
                 setShowOnboarding(true);
             } else if (!profile && (address || session)) {
-                console.log("⚠️ Logged in but no profile found, triggering Onboarding...");
                 setShowOnboarding(true);
             } else {
                 setShowOnboarding(false);
@@ -362,8 +361,6 @@ export default function Dashboard() {
 
     // Debug Active Mode
     useEffect(() => {
-        if (address) console.log("🔵 Dashboard Mode: Injective Connected", address);
-        else if (profile?.authority) console.log("望 Dashboard Mode: Custodial", profile.authority);
     }, [address, profile]);
 
 
@@ -792,8 +789,8 @@ function OverviewSection({
         }
     };
 
-    const balanceValue = balance || 0;
-    const usdValue = injPrice ? (balanceValue * injPrice).toFixed(2) : '...';
+    const balanceValue = typeof balance === 'number' ? balance : 0;
+    const usdValue = injPrice ? (balanceValue * injPrice).toFixed(2) : '0.00';
 
     return (
         <div className="space-y-8 px-4 md:px-0">
@@ -913,22 +910,44 @@ function OverviewSection({
                                 <p className="text-zinc-500 text-sm">No transactions yet</p>
                             </div>
                         ) : (
-                            transactions.slice(0, 5).map((tx: any) => (
-                                <div key={tx.signature} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group">
+                            transactions.slice(0, 5).map((tx: any) => {
+                                const rawSig = tx.signature || '';
+                                const cleanSig = rawSig.replace(/^0x/i, '').toUpperCase();
+                                const displaySig = cleanSig ? `${cleanSig.slice(0, 8)}...${cleanSig.slice(-6)}` : 'UNKNOWN';
+
+                                return (
+                                <div key={rawSig} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all group relative">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tx.err ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
                                             {tx.err ? <ArrowDownIcon size={16} /> : <CheckCircleIcon size={16} />}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-bold text-white truncate pr-2">
-                                                {tx.signature.slice(0, 8)}...{tx.signature.slice(-6)}
-                                            </p>
                                             <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-white truncate font-mono">
+                                                    {displaySig}
+                                                </p>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(cleanSig);
+                                                        showToast("Transaction ID copied!", "success");
+                                                    }}
+                                                    className="text-zinc-500 hover:text-white transition-colors"
+                                                    title="Copy Transaction ID"
+                                                >
+                                                    <CopyIcon size={12} weight="bold" />
+                                                </button>
+                                                {tx.isLocal && (
+                                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest">
+                                                        Local
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
                                                 <p className="text-[10px] sm:text-xs text-zinc-500 truncate">
                                                     {new Date(tx.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                                 </p>
                                                 <a
-                                                    href={tx.viewUrl}
+                                                    href={`https://testnet.explorer.injective.network/transaction/${cleanSig}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-orange-500 hover:text-orange-400 transition-colors shrink-0"
@@ -947,7 +966,7 @@ function OverviewSection({
                                         </p>
                                     </div>
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 </div>

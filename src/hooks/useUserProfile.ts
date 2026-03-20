@@ -26,10 +26,8 @@ export function useUserProfile() {
     // Initial Session Check
     useEffect(() => {
         const initSession = async () => {
-            console.log('🔍 [useUserProfile] Initializing session...');
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                console.log('🔍 [useUserProfile] getSession result:', session ? 'Session found' : 'No session');
                 setSession(session);
             } catch (err) {
                 console.error('🔍 [useUserProfile] getSession failed:', err);
@@ -42,7 +40,6 @@ export function useUserProfile() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            console.log(`🔍 [useUserProfile] Auth state change Event: ${_event}`, session ? 'Session found' : 'No session');
             setSession(session);
             setSessionInitialized(true);
         });
@@ -52,14 +49,10 @@ export function useUserProfile() {
 
     const fetchProfile = useCallback(async () => {
         // block until session check is done
-        if (!sessionInitialized) {
-            console.log('🔍 [useUserProfile] fetchProfile blocked: session not initialized');
-            return;
-        }
+        if (!sessionInitialized) return;
 
         setLoading(true);
         setError(null);
-        console.log('🔍 [useUserProfile] Starting fetchProfile...', { hasSession: !!session, address });
 
         try {
             let data, error;
@@ -83,7 +76,6 @@ export function useUserProfile() {
                 data = result.data;
                 error = result.error;
             } else {
-                console.log('🔍 [useUserProfile] fetchProfile: No session OR address available');
                 setProfile(null);
                 setLoading(false);
                 return;
@@ -95,7 +87,6 @@ export function useUserProfile() {
             }
 
             if (data) {
-                console.log('🔍 [useUserProfile] Profile data loaded successfully');
                 setProfile({
                     username: data.username,
                     emoji: data.emoji || '👤',

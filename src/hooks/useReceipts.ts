@@ -40,30 +40,30 @@ export function useReceipts(walletAddress: string | null) {
         }
     }, [walletAddress]);
 
-    // Create a new receipt
+    // Create a new receipt using the Secure Backend Proxy
     const createReceipt = async (receipt: Omit<Receipt, 'id' | 'timestamp'>): Promise<Receipt | null> => {
         try {
-            const normalizedReceipt = {
-                ...receipt,
-                wallet_address: receipt.wallet_address.toLowerCase()
-            };
-            console.log('📝 Creating receipt in Supabase:', normalizedReceipt);
-            const { data, error: insertError } = await supabase
-                .from('receipts')
-                .insert([normalizedReceipt])
-                .select()
-                .single();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("Authentication required to save receipts.");
 
-            if (insertError) {
-                console.error('Supabase Insert Error:', insertError);
-                throw insertError;
+            const response = await fetch('/api/transactions/receipt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(receipt)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Backend failed to save receipt');
             }
 
-            console.log('✅ Receipt created successfully:', data);
             // Refresh receipts list
             await fetchReceipts();
-
-            return data;
+            return result.data;
         } catch (err: any) {
             console.error('Error creating receipt:', err);
             setError(err.message);
