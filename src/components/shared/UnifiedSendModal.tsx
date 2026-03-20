@@ -12,6 +12,7 @@ import { transferInj } from '@/lib/injective-wallet';
 import { supabase } from '@/lib/supabase';
 import { useReceipts } from '@/hooks/useReceipts';
 import { LinkIcon, DownloadIcon } from '@phosphor-icons/react';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 
 interface UnifiedSendModalProps {
@@ -36,8 +37,9 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
-    const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet } = useBiometricWallet();
+    const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet, checkWalletExists, createWalletWithPassword } = useBiometricWallet();
     const { createReceipt } = useReceipts(userAddress);
+    const { profile } = useUserProfile();
 
     // Get user email from Supabase session and check biometric support
     useEffect(() => {
@@ -160,11 +162,36 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 throw new Error('User not authenticated');
             }
 
-            // 2. Unlock with password
+            // 1. PIN Verification
+            if (profile?.pin && password !== profile.pin) {
+                throw new Error('Incorrect Security PIN. Please try again.');
+            }
+
+            // 2. Check if wallet needs sync (for custodial/Gmail users)
+            const exists = await checkWalletExists(userEmail);
+            if (!exists && profile?.encrypted_private_key) {
+                console.log('🔄 Wallet not found in local storage. Syncing from Supabase...');
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch('/api/wallet/export', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`
+                    }
+                });
+                const exportData = await res.json();
+                if (exportData.success && exportData.mnemonic) {
+                    // Store locally encrypted with PIN
+                    await createWalletWithPassword(userEmail, exportData.mnemonic, password);
+                } else {
+                    throw new Error('Failed to sync security credentials from server.');
+                }
+            }
+
+            // 3. Unlock with PIN/password
             const unlockResult = await unlockWalletWithPassword(userEmail, password);
 
             if (!unlockResult.success || !unlockResult.mnemonic) {
-                throw new Error(unlockResult.error || 'Failed to unlock wallet');
+                throw new Error(unlockResult.error || 'Failed to unlock wallet for signing');
             }
 
             // 3. Sign and broadcast transaction directly to Injective network
@@ -385,11 +412,11 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                     <div>
                                         <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
                                             <LockKeyIcon size={14} className="inline mr-1" />
-                                            Wallet Password
+                                            Security PIN
                                         </label>
                                         <input
                                             type="password"
-                                            placeholder="Enter your wallet password"
+                                            placeholder="Enter your 4-digit PIN"
                                             className="w-full bg-zinc-900/60 border border-white/10 p-4 rounded-2xl text-white focus:outline-none focus:border-orange-500/50 transition-all"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}

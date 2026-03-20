@@ -9,18 +9,33 @@ export async function GET(request: Request) {
     }
 
     try {
-        const response = await fetch(`https://testnet.explorer.injective.network/api/v1/accounts/${address}/transactions`);
+        // Using Sentry LCD endpoint which is more reliable for L1 events
+        // Fetching both sent and received transactions
+        const [sentRes, receivedRes] = await Promise.all([
+            fetch(`https://testnet.sentry.lcd.injective.network/cosmos/tx/v1beta1/txs?events=message.sender='${address}'`),
+            fetch(`https://testnet.sentry.lcd.injective.network/cosmos/tx/v1beta1/txs?events=transfer.recipient='${address}'`)
+        ]);
+
+        const sentData = sentRes.ok ? await sentRes.json() : { tx_responses: [] };
+        const receivedData = receivedRes.ok ? await receivedRes.json() : { tx_responses: [] };
+
+        const allTxs = [...(sentData.tx_responses || []), ...(receivedData.tx_responses || [])];
         
-        if (response.status === 404) {
-            return NextResponse.json({ transactions: [] });
-        }
+        // Map to uniform structure
+        const transactions = allTxs.map((tx: any) => ({
+            signature: tx.txhash,
+            hash: tx.txhash,
+            timestamp: tx.timestamp ? new Date(tx.timestamp).getTime() : Date.now(),
+            amount: 0, // Injective LCD doesn't give simple amount in the list, would need parsing
+            err: tx.code !== 0,
+            slot: parseInt(tx.height) || 0
+        }));
 
-        if (!response.ok) {
-            return NextResponse.json({ error: 'Failed to fetch from explorer' }, { status: response.status });
-        }
+        // Deduplicate and sort
+        const uniqueTxs = Array.from(new Map(transactions.map(item => [item.signature, item])).values())
+            .sort((a: any, b: any) => b.timestamp - a.timestamp);
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json({ transactions: uniqueTxs });
     } catch (error: any) {
         console.error('Injective Proxy Error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

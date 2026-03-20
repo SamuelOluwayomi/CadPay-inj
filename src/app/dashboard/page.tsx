@@ -56,12 +56,14 @@ export default function Dashboard() {
     const {
         address,
         balance: walletBalance,
-        isLoading: loading,
+        isLoading: loadingTransactions,
         isConnected,
+        connect,
         disconnect,
         refreshBalance: refreshWalletBalance,
         transactions,
-        fetchTransactions
+        fetchTransactions,
+        isConnecting
     } = useInjective();
 
     const { showToast } = useToast();
@@ -91,7 +93,7 @@ export default function Dashboard() {
     // Auth Guard: Redirect to Home if not authenticated
     useEffect(() => {
         // block until all initial checks are done
-        if (loading || profileLoading || !sessionInitialized) return;
+        if (loadingTransactions || profileLoading || !sessionInitialized) return;
 
         // If we HAVE a session or address, we are good. Stop waiting.
         if (session || address) {
@@ -108,7 +110,7 @@ export default function Dashboard() {
         }, 800); // Reduced to 800ms now that session-clearing is fixed
 
         return () => clearTimeout(timer);
-    }, [session, address, loading, profileLoading, sessionInitialized, router]);
+    }, [session, address, loadingTransactions, profileLoading, sessionInitialized, router]);
 
     const userProfile = {
         username: profile?.username || 'User',
@@ -253,7 +255,7 @@ export default function Dashboard() {
     useEffect(() => {
         // Debounce the onboarding check to prevent flashing during loading states
         const timer = setTimeout(() => {
-            if (loading || profileLoading) return;
+            if (loadingTransactions || profileLoading) return;
 
             // Trigger Onboarding if:
             // 1. Profile exists but is incomplete (No Username OR No PIN) 
@@ -270,7 +272,7 @@ export default function Dashboard() {
         }, 800);
 
         return () => clearTimeout(timer);
-    }, [address, loading, profile, profileLoading]);
+    }, [address, loadingTransactions, profile, profileLoading]);
 
     const activeAddress = address || profile?.authority || "";
     // Onboarding handlers
@@ -516,10 +518,11 @@ export default function Dashboard() {
                             userName={userProfile.username}
                             avatar={userProfile.avatar}
                             avatarUrl={userProfile.avatar_url}
-                            balance={displayBalance.toFixed(2)}
+                            balance={displayBalance}
                             address={address || ""}
                             refreshBalance={refreshWalletBalance}
-                            loading={loading}
+                            loading={isConnecting} // Use isConnecting for general loading state
+                            loadingTransactions={loadingTransactions} // Pass the new prop
                             copyToClipboard={copyToClipboard}
                             onOpenSend={() => setShowSendModal(true)}
                             onTransactionSuccess={onTransactionSuccess}
@@ -667,12 +670,13 @@ function NavItem({ icon, label, active, onClick }: any) {
 function OverviewSection({
     userName, avatar, avatarUrl, balance, address, loading,
     copyToClipboard, onOpenSend, refreshBalance, transactions,
-    fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess
+    fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess,
+    loadingTransactions
 }: {
     userName: string,
     avatar: string,
     avatarUrl?: string,
-    balance: string,
+    balance: number,
     address: string,
     loading: boolean,
     copyToClipboard: () => void,
@@ -681,7 +685,8 @@ function OverviewSection({
     txSpeed: TxSpeed,
     setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
     pots: any[],
-    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean) => Promise<void>
+    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean) => Promise<void>,
+    loadingTransactions: boolean
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const [injPrice, setInjPrice] = useState<number | null>(null);
@@ -774,7 +779,7 @@ function OverviewSection({
         }
     };
 
-    const balanceValue = parseFloat(balance) || 0;
+    const balanceValue = balance || 0;
     const usdValue = injPrice ? (balanceValue * injPrice).toFixed(2) : '...';
 
     return (
@@ -869,7 +874,12 @@ function OverviewSection({
                         Recent Activity
                     </h3>
                     <div className="space-y-3">
-                        {transactions.length === 0 ? (
+                        {loadingTransactions ? (
+                            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+                                <p className="text-zinc-500 text-xs font-medium animate-pulse">Fetching transactions...</p>
+                            </div>
+                        ) : transactions.length === 0 ? (
                             <div className="text-center py-12">
                                 <ActivityIcon size={48} className="mx-auto text-zinc-800 mb-3" />
                                 <p className="text-zinc-500 text-sm">No transactions yet</p>

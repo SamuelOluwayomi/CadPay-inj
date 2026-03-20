@@ -9,6 +9,7 @@ export const useInjective = () => {
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
 
     const [transactions, setTransactions] = useState<any[]>([]);
 
@@ -71,23 +72,28 @@ export const useInjective = () => {
     }, [fetchBalance, fetchTransactions]);
 
     const connect = async (manualAddress?: string) => {
-        if (manualAddress) {
-            setAddress(manualAddress);
-            setIsConnected(true);
-            localStorage.setItem('active_wallet_address', manualAddress);
-            await fetchBalance(manualAddress);
-            await fetchTransactions(manualAddress);
-            return manualAddress;
+        setIsConnecting(true);
+        try {
+            if (manualAddress) {
+                setAddress(manualAddress);
+                setIsConnected(true);
+                localStorage.setItem('active_wallet_address', manualAddress);
+                await fetchBalance(manualAddress);
+                await fetchTransactions(manualAddress);
+                return manualAddress;
+            }
+            
+            // If no manual address, just check storage
+            const storageAddr = localStorage.getItem('active_wallet_address');
+            if (storageAddr) {
+                setAddress(storageAddr);
+                setIsConnected(true);
+                return storageAddr;
+            }
+            return null;
+        } finally {
+            setIsConnecting(false);
         }
-        
-        // If no manual address, just check storage
-        const storageAddr = localStorage.getItem('active_wallet_address');
-        if (storageAddr) {
-            setAddress(storageAddr);
-            setIsConnected(true);
-            return storageAddr;
-        }
-        return null;
     };
 
     const disconnect = useCallback(() => {
@@ -105,6 +111,7 @@ export const useInjective = () => {
         isConnected,
         error,
         isLoading,
+        isConnecting,
         connect,
         disconnect,
         refreshBalance: () => address && fetchBalance(address),
