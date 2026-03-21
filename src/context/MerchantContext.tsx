@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 import { SERVICES } from '@/data/subscriptions';
 
-export interface Merchant {
+export interface MerchantProfile {
     id: string;
     name: string;
     email: string;
@@ -18,22 +18,45 @@ export interface MerchantService {
     id: string;
     merchantId: string;
     name: string;
+    category: string;
     description: string;
-    price: number;
-    icon: string; // url or icon name
+    imageUrl?: string;
     color: string;
+    merchantWallet?: string;
+    priceBasic: number;
+    pricePro: number;
+    priceEnterprise: number;
+    featuresBasic: string[];
+    featuresPro: string[];
+    featuresEnterprise: string[];
+}
+
+export interface UserSubscription {
+    id: string;
+    userId: string;
+    merchantId: string | null;
+    serviceId: string;
+    serviceName: string;
+    planName: string;
+    priceUsd: number;
+    priceInj: number | null;
+    status: 'active' | 'expired' | 'canceled';
+    nextBillingDate: string;
+    createdAt: string;
 }
 
 interface MerchantContextType {
-    merchant: Merchant | null;
-    merchants: Merchant[];
+    merchant: MerchantProfile | null;
     services: MerchantService[];
-    createMerchant: (name: string, email: string, password?: string) => Promise<Merchant>;
+    publicServices: MerchantService[];
+    subscriptions: UserSubscription[];
+    createMerchant: (name: string, email: string, password?: string) => Promise<MerchantProfile>;
     loginMerchant: (email: string, password?: string) => Promise<boolean>;
-    logoutMerchant: () => void;
-    createNewService: (name: string, price: number, description: string, color: string) => void;
-
+    logoutMerchant: () => Promise<void>;
+    createNewService: (serviceData: Partial<MerchantService>) => Promise<boolean>;
+    subscribeToService: (subscriptionData: any) => Promise<boolean>;
     getMerchantServices: (merchantId: string) => MerchantService[];
+    fetchPublicServices: () => Promise<void>;
     isLoading: boolean;
 }
 
@@ -45,8 +68,10 @@ import { supabase } from '@/lib/supabase';
 export function MerchantProvider({ children }: { children: React.ReactNode }) {
     const { profile, loading: profileLoading } = useUser();
 
-    const [merchantProfile, setMerchantProfile] = useState<Merchant | null>(null);
+    const [merchantProfile, setMerchantProfile] = useState<MerchantProfile | null>(null);
     const [services, setServices] = useState<MerchantService[]>([]);
+    const [publicServices, setPublicServices] = useState<MerchantService[]>([]);
+    const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -76,31 +101,6 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                         walletSecretKey: merchantData.encrypted_private_key, 
                         joinedAt: new Date(merchantData.created_at)
                     });
-                } else if (user.app_metadata?.provider === 'google' || user.user_metadata?.full_name) {
-                    // AUTO-PROVISION for OAuth users if profile is missing
-                    // STRATEGY: Check if UserContext already provided a wallet address
-                    if (profile?.authority) {
-                        console.log("📂 Reusing existing profile wallet for merchant profile...");
-                        const response = await fetch('/api/merchant/wallet/create', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                userId: user.id,
-                                businessName: user.user_metadata?.business_name || user.user_metadata?.full_name || "New Merchant",
-                                email: user.email,
-                                authMethod: 'google',
-                                // NEW: Pass the existing address to avoid generating a duplicate
-                                existingAddress: profile.authority 
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            setRefreshTrigger(prev => prev + 1);
-                        }
-                    } else {
-                        // Fallback: If profile is not yet fully initialized, wait or provision cautiously
-                        console.log("⏳ Waiting for profile authority before merchant auto-provisioning...");
-                    }
                 }
             } catch (err) {
                 console.error('Error fetching merchant profile:', err);
@@ -110,7 +110,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
         };
 
         fetchMerchantProfile();
-    }, [profile?.authority, refreshTrigger]);
+    }, [refreshTrigger]);
 
     // Derived Merchant State
     const merchant = React.useMemo(() => {
@@ -129,45 +129,97 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
 
     // Seed Services
     useEffect(() => {
-        const loadServices = () => {
-            if (!merchant) {
-                setIsLoading(false);
-                return;
-            }
-
+        const loadMerchantData = async () => {
+            if (!merchant?.id) return;
+            setIsLoading(true);
             try {
-                const storedServices = localStorage.getItem('cadpay_services');
-                let currentServices = storedServices ? JSON.parse(storedServices) : [];
-                const ADMIN_KEY = "inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te";
-
-                if (merchant.walletPublicKey === ADMIN_KEY) {
-                    const adminServices = currentServices.filter((s: MerchantService) => s.merchantId === merchant.id);
-                    if (adminServices.length === 0) {
-                        const seedServices = SERVICES.map(s => ({
-                            id: s.id,
-                            merchantId: merchant.id,
-                            name: s.name,
-                            description: s.description,
-                            price: s.plans[0].priceUSD,
-                            icon: s.id,
-                            color: s.color
-                        }));
-                        currentServices = [...currentServices, ...seedServices];
-                        localStorage.setItem('cadpay_services', JSON.stringify(currentServices));
-                    }
+                // 1. Load Services from DB
+                const sResponse = await fetch(`/api/merchant/services?merchantId=${merchant.id}`);
+                if (sResponse.ok) {
+                    const sData = await sResponse.json();
+                    setServices(sData.map((s: any) => ({
+                        id: s.id,
+                        merchantId: s.merchant_id,
+                        name: s.name,
+                        category: s.category,
+                        description: s.description,
+                        imageUrl: s.image_url,
+                        color: s.color,
+                        merchantWallet: s.merchant_wallet,
+                        priceBasic: parseFloat(s.price_basic),
+                        pricePro: parseFloat(s.price_pro),
+                        priceEnterprise: parseFloat(s.price_enterprise),
+                        featuresBasic: s.features_basic,
+                        featuresPro: s.features_pro,
+                        featuresEnterprise: s.features_enterprise
+                    })));
                 }
-                setServices(currentServices);
+
+                // 2. Load Subscriptions (including hardcoded ones if this is admin)
+                const subUrl = merchant.id === 'demo-admin' 
+                    ? `/api/subscriptions?merchantId=admin` // Placeholder for admin logic
+                    : `/api/subscriptions?merchantId=${merchant.id}`;
+                
+                const subResponse = await fetch(subUrl);
+                if (subResponse.ok) {
+                    const subData = await subResponse.json();
+                    setSubscriptions(subData.map((sub: any) => ({
+                        id: sub.id,
+                        userId: sub.user_id,
+                        merchantId: sub.merchant_id,
+                        serviceId: sub.service_id,
+                        serviceName: sub.service_name,
+                        planName: sub.plan_name,
+                        priceUsd: parseFloat(sub.price_usd),
+                        priceInj: sub.price_inj ? parseFloat(sub.price_inj) : null,
+                        status: sub.status,
+                        nextBillingDate: sub.next_billing_date,
+                        createdAt: sub.created_at
+                    })));
+                }
             } catch (e) {
-                console.error("Failed to load services", e);
+                console.error("Failed to load merchant data", e);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadServices();
-    }, [merchant?.id]);
+        loadMerchantData();
+    }, [merchant?.id, refreshTrigger]);
 
-    const createMerchant = async (name: string, email: string, password?: string) => {
+    const fetchPublicServices = async () => {
+        try {
+            const response = await fetch('/api/merchant/services');
+            if (response.ok) {
+                const data = await response.json();
+                setPublicServices(data.map((s: any) => ({
+                    id: s.id,
+                    merchantId: s.merchant_id,
+                    name: s.name,
+                    category: s.category,
+                    description: s.description,
+                    imageUrl: s.image_url,
+                    color: s.color,
+                    merchantWallet: s.merchant_wallet,
+                    priceBasic: parseFloat(s.price_basic),
+                    pricePro: parseFloat(s.price_pro),
+                    priceEnterprise: parseFloat(s.price_enterprise),
+                    featuresBasic: s.features_basic,
+                    featuresPro: s.features_pro,
+                    featuresEnterprise: s.features_enterprise
+                })));
+            }
+        } catch (e) {
+            console.error("Failed to fetch public services", e);
+        }
+    };
+
+    // Auto-fetch public services for users
+    useEffect(() => {
+        fetchPublicServices();
+    }, []);
+
+    const createMerchant = async (name: string, email: string, password?: string): Promise<MerchantProfile> => {
         setIsLoading(true);
         try {
             // 1. Create Supabase Auth Account
@@ -193,10 +245,12 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                 })
             });
 
+            if (!response.ok) throw new Error("Failed to create merchant profile");
+            
             const result = await response.json();
             if (!result.success) throw new Error(result.error);
 
-            // 3. Update local state
+            // 3. Update local state and return the new merchant profile
             setRefreshTrigger(prev => prev + 1);
             
             return {
@@ -204,7 +258,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                 name,
                 email,
                 walletPublicKey: result.address,
-                walletSecretKey: '',
+                walletSecretKey: '', // Wallet secret key is not returned for security
                 joinedAt: new Date()
             };
         } catch (e: any) {
@@ -242,36 +296,60 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
         window.location.href = '/';
     };
 
-    const createNewService = (name: string, price: number, description: string, color: string) => {
-        if (!merchant) return;
-        const newService: MerchantService = {
-            id: crypto.randomUUID(),
-            merchantId: merchant.id,
-            name,
-            price,
-            description,
-            icon: 'Storefront',
-            color
-        };
-        const updatedServices = [...services, newService];
-        setServices(updatedServices);
-        localStorage.setItem('cadpay_services', JSON.stringify(updatedServices));
+    const createNewService = async (serviceData: Partial<MerchantService>) => {
+        if (!merchant) return false;
+        try {
+            const response = await fetch('/api/merchant/services', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    merchantId: merchant.id,
+                    ...serviceData
+                })
+            });
+
+            if (response.ok) {
+                setRefreshTrigger(prev => prev + 1);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error("Failed to create service", e);
+            return false;
+        }
     };
 
     const getMerchantServices = (merchantId: string) => {
         return services.filter(s => s.merchantId === merchantId);
     };
 
+    const subscribeToService = async (subscriptionData: any) => {
+        try {
+            const response = await fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscriptionData)
+            });
+            return response.ok;
+        } catch (e) {
+            console.error("Failed to subscribe", e);
+            return false;
+        }
+    };
+
     return (
         <MerchantContext.Provider value={{
             merchant,
-            merchants: [],
             services,
+            publicServices,
+            subscriptions,
             createMerchant,
             loginMerchant,
             logoutMerchant,
             createNewService,
+            subscribeToService,
             getMerchantServices,
+            fetchPublicServices,
             isLoading: profileLoading || isLoading
         }}>
             {children}

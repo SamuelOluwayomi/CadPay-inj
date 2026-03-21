@@ -26,16 +26,27 @@ const SkeletonLoader = ({ className }: { className?: string }) => (
 );
 
 export default function MerchantDashboard() {
-    const { merchant, createNewService, logoutMerchant, isLoading: isAuthLoading } = useMerchant();
+    const { merchant, createNewService, logoutMerchant, services, subscriptions, isLoading: isAuthLoading } = useMerchant();
     const router = useRouter();
     const { showToast } = useToast();
 
     // Create Service Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    
+    // Form State
     const [newServiceName, setNewServiceName] = useState('');
+    const [newServiceCategory, setNewServiceCategory] = useState('streaming');
+    const [newServiceDescription, setNewServiceDescription] = useState('');
+    const [newServiceColor, setNewServiceColor] = useState('#F97316');
+    const [newServicePrices, setNewServicePrices] = useState({ basic: 9.99, pro: 19.99, enterprise: 49.99 });
+    const [newServiceFeatures, setNewServiceFeatures] = useState({ 
+        basic: ['Access all content'], 
+        pro: ['Priority support', 'HD Streaming'], 
+        enterprise: ['Unlimited devices', 'Enterprise API'] 
+    });
 
-    // [NEW] Live Data Integration with API recovery callback
+    // Subscriptions integration
     const {
         balance,
         transactions,
@@ -46,18 +57,20 @@ export default function MerchantDashboard() {
     } = useInjectiveData(merchant?.walletPublicKey || null);
 
     // Derived Metrics from Hook
-    const totalRevenue = stats?.revenue || 0;
-    const txCount = stats?.txCount || 0; // This is count of incoming txs (customers)
-    const uniqueCustomers = stats?.uniqueCustomers || 0;
-    const mrr = stats?.mrr || 0;
+    const activeSubscribers = subscriptions.filter(s => s.status === 'active').length;
+    const monthlyRevenue = subscriptions
+        .filter(s => s.status === 'active')
+        .reduce((acc, sub) => acc + sub.priceUsd, 0);
+    const totalTransactions = transactions?.length || 0;
+    const avgTicket = activeSubscribers > 0 ? (monthlyRevenue / activeSubscribers) : 0;
 
     // Calculate Gas Saved (Simulated based on Volume for "The Flex")
     // Assuming 0.0001 INJ per tx vs standard network
-    const gasSaved = txCount * 0.0001;
+    const gasSaved = totalTransactions * 0.0001;
 
     // Chart Data - Single segment for now as we don't have product breakdown yet
     const chartData = [
-        { name: 'General Revenue', value: totalRevenue || 100, color: '#F97316' }
+        { name: 'General Revenue', value: monthlyRevenue || 100, color: '#F97316' }
     ];
 
     const [showKey, setShowKey] = useState(false);
@@ -108,13 +121,45 @@ export default function MerchantDashboard() {
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsCreating(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        createNewService(newServiceName, newServicePrice, "Monthly Subscription", newServiceColor);
-        setIsCreating(false);
-        setIsCreateModalOpen(false);
-        setNewServiceName('');
-        setNewServicePrice(19.99);
+        
+        try {
+            const success = await createNewService({
+                name: newServiceName,
+                category: newServiceCategory,
+                description: newServiceDescription,
+                color: newServiceColor,
+                priceBasic: newServicePrices.basic,
+                pricePro: newServicePrices.pro,
+                priceEnterprise: newServicePrices.enterprise,
+                featuresBasic: newServiceFeatures.basic,
+                featuresPro: newServiceFeatures.pro,
+                featuresEnterprise: newServiceFeatures.enterprise
+            });
+
+            if (success) {
+                showToast("Service created successfully!", "success");
+                setIsCreateModalOpen(false);
+                // Reset form
+                setNewServiceName('');
+                setNewServiceDescription('');
+            } else {
+                showToast("Failed to create service", "error");
+            }
+        } catch (err) {
+            showToast("An error occurred", "error");
+        } finally {
+            setIsCreating(false);
+        }
+    };
+    
+    const addFeature = (tier: 'basic' | 'pro' | 'enterprise') => {
+        const feature = prompt("Enter feature description:");
+        if (feature) {
+            setNewServiceFeatures(prev => ({
+                ...prev,
+                [tier]: [...prev[tier], feature]
+            }));
+        }
     };
 
     if (isAuthLoading) {
@@ -128,7 +173,7 @@ export default function MerchantDashboard() {
         );
     }
 
-    if (!merchant) return null;
+    if (!merchant) return <div className="min-h-screen bg-black" />; // Keep it dark during redirect
 
     return (
         <div className="flex min-h-screen bg-black text-white font-sans selection:bg-orange-500/30 pt-5">
@@ -291,7 +336,7 @@ export default function MerchantDashboard() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                                 <MetricCard
                                     title="Total Revenue"
-                                    value={`${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INJ`}
+                                    value={`${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`}
                                     trend="+0%"
                                     icon={<TrendUpIcon size={24} className="text-green-400" />}
                                     color="green"
@@ -299,15 +344,15 @@ export default function MerchantDashboard() {
                                 />
                                 <MetricCard
                                     title="Total Customers"
-                                    value={uniqueCustomers.toLocaleString()}
-                                    trend={`+${uniqueCustomers} new`}
+                                    value={activeSubscribers.toLocaleString()}
+                                    trend={`+${activeSubscribers} new`}
                                     icon={<UsersIcon size={24} className="text-orange-400" />}
                                     color="orange"
                                     loading={isDataLoading}
                                 />
                                 <MetricCard
                                     title="Monthly Recurring (MRR)"
-                                    value={`${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INJ`}
+                                    value={`${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`}
                                     trend="+0%"
                                     icon={<ReceiptIcon size={24} className="text-purple-400" />}
                                     color="purple"
@@ -335,7 +380,7 @@ export default function MerchantDashboard() {
                                     </div>
 
                                     <div className="h-80 w-full relative min-w-0">
-                                        {isDataLoading && totalRevenue === 0 ? (
+                                        {isDataLoading && monthlyRevenue === 0 ? (
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
                                             </div>
@@ -344,19 +389,19 @@ export default function MerchantDashboard() {
                                                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                                     <PieChart>
                                                         <Pie
-                                                            data={totalRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]}
+                                                            data={monthlyRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]}
                                                             innerRadius={60}
                                                             outerRadius={80}
                                                             paddingAngle={5}
                                                             dataKey="value"
                                                             stroke="none"
                                                         >
-                                                            {(totalRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]).map((entry, index) => (
+                                                            {(monthlyRevenue > 0 ? chartData : [{ name: 'No Data', value: 100, color: '#27272a' }]).map((entry, index) => (
                                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                                             ))}
                                                         </Pie>
                                                         <Tooltip
-                                                            formatter={(value: any) => `${value?.toLocaleString()} INJ`}
+                                                            formatter={(value: any) => `${value?.toLocaleString()} USD`}
                                                             contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
                                                             itemStyle={{ color: '#fff' }}
                                                         />
@@ -367,9 +412,9 @@ export default function MerchantDashboard() {
                                                     <div className="text-center">
                                                         <span className="block text-zinc-500 text-xs">Total</span>
                                                         <span className="block text-xl font-bold text-white">
-                                                            {totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                            {monthlyRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                         </span>
-                                                        <span className="block text-[10px] text-zinc-500">INJ</span>
+                                                        <span className="block text-[10px] text-zinc-500">USD</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -523,16 +568,63 @@ export default function MerchantDashboard() {
                                             </button>
                                         </div>
 
-                                        {/* Empty State or List */}
-                                        <div className="space-y-4">
-                                            <div className="p-8 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-center">
-                                                <div className="p-3 bg-zinc-800 rounded-full mb-3 text-zinc-400">
-                                                    <StorefrontIcon size={24} />
+                                        {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                        <StatCard 
+                                            label="Active Subscribers" 
+                                            value={activeSubscribers.toString()} 
+                                            change="+12%" 
+                                            icon={<UserCircleIcon size={20} />} 
+                                        />
+                                        <StatCard 
+                                            label="Monthly Revenue" 
+                                            value={`$${monthlyRevenue.toLocaleString()}`} 
+                                            change="+8.4%" 
+                                            icon={<CurrencyDollarIcon size={20} />} 
+                                        />
+                                        <StatCard 
+                                            label="All-time TXs" 
+                                            value={totalTransactions.toString()} 
+                                            change="+24%" 
+                                            icon={<ArrowsClockwiseIcon size={20} />} 
+                                        />
+                                        <StatCard 
+                                            label="Avg. Ticket" 
+                                            value={`$${avgTicket.toFixed(2)}`} 
+                                            change="-2%" 
+                                            icon={<ChartLineUpIcon size={20} />} 
+                                        />
+                                    </div>
+                                        {/* Dynamic Service List */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {services.map((service: any) => (
+                                                <div key={service.id} className="bg-black/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-orange-500/30 transition-all">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: service.color }}>
+                                                            <StorefrontIcon size={24} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-white text-sm">{service.name}</h4>
+                                                            <p className="text-xs text-zinc-500 uppercase font-black">{service.category}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-orange-500">${service.priceBasic} - ${service.priceEnterprise}</p>
+                                                        <p className="text-[10px] text-zinc-500">Tiered Pricing</p>
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm font-medium text-zinc-300">No active plans</p>
-                                                <p className="text-xs text-zinc-500 mb-3">Create your first subscription tier</p>
-                                                <button onClick={() => setIsCreateModalOpen(true)} className="text-orange-500 text-xs font-bold hover:underline">Create Now</button>
-                                            </div>
+                                            ))}
+                                            
+                                            {services.length === 0 && (
+                                                <div className="md:col-span-2 p-8 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-center">
+                                                    <div className="p-3 bg-zinc-800 rounded-full mb-3 text-zinc-400">
+                                                        <StorefrontIcon size={24} />
+                                                    </div>
+                                                    <p className="text-sm font-medium text-zinc-300">No active plans</p>
+                                                    <p className="text-xs text-zinc-500 mb-3">Create your first subscription tier</p>
+                                                    <button onClick={() => setIsCreateModalOpen(true)} className="text-orange-500 text-xs font-bold hover:underline">Create Now</button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -606,57 +698,158 @@ export default function MerchantDashboard() {
                         />
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md p-6 relative z-10 shadow-2xl"
+                            className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-2xl p-6 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
                         >
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold text-white">New Subscription Plan</h3>
+                            <div className="flex items-center justify-between mb-6 sticky top-0 bg-zinc-900 pb-2 z-10">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Create New Web3 Service</h3>
+                                    <p className="text-xs text-zinc-500">Your products will be discoverable on the user subscription dashboard.</p>
+                                </div>
                                 <button onClick={() => setIsCreateModalOpen(false)}><XIcon size={20} className="text-zinc-400 hover:text-white" /></button>
                             </div>
 
-                            <form onSubmit={handleCreateService} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Service Name</label>
-                                    <input
-                                        type="text" value={newServiceName} onChange={e => setNewServiceName(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                                        placeholder="e.g. Premium Plan"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Price (USDC)</label>
-                                    <input
-                                        type="number" step="0.01" value={newServicePrice} onChange={e => setNewServicePrice(parseFloat(e.target.value))}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Brand Color</label>
-                                    <div className="flex gap-2">
-                                        {['#EF4444', '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B'].map(color => (
-                                            <div
-                                                key={color}
-                                                onClick={() => setNewServiceColor(color)}
-                                                className={`w-8 h-8 rounded-full cursor-pointer border-2 ${newServiceColor === color ? 'border-white' : 'border-transparent'}`}
-                                                style={{ backgroundColor: color }}
+                            <form onSubmit={handleCreateService} className="space-y-8">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Service Identity</label>
+                                            <input
+                                                type="text" value={newServiceName} onChange={e => setNewServiceName(e.target.value)}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
+                                                placeholder="e.g. Injective VPN"
+                                                required
                                             />
-                                        ))}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Category</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {['streaming', 'music', 'social', 'creative', 'developer', 'ai'].map(cat => (
+                                                    <button
+                                                        key={cat} type="button"
+                                                        onClick={() => setNewServiceCategory(cat)}
+                                                        className={`py-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${newServiceCategory === cat ? 'bg-orange-600 border-orange-500 text-white' : 'bg-black/40 border-white/5 text-zinc-500 hover:text-zinc-300'}`}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Description</label>
+                                            <textarea
+                                                value={newServiceDescription} onChange={e => setNewServiceDescription(e.target.value)}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 h-24 resize-none text-sm"
+                                                placeholder="Tell users what you're building..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Brand Accent</label>
+                                            <div className="flex gap-3">
+                                                {['#F97316', '#EF4444', '#10B981', '#3B82F6', '#8B5CF6'].map(color => (
+                                                    <div
+                                                        key={color}
+                                                        onClick={() => setNewServiceColor(color)}
+                                                        className={`w-8 h-8 rounded-full cursor-pointer border-2 transition-transform hover:scale-110 ${newServiceColor === color ? 'border-white scale-110 ring-2 ring-orange-500/20' : 'border-transparent'}`}
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PRICING TIERS */}
+                                    <div className="space-y-6">
+                                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest">Pricing Strategy (USD)</label>
+                                        
+                                        {/* Basic Tier */}
+                                        <div className="p-4 bg-black/40 border border-white/5 rounded-2xl relative">
+                                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-800 rounded text-[8px] font-black uppercase text-zinc-500">Tier 1</div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-white uppercase tracking-tight">Basic</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] text-zinc-500">$</span>
+                                                    <input 
+                                                        type="number" value={newServicePrices.basic} 
+                                                        onChange={e => setNewServicePrices({...newServicePrices, basic: parseFloat(e.target.value)})}
+                                                        className="w-16 bg-transparent border-b border-zinc-800 text-sm font-bold text-white focus:outline-none focus:border-orange-500" 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {newServiceFeatures.basic.map((f, i) => (
+                                                    <div key={i} className="flex items-center gap-2 text-[10px] text-zinc-400">
+                                                        <CheckIcon size={12} className="text-orange-500" /> {f}
+                                                    </div>
+                                                ))}
+                                                <button type="button" onClick={() => addFeature('basic')} className="text-[10px] text-orange-500/80 hover:text-orange-500">+ Add Feature</button>
+                                            </div>
+                                        </div>
+
+                                        {/* Pro Tier */}
+                                        <div className="p-4 bg-orange-600/5 border border-orange-500/20 rounded-2xl relative">
+                                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-600/20 rounded text-[8px] font-black uppercase text-orange-400">Tier 2</div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-white uppercase tracking-tight">Professional</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] text-zinc-500">$</span>
+                                                    <input 
+                                                        type="number" value={newServicePrices.pro} 
+                                                        onChange={e => setNewServicePrices({...newServicePrices, pro: parseFloat(e.target.value)})}
+                                                        className="w-16 bg-transparent border-b border-orange-500/30 text-sm font-bold text-white focus:outline-none focus:border-orange-500" 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {newServiceFeatures.pro.map((f, i) => (
+                                                    <div key={i} className="flex items-center gap-2 text-[10px] text-zinc-400">
+                                                        <CheckIcon size={12} className="text-orange-500" /> {f}
+                                                    </div>
+                                                ))}
+                                                <button type="button" onClick={() => addFeature('pro')} className="text-[10px] text-orange-500/80 hover:text-orange-500">+ Add Feature</button>
+                                            </div>
+                                        </div>
+
+                                        {/* Enterprise Tier */}
+                                        <div className="p-4 bg-purple-600/5 border border-purple-500/20 rounded-2xl relative">
+                                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-600/20 rounded text-[8px] font-black uppercase text-purple-400">Tier 3</div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-white uppercase tracking-tight">Enterprise</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] text-zinc-500">$</span>
+                                                    <input 
+                                                        type="number" value={newServicePrices.enterprise} 
+                                                        onChange={e => setNewServicePrices({...newServicePrices, enterprise: parseFloat(e.target.value)})}
+                                                        className="w-16 bg-transparent border-b border-purple-500/30 text-sm font-bold text-white focus:outline-none focus:border-orange-500" 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {newServiceFeatures.enterprise.map((f, i) => (
+                                                    <div key={i} className="flex items-center gap-2 text-[10px] text-zinc-400">
+                                                        <CheckIcon size={12} className="text-orange-500" /> {f}
+                                                    </div>
+                                                ))}
+                                                <button type="button" onClick={() => addFeature('enterprise')} className="text-[10px] text-orange-500/80 hover:text-orange-500">+ Add Feature</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <button
                                     type="submit"
                                     disabled={isCreating}
-                                    className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-zinc-200 transition-colors mt-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-zinc-200 transition-all mt-4 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl shadow-white/5 active:scale-[0.98]"
                                 >
                                     {isCreating ? (
                                         <>
-                                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                            Creating...
+                                            <div className="w-5 h-5 border-3 border-black border-t-transparent rounded-full animate-spin" />
+                                            Launching on Injective...
                                         </>
                                     ) : (
-                                        'Create Plan'
+                                        <>
+                                            Deploy Web3 Service
+                                            <ArrowRightIcon size={20} weight="bold" />
+                                        </>
                                     )}
                                 </button>
                             </form>

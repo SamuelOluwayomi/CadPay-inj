@@ -12,7 +12,7 @@ import { useReceipts } from '@/hooks/useReceipts';
 import { useUser } from '@/context/UserContext';
 import { CaretDownIcon, EnvelopeSimpleIcon, UserIcon } from '@phosphor-icons/react';
 
-const MERCHANT_WALLET = 'inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te';
+const DEFAULT_ADMIN_WALLET = 'inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te';
 
 interface SubscribeModalProps {
     isOpen: boolean;
@@ -101,6 +101,8 @@ export default function SubscribeModal({
             return;
         }
 
+        const merchantWallet = (service as any)?.merchantWallet || DEFAULT_ADMIN_WALLET;
+        
         setError('');
         setStep('processing');
 
@@ -120,7 +122,7 @@ export default function SubscribeModal({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
                     body: JSON.stringify({
-                        recipient: MERCHANT_WALLET,
+                        recipient: merchantWallet,
                         amount: priceINJ,
                         pin: password, // Server verifies this again to be safe
                         service_name: service.name,
@@ -149,7 +151,7 @@ export default function SubscribeModal({
                 const { transferInj } = await import('@/lib/injective-wallet');
                 txId = await transferInj({
                     mnemonicOrKey: unlockResult.mnemonic,
-                    recipient: MERCHANT_WALLET,
+                    recipient: merchantWallet,
                     amount: priceINJ,
                 });
 
@@ -164,9 +166,9 @@ export default function SubscribeModal({
                     amount_usd: selectedPlan!.priceUSD,
                     tx_signature: txId,
                     status: 'completed',
-                    merchant_wallet: MERCHANT_WALLET,
+                    merchant_wallet: merchantWallet,
                     sender_address: address!,
-                    receiver_address: MERCHANT_WALLET
+                    receiver_address: merchantWallet
                 });
             }
 
@@ -372,7 +374,7 @@ export default function SubscribeModal({
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-zinc-400">To</span>
-                                            <span className="text-zinc-300 font-mono text-xs">{MERCHANT_WALLET.slice(0, 20)}...</span>
+                                            <span className="text-zinc-300 font-mono text-xs">{((service as any)?.merchantWallet || DEFAULT_ADMIN_WALLET).slice(0, 20)}...</span>
                                         </div>
                                     </div>
 

@@ -33,7 +33,7 @@ export function useSubscriptions() {
             }
 
             const { data, error } = await supabase
-                .from('subscriptions')
+                .from('user_subscriptions')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
@@ -47,9 +47,9 @@ export function useSubscriptions() {
                     serviceName: sub.service_name,
                     plan: sub.plan_name,
                     priceUSD: Number(sub.price_usd),
-                    email: sub.email,
-                    startDate: sub.start_date,
-                    nextBilling: sub.next_billing,
+                    email: sub.email || '',
+                    startDate: sub.created_at,
+                    nextBilling: sub.next_billing_date || new Date().toISOString(),
                     color: sub.color || '#FF6B35',
                     transactionSignature: sub.tx_signature
                 })) as ActiveSubscription[];
@@ -84,60 +84,15 @@ export function useSubscriptions() {
     }, [subscriptions, updateMonthlyData]);
 
     const addSubscription = useCallback(async (subscription: Omit<ActiveSubscription, 'id' | 'startDate' | 'nextBilling'>) => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Authentication required");
-
-            const now = new Date();
-            const nextMonth = new Date(now);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-            const { data, error } = await supabase
-                .from('subscriptions')
-                .insert({
-                    user_id: user.id,
-                    service_id: subscription.serviceId,
-                    service_name: subscription.serviceName,
-                    plan_name: subscription.plan,
-                    price_usd: subscription.priceUSD,
-                    email: subscription.email,
-                    color: subscription.color,
-                    tx_signature: subscription.transactionSignature,
-                    start_date: now.toISOString(),
-                    next_billing: nextMonth.toISOString()
-                })
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            if (data) {
-                const newSub: ActiveSubscription = {
-                    id: data.id,
-                    serviceId: data.service_id,
-                    serviceName: data.service_name,
-                    plan: data.plan_name,
-                    priceUSD: Number(data.price_usd),
-                    email: data.email,
-                    startDate: data.start_date,
-                    nextBilling: data.next_billing,
-                    color: data.color || '#FF6B35',
-                    transactionSignature: data.tx_signature
-                };
-
-                setSubscriptions(prev => [newSub, ...prev]);
-                return newSub;
-            }
-        } catch (error) {
-            console.error('❌ Failed to add subscription:', error);
-            throw error;
-        }
+        // This is now handled by the MerchantContext subscribeToService call 
+        // to ensure database consistency across tables, but we keep it for local state update
+        return null;
     }, []);
 
     const removeSubscription = useCallback(async (id: string) => {
         try {
             const { error } = await supabase
-                .from('subscriptions')
+                .from('user_subscriptions')
                 .delete()
                 .eq('id', id);
 

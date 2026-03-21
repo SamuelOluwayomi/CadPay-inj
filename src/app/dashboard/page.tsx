@@ -1217,7 +1217,7 @@ function SubscriptionsSection({
         getHistoricalData,
         loading: loadingSub
     } = useSubscriptions();
-    const { services: dynamicServices, merchants } = useMerchant();
+    const { publicServices: dynamicServices, merchants, subscribeToService, merchant: currentMerchant } = useMerchant();
 
     // Merge Static + Dynamic Services (Filter out duplicates)
     const staticServiceNames = SERVICES.map(s => s.name.toLowerCase());
@@ -1226,19 +1226,19 @@ function SubscriptionsSection({
         ...dynamicServices
             .filter(ds => !staticServiceNames.includes(ds.name.toLowerCase())) // Remove duplicates
             .map(ds => ({
-                id: ds.id,
+                merchantId: ds.merchantId,
+                merchantWallet: ds.merchantWallet,
                 name: ds.name,
                 description: ds.description || 'Custom Service',
-                priceUSD: ds.price,
-                icon: StorefrontIcon, // Default icon for dynamic services
+                priceUSD: ds.priceBasic, // Use basic as default for card
                 color: ds.color,
-                category: 'other' as const, // Default category
-                features: ['Unified Billing', 'Gasless Payments', 'Instant Access'],
-                plans: [{
-                    name: 'Standard',
-                    priceUSD: ds.price,
-                    features: ['Full Access', 'Priority Support', 'HD Streaming']
-                }]
+                category: ds.category as any,
+                features: ds.featuresBasic,
+                plans: [
+                    { name: 'Basic', priceUSD: ds.priceBasic, features: ds.featuresBasic },
+                    { name: 'Professional', priceUSD: ds.pricePro, features: ds.featuresPro },
+                    { name: 'Enterprise', priceUSD: ds.priceEnterprise, features: ds.featuresEnterprise },
+                ]
             }))
     ];
 
@@ -1264,8 +1264,20 @@ function SubscriptionsSection({
 
             setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
-            const actualService = SERVICES.find(s => s.id === serviceId) || dynamicServices.find(s => s.id === serviceId);
+            const actualService = allServices.find(s => s.id === serviceId);
 
+            // Record in Database
+            await subscribeToService({
+                userId: profile?.id,
+                merchantId: (actualService as any)?.merchantId || 'admin', // Route hardcoded to admin
+                serviceId,
+                serviceName: actualService ? actualService.name : serviceId,
+                planName: plan.name,
+                priceUsd: plan.priceUSD,
+                priceInj: price, // Snapshotted INJ price from modal context
+            });
+
+            // Update local state (for instant feedback)
             await addSubscription({
                 serviceId,
                 serviceName: actualService ? actualService.name : serviceId,
@@ -1632,7 +1644,7 @@ function SubscriptionsSection({
                 onClose={() => setShowSubscribeModal(false)}
                 service={selectedService}
                 onSubscribe={handleSubscribe}
-                balance={balance || 0}
+                balance={balance}
                 injPrice={injPrice}
                 existingSubscriptions={subscriptions}
             />
