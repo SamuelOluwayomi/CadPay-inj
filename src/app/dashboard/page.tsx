@@ -1121,7 +1121,7 @@ function SubscriptionsSection({
     const { showToast } = useToast();
 
     const { address } = useInjective();
-    const { profile } = useUserProfile();
+    const { profile } = useUser();
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
 
