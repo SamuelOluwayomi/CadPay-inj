@@ -568,6 +568,7 @@ export default function Dashboard() {
                             avatarUrl={userProfile.avatar_url}
                             balance={displayBalance}
                             address={address || ""}
+                            profile={profile}
                             refreshBalance={refreshWalletBalance}
                             loading={isConnecting} // Use isConnecting for general loading state
                             loadingTransactions={loadingTransactions} // Pass the new prop
@@ -726,27 +727,45 @@ function NavItem({ icon, label, active, onClick }: any) {
 
 // Overview Section
 function OverviewSection({
-    userName, avatar, avatarUrl, balance, address, loading,
-    copyToClipboard, onOpenSend, refreshBalance, transactions,
-    fetchTransactions, txSpeed, setTxSpeed, pots, onTransactionSuccess,
-    loadingTransactions, isConnected, injPrice
+    userName,
+    avatar,
+    avatarUrl,
+    balance,
+    address,
+    loading,
+    profile,
+    copyToClipboard,
+    onOpenSend,
+    refreshBalance,
+    transactions,
+    fetchTransactions,
+    txSpeed,
+    setTxSpeed,
+    pots,
+    onTransactionSuccess,
+    loadingTransactions,
+    isConnected,
+    injPrice
 }: {
-    userName: string,
-    avatar: string,
-    avatarUrl?: string,
-    balance: number,
-    address: string,
-    loading: boolean,
-    copyToClipboard: () => void,
-    onOpenSend: () => void, refreshBalance: () => void, transactions: any[],
-    fetchTransactions: (manual?: boolean) => Promise<void> | void,
-    txSpeed: TxSpeed,
-    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>,
-    pots: any[],
-    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean, silent?: boolean) => Promise<void>,
-    loadingTransactions: boolean,
-    isConnected: boolean,
-    injPrice: number | null
+    userName: string;
+    avatar: string;
+    avatarUrl?: string;
+    balance: number;
+    address: string;
+    loading: boolean;
+    profile: any;
+    copyToClipboard: () => void;
+    onOpenSend: () => void;
+    refreshBalance: () => void;
+    transactions: any[];
+    fetchTransactions: (manual?: boolean) => Promise<void> | void;
+    txSpeed: TxSpeed;
+    setTxSpeed: React.Dispatch<React.SetStateAction<TxSpeed>>;
+    pots: any[];
+    onTransactionSuccess: (recipient: string, amount: number, isSavings: boolean, silent?: boolean) => Promise<void>;
+    loadingTransactions: boolean;
+    isConnected: boolean;
+    injPrice: number | null;
 }) {
     const [showUSD, setShowUSD] = useState(true);
     const { subscriptions, loading: loadingSub } = useSubscriptions();
@@ -1038,9 +1057,6 @@ function OverviewSection({
                                             <p className="text-sm font-bold text-white">{pot.name}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <p className="text-xs text-zinc-500">{(pot.amount ?? 0).toFixed(2)} INJ</p>
-                                                <div className="px-1.5 py-0.5 bg-orange-500/10 rounded flex items-center">
-                                                    <span className="text-[8px] font-black text-orange-400">+15% APR</span>
-                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
