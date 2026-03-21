@@ -35,12 +35,12 @@ const generateInjectiveAddress = () => {
     return result;
 };
 
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUser } from '@/context/UserContext';
 import { useInjective } from './useInjective';
 
 export const useSavings = () => {
     const { address: userAddress } = useInjective();
-    const { profile } = useUserProfile();
+    const { profile } = useUser();
     // Prioritize connected wallet, fallback to custodial profile authority
     const effectiveAddress = userAddress || profile?.authority;
 

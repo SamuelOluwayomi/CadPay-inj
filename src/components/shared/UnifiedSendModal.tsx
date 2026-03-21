@@ -12,7 +12,7 @@ import { transferInj } from '@/lib/injective-wallet';
 import { supabase } from '@/lib/supabase';
 import { useReceipts } from '@/hooks/useReceipts';
 import { LinkIcon, DownloadIcon } from '@phosphor-icons/react';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUser } from '@/context/UserContext';
 
 
 interface UnifiedSendModalProps {
@@ -38,8 +38,8 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
 
     const { unlockWalletWithPassword, unlockWallet, checkSupport, hasBiometricWallet, checkWalletExists, createWalletWithPassword } = useBiometricWallet();
+    const { profile, session } = useUser();
     const { createReceipt } = useReceipts(userAddress);
-    const { profile } = useUserProfile();
 
     // Get user email from Supabase session and check biometric support
     useEffect(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUser } from '@/context/UserContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -63,7 +63,7 @@ export default function Dashboard() {
         sessionInitialized,
         createProfile,
         updateProfile
-    } = useUserProfile();
+    } = useUser();
 
     const {
         address,

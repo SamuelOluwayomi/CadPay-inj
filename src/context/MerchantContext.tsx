@@ -39,11 +39,11 @@ interface MerchantContextType {
 
 const MerchantContext = createContext<MerchantContextType | undefined>(undefined);
 
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUser } from '@/context/UserContext';
 
 export function MerchantProvider({ children }: { children: React.ReactNode }) {
-    // 1. New On-Chain Hook
-    const { profile, loading: profileLoading, createProfile } = useUserProfile();
+    // 1. New On-Chain Hook using Context
+    const { profile, loading: profileLoading, createProfile } = useUser();
 
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [services, setServices] = useState<MerchantService[]>([]);

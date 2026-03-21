@@ -9,7 +9,7 @@ import { useBiometricWallet } from '@/hooks/useBiometricWallet';
 import { verifyPassword } from '@/utils/passwordHash';
 import { supabase } from '@/lib/supabase';
 import { useReceipts } from '@/hooks/useReceipts';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUser } from '@/context/UserContext';
 import { CaretDownIcon, EnvelopeSimpleIcon, UserIcon } from '@phosphor-icons/react';
 
 const MERCHANT_WALLET = 'inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te';
@@ -42,7 +42,7 @@ export default function SubscribeModal({
     const [txSignature, setTxSignature] = useState('');
 
     const { address } = useInjective();
-    const { profile } = useUserProfile();
+    const { profile } = useUser();
     const { unlockWallet, unlockWalletWithPassword } = useBiometricWallet();
     const { createReceipt } = useReceipts(address);
 

@@ -23,8 +23,8 @@ const AVATAR_OPTIONS = [
 ];
 
 export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, needsPin = true, initialProfile, onComplete }: OnboardingModalProps) {
-    const isPreFilled = !!(initialProfile?.username && initialProfile?.username.length > 2);
-    const [step, setStep] = useState(isPreFilled ? (needsPin ? 3 : 4) : 1);
+    // Always start at Step 1 (Username) to give users full control, even if pre-filled.
+    const [step, setStep] = useState(1);
     const [username, setUsername] = useState(initialProfile?.username || '');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -37,11 +37,9 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, n
     // Sync state when initialProfile changes or modal opens
     useEffect(() => {
         if (isOpen && initialProfile) {
-            if (initialProfile.username && initialProfile.username.length > 2) {
-                if (step < 3) setStep(3);
+            // Update fields but don't force step change
+            if (initialProfile.username) {
                 setUsername(initialProfile.username);
-            } else {
-                setUsername(initialProfile.username || '');
             }
 
             if (initialProfile.email) setEmail(initialProfile.email);
@@ -179,14 +177,12 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, n
                             )}
                         </div>
                         <div className="flex gap-3">
-                            {!isPreFilled && (
-                                <button
-                                    onClick={() => setStep(1)}
-                                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
-                                >
-                                    Back
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setStep(1)}
+                                className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
+                            >
+                                Back
+                            </button>
                             <button
                                 onClick={() => pin.length === 4 && pin === confirmPin && setStep(4)}
                                 disabled={pin.length !== 4 || pin !== confirmPin}
