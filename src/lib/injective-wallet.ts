@@ -87,3 +87,115 @@ export async function transferInj(params: {
         throw new Error(error.message || 'Failed to complete Injective transfer');
     }
 }
+
+import { MsgDelegate, MsgUndelegate } from '@injectivelabs/sdk-ts';
+
+export async function stakeInj({ 
+    mnemonicOrKey, 
+    amount 
+}: { 
+    mnemonicOrKey: string, 
+    amount: number 
+}) {
+    // 1. Clean and initialize the key (just like your send function)
+    const ultraClean = mnemonicOrKey.replace(/['"\s\n\r]/g, '');
+    let privateKey: PrivateKey;
+    
+    if (mnemonicOrKey.trim().includes(' ')) {
+        const cleanMnemonic = mnemonicOrKey.replace(/['"]/g, '').trim();
+        privateKey = PrivateKey.fromMnemonic(cleanMnemonic);
+    } else {
+        const cleanHex = ultraClean.replace(/^0x/, '');
+        privateKey = PrivateKey.fromHex(cleanHex);
+    }
+    
+    const injectiveAddress = privateKey.toBech32();
+
+    // 2. Pick a Testnet Validator 
+    const VALIDATOR_ADDRESS = 'injvaloper1h5u937etuat5hnr2s34yaaalfpkkscl587w3v6';
+
+    // 3. Format the amount
+    const amountInBaseUnits = new BigNumberInBase(amount).toWei();
+
+    // 4. Create the Staking Message
+    const msg = MsgDelegate.fromJSON({
+        amount: {
+            denom: 'inj',
+            amount: amountInBaseUnits.toString(),
+        },
+        validatorAddress: VALIDATOR_ADDRESS,
+        injectiveAddress: injectiveAddress,
+    });
+
+    // 5. Broadcast to Testnet
+    const broadcaster = new MsgBroadcasterWithPk({
+        privateKey: privateKey,
+        network: INJECTIVE_NETWORK,
+        endpoints: INJECTIVE_ENDPOINTS,
+    });
+
+    const txResponse = await broadcaster.broadcast({
+        msgs: msg
+    });
+
+    if (txResponse.code !== 0) {
+        throw new Error(`Staking failed with code ${txResponse.code}: ${txResponse.rawLog}`);
+    }
+
+    return txResponse.txHash;
+}
+
+export async function unstakeInj({ 
+    mnemonicOrKey, 
+    amount 
+}: { 
+    mnemonicOrKey: string, 
+    amount: number 
+}) {
+    // 1. Clean and initialize the key
+    const ultraClean = mnemonicOrKey.replace(/['"\s\n\r]/g, '');
+    let privateKey: PrivateKey;
+    
+    if (mnemonicOrKey.trim().includes(' ')) {
+        const cleanMnemonic = mnemonicOrKey.replace(/['"]/g, '').trim();
+        privateKey = PrivateKey.fromMnemonic(cleanMnemonic);
+    } else {
+        const cleanHex = ultraClean.replace(/^0x/, '');
+        privateKey = PrivateKey.fromHex(cleanHex);
+    }
+    
+    const injectiveAddress = privateKey.toBech32();
+
+    // 2. Consistent Testnet Validator
+    const VALIDATOR_ADDRESS = 'injvaloper1h5u937etuat5hnr2s34yaaalfpkkscl587w3v6';
+
+    // 3. Format the amount
+    const amountInBaseUnits = new BigNumberInBase(amount).toWei();
+
+    // 4. Create the Unstake (Undelegate) Message
+    const msg = MsgUndelegate.fromJSON({
+        amount: {
+            denom: 'inj',
+            amount: amountInBaseUnits.toString(),
+        },
+        validatorAddress: VALIDATOR_ADDRESS,
+        injectiveAddress: injectiveAddress,
+    });
+
+    // 5. Broadcast to Testnet
+    const broadcaster = new MsgBroadcasterWithPk({
+        privateKey: privateKey,
+        network: INJECTIVE_NETWORK,
+        endpoints: INJECTIVE_ENDPOINTS,
+    });
+
+    const txResponse = await broadcaster.broadcast({
+        msgs: msg
+    });
+
+    if (txResponse.code !== 0) {
+        throw new Error(`Unstaking failed with code ${txResponse.code}: ${txResponse.rawLog}`);
+    }
+
+    return txResponse.txHash;
+}

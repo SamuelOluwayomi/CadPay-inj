@@ -8,7 +8,7 @@ import {
     HouseIcon, UserCircleIcon, CreditCardIcon, PlusIcon, LinkIcon,
     ReceiptIcon, KeyIcon, SignOutIcon, CopyIcon, ArrowRightIcon, WalletIcon,
     CaretRightIcon, ListIcon, XIcon, CurrencyDollarIcon, ArrowUpIcon, ArrowDownIcon,
-    StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon,
+    StorefrontIcon, CaretDownIcon, CoinsIcon, PiggyBankIcon, ChartLineUpIcon,
     PaperPlaneTiltIcon, CheckCircleIcon, ArrowSquareOutIcon,
     DownloadIcon, LightningIcon, ActivityIcon, TimerIcon, MagnifyingGlassIcon,
     CheckIcon, ArrowsClockwiseIcon
@@ -1835,53 +1835,24 @@ function DevKeysSection() {
     );
 }
 
-// Savings Section
+// Yield Section
 function SavingsSection({ session, injPrice }: { session: any, injPrice: number | null }) {
-    const { pots, isLoading, createPot, withdrawFromPot, depositToPot } = useSavings();
-    const { address, refreshBalance, fetchTransactions } = useInjective(); // Need address for receipts
+    const { pots, isLoading, createPot, breakPot } = useSavings();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
-    const [selectedPot, setSelectedPot] = useState<any>(null);
-    const [showReceipts, setShowReceipts] = useState(false);
-    const [isFunding, setIsFunding] = useState(false);
     const { showToast } = useToast();
-    const { createReceipt } = useReceipts(address);
 
-    const handleCreatePot = async (name: string, durationMonths: number) => {
+    const handleCreatePot = async (name: string, amount: number, lockupMonths: number) => {
         setIsCreating(true);
         try {
-            // Simulate API delay (Mock visual feedback)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            const result = await createPot(name, durationMonths);
-
-            if (result) {
-                showToast("Savings Pot Created! 🐷", "success");
-                setShowCreateModal(false);
-            } else {
-                throw new Error("Failed to create pot");
-            }
-        } catch (e) {
+            await createPot(name, amount, lockupMonths);
+            showToast("Yield Pot Created and Staked Successfully! 📈", "success");
+            setShowCreateModal(false);
+        } catch (e: any) {
             console.error(e);
-            showToast("Failed to create savings pot", "error");
+            showToast(e.message || "Failed to create yield pot", "error");
         } finally {
             setIsCreating(false);
-        }
-    };
-
-    const handleFundPot = async (potAddress: string, potName: string, amount?: number) => {
-        setIsFunding(true);
-        try {
-            if (!amount) {
-                throw new Error("Please enter an amount to transfer");
-            }
-            // Direct users to use the Send Funds modal for secure client-side signing
-            throw new Error("Please use the 'Send Funds' button in the Overview tab to fund your savings pot securely.");
-        } catch (e: any) {
-            console.error("Fund pot error:", e);
-            showToast(e.message || "Transfer failed", "error");
-        } finally {
-            setIsFunding(false);
         }
     };
 
@@ -1889,31 +1860,31 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
         <div className="space-y-8 min-h-screen pb-24 md:pb-12 px-4 md:px-8 pt-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Savings Wallet 🐷</h1>
-                    <p className="text-zinc-400 mt-2">Manage your financial goals with time-locked savings pots.</p>
+                    <h1 className="text-4xl font-bold tracking-tight">Yield-Bearing Staking 📈</h1>
+                    <p className="text-zinc-400 mt-2">Natively stake your INJ to earn DeFi yield seamlessly.</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all hover:scale-105 shadow-lg shadow-orange-500/20"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all hover:scale-105 shadow-lg shadow-green-500/20"
                 >
-                    <PlusIcon weight="bold" /> New Savings Pot
+                    <PlusIcon weight="bold" /> Stake New Pot
                 </button>
             </div>
 
             {pots.length === 0 ? (
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
-                    <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center text-orange-500 mx-auto mb-6">
-                        <PiggyBankIcon size={40} weight="duotone" />
+                    <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
+                        <ChartLineUpIcon size={40} weight="duotone" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">No savings pots yet</h2>
+                    <h2 className="text-xl font-bold mb-2">No active yield pots</h2>
                     <p className="text-zinc-500 mb-8 max-w-sm mx-auto">
-                        Create your first pot to start saving for your next big purchase or financial goal.
+                        Stake your INJ passively and natively on the blockchain to earn yield while maintaining full control over your assets.
                     </p>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="px-8 py-3 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-all"
+                        className="px-8 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg shadow-green-500/20"
                     >
-                        Create My First Pot
+                        Create Yield Pot
                     </button>
                 </div>
             ) : (
@@ -1922,13 +1893,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                         <SavingsPotView
                             key={pot.id}
                             pot={pot}
-                            onWithdraw={(recipient, amount, note) => withdrawFromPot(pot.id, amount)}
-                            onRefresh={() => { }}
-                            onShowReceipts={() => {
-                                setSelectedPot(pot);
-                                setShowReceipts(true);
-                            }}
-                            onFund={(amount) => handleFundPot(pot.address, pot.name, amount)}
+                            onBreakPot={() => breakPot(pot.id)}
                         />
                     ))}
                 </div>
@@ -1939,12 +1904,6 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                 isLoading={isCreating}
                 onClose={() => setShowCreateModal(false)}
                 onCreate={handleCreatePot}
-            />
-
-            <SavingsReceiptsModal
-                isOpen={showReceipts}
-                onClose={() => setShowReceipts(false)}
-                pot={selectedPot}
             />
         </div>
     );

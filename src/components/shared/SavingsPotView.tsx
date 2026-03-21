@@ -1,245 +1,192 @@
 'use client';
 
 import { useState } from 'react';
-// @ts-ignore
-import QRCode from 'react-qr-code';
 import {
-    ArrowUpIcon, ArrowDownIcon, LockIcon, LockOpenIcon,
-    QrCodeIcon, XIcon, InfoIcon, PaperPlaneTiltIcon, ReceiptIcon, LightningIcon
+    ChartLineUpIcon, LockKeyOpenIcon, ArrowSquareOutIcon, LockIcon, InfoIcon
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CopyButton from './CopyButton';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 interface SavingsPotViewProps {
     pot: {
         id: string;
         name: string;
-        address: string;
-        balance: number;
-        unlock_time: number;
+        amount: number;
+        tx_hash: string;
+        status: string;
+        created_at: string;
+        unlock_date: string;
     };
-    onWithdraw: (recipient: string, amount: number, note: string) => void;
-    onRefresh: () => void;
-    onShowReceipts?: () => void;
-    onFund?: (amount?: number) => void;
+    onBreakPot: () => void;
 }
 
-export default function SavingsPotView({ pot, onWithdraw, onRefresh, onShowReceipts, onFund }: SavingsPotViewProps) {
-    const [showFundModal, setShowFundModal] = useState(false);
-    const [showQR, setShowQR] = useState(false);
-    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-    const [recipient, setRecipient] = useState('');
-    const [amount, setAmount] = useState('');
-    const [note, setNote] = useState('');
+export default function SavingsPotView({ pot, onBreakPot }: SavingsPotViewProps) {
+    const [showUnstakeModal, setShowUnstakeModal] = useState(false);
 
-    const isLocked = (Date.now() / 1000) < pot.unlock_time;
-    const unlockDate = new Date(pot.unlock_time * 1000);
+    // If it's old legacy stuff, status 'locked' behaves same as 'staked' but with a time constraint.
+    const isStaked = pot.status === 'staked' || pot.status === 'locked';
 
-    const handleWithdraw = () => {
-        if (!recipient || !amount) return;
-        onWithdraw(recipient, parseFloat(amount), note);
-        setShowWithdrawModal(false);
-        setRecipient('');
-        setAmount('');
-        setNote('');
+    let isLocked = false;
+    let unlockDate = new Date();
+
+    if (pot.unlock_date) {
+        unlockDate = new Date(pot.unlock_date);
+        isLocked = new Date() < unlockDate && pot.status === 'locked';
+    }
+
+    const calculateDaysRemaining = () => {
+        if (!isLocked) return 0;
+        const diffMillis = unlockDate.getTime() - new Date().getTime();
+        return Math.ceil(diffMillis / (1000 * 60 * 60 * 24));
     };
 
-    const handleQuickFund = () => {
-        if (!amount) return;
-        if (onFund) onFund(parseFloat(amount));
-        setShowFundModal(false);
-        setAmount('');
-    };
+    const daysLeft = calculateDaysRemaining();
 
     return (
         <div className="flex justify-center w-full">
-            <div className="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-[400px] p-6 relative overflow-visible group flex flex-col">
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                            {pot.name}
-                            {isLocked ? (
-                                <LockIcon size={20} className="text-red-400" />
-                            ) : (
-                                <LockOpenIcon size={20} className="text-green-400" />
-                            )}
-                        </h3>
-                        {/* QR Code Button moved to top right */}
-                        <button
-                            onClick={() => setShowQR(true)}
-                            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-500 hover:text-white transition-all"
-                            title="Show QR Code"
-                        >
-                            <QrCodeIcon size={20} />
-                        </button>
-                    </div>
-                    <p className="text-3xl font-black text-white">
-                        {pot.balance.toFixed(2)} INJ
-                    </p>
-                    <p className="text-sm text-zinc-400 mt-1">Available Balance</p>
-                </div>
+            <div className={`bg-zinc-900/60 backdrop-blur-md border rounded-3xl w-full max-w-[400px] p-8 relative overflow-hidden group flex flex-col transition-all ${isStaked ? 'border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.05)]' : 'border-white/10'}`}>
 
-                {isLocked && (
-                    <div className="px-4 py-2 bg-zinc-800/30 rounded-xl border border-white/5 flex items-center gap-2 mb-4 w-fit">
-                        <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Locked</span>
-                        <div className="w-1 h-3 bg-zinc-700" />
-                        <span className="text-xs text-zinc-400 font-medium">{unlockDate.toLocaleDateString()}</span>
-                    </div>
-                )}
+                {/* Background Glow */}
+                <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl pointer-events-none transition-opacity ${isStaked ? 'bg-green-500/10 opacity-100' : 'bg-transparent opacity-0'}`} />
 
-                <div className="grid grid-cols-3 gap-3">
-                    <button
-                        onClick={() => setShowQR(true)}
-                        className="flex flex-col items-center justify-center gap-2 py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-xl transition-all"
-                        title="Deposit"
-                    >
-                        <ArrowDownIcon size={20} weight="bold" />
-                        <span className="text-xs font-bold">Deposit</span>
-                    </button>
-                    <button
-                        onClick={() => setShowWithdrawModal(true)}
-                        disabled={isLocked}
-                        className={`flex flex-col items-center justify-center gap-2 py-3 border rounded-xl transition-all ${isLocked
-                            ? 'bg-zinc-800/50 border-white/5 text-zinc-500 cursor-not-allowed'
-                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20'
-                            }`}
-                        title="Withdraw"
-                    >
-                        <ArrowUpIcon size={20} weight="bold" />
-                        <span className="text-xs font-bold">Withdraw</span>
-                    </button>
-                    {onShowReceipts && (
-                        <button
-                            onClick={onShowReceipts}
-                            className="flex flex-col items-center justify-center gap-2 py-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-xl transition-all"
-                            title="Receipts"
-                        >
-                            <ReceiptIcon size={20} weight="bold" />
-                            <span className="text-xs font-bold">Receipts</span>
-                        </button>
-                    )}
-                </div>
-
-                {/* QR Code / Deposit Modal - FIXED POSITIONING */}
-                <AnimatePresence>
-                    {showQR && (
-                        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-md relative"
-                            >
-                                <button
-                                    onClick={() => setShowQR(false)}
-                                    className="absolute top-4 right-4 text-zinc-500 hover:text-white bg-white/5 p-2 rounded-full"
-                                >
-                                    <XIcon size={20} />
-                                </button>
-
-                                <h4 className="text-xl font-bold mb-6 text-center">Add Funds to {pot.name}</h4>
-
-                                {/* Tab 1: Instant Transfer (User Request) */}
-                                <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                                    <h5 className="font-bold text-orange-400 mb-2 flex items-center gap-2">
-                                        <LightningIcon weight="fill" />
-                                        Quick Transfer
-                                    </h5>
-                                    <p className="text-xs text-zinc-400 mb-4">
-                                        Instantly transfer from your main balance to this savings pot.
-                                    </p>
-                                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                                        <input
-                                            type="number"
-                                            placeholder="Amount"
-                                            className="w-full min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                        />
-                                        <button
-                                            onClick={handleQuickFund}
-                                            disabled={!amount}
-                                            className="shrink-0 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl transition-colors whitespace-nowrap"
-                                        >
-                                            Transfer
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="relative flex py-2 items-center">
-                                    <div className="grow border-t border-white/10"></div>
-                                    <span className="shrink-0 mx-4 text-zinc-500 text-xs">OR DEPOSIT VIA ADDRESS</span>
-                                    <div className="grow border-t border-white/10"></div>
-                                </div>
-
-                                <div className="flex flex-col items-center mt-6">
-                                    <div className="bg-white p-4 rounded-2xl mb-4">
-                                        <QRCode value={pot.address} size={160} level="H" />
-                                    </div>
-                                    <div className="w-full flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 mb-2">
-                                        <span className="text-xs font-mono text-zinc-400 truncate flex-1 text-left mr-2">{pot.address}</span>
-                                        <CopyButton text={pot.address} />
-                                    </div>
-                                </div>
-                            </motion.div>
+                <div className="mb-8 relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLocked ? 'bg-orange-500/20 text-orange-500' : isStaked ? 'bg-green-500/20 text-green-500' : 'bg-zinc-800 text-zinc-500'}`}>
+                                {isLocked ? <LockIcon size={20} weight="duotone" /> : <ChartLineUpIcon size={20} weight="duotone" />}
+                            </div>
+                            <h3 className="text-xl font-bold text-white">
+                                {pot.name}
+                            </h3>
                         </div>
-                    )}
-                </AnimatePresence>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 border ${isLocked ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : isStaked ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-zinc-800 border-white/5 text-zinc-400'}`}>
+                            {isLocked ? (
+                                <>
+                                    <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                                    Locked {daysLeft}d
+                                </>
+                            ) : isStaked ? (
+                                <>
+                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                    Staked
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full" />
+                                    Unstaked
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                {/* Withdraw Modal - FIXED POSITIONING */}
-                <AnimatePresence>
-                    {showWithdrawModal && (
-                        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-md relative"
-                            >
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-xl font-bold">Withdraw Funds</h4>
-                                    <button onClick={() => setShowWithdrawModal(false)} className="text-zinc-500 hover:text-white bg-white/5 p-2 rounded-full">
-                                        <XIcon size={20} />
+                    <div>
+                        <p className="text-4xl font-black text-white tracking-tight">
+                            {pot.amount.toFixed(2)} INJ
+                        </p>
+                        <p className="text-sm text-zinc-400 mt-1 font-medium flex items-center gap-1.5">
+                            {isLocked ? `Locked in Yield Protocol until ${unlockDate.toLocaleDateString()}` : 'Generating protocol yield.'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="space-y-3 relative z-10 mt-auto">
+                    {/* View Stake Tx Button */}
+                    <a
+                        href={`https://testnet.explorer.injective.network/transaction/${pot.tx_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between w-full p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group/btn"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-black/50 flex items-center justify-center text-zinc-400 group-hover/btn:text-white transition-colors">
+                                <ArrowSquareOutIcon size={16} weight="bold" />
+                            </div>
+                            <div className="text-left w-full truncate">
+                                <p className="text-sm font-bold text-white">View Stake Details</p>
+                                <p className="text-xs text-zinc-500 font-mono truncate max-w-[150px]">{pot.tx_hash}</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    {/* Unstake Button with Tooltip */}
+                    <Tooltip.Provider delayDuration={100}>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                                <div className="w-full">
+                                    <button
+                                        onClick={() => !isLocked && isStaked && setShowUnstakeModal(true)}
+                                        disabled={!isStaked || isLocked}
+                                        className={`w-full py-4 text-sm font-bold rounded-2xl transition-all flex items-center justify-center gap-2 ${(!isStaked || isLocked)
+                                                ? 'bg-zinc-800/50 text-zinc-600 border border-white/5 cursor-not-allowed'
+                                                : 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20'
+                                            }`}
+                                    >
+                                        {isLocked ? <LockIcon size={18} weight="bold" /> : <LockKeyOpenIcon size={18} weight="bold" />}
+                                        {isLocked ? 'Pot is Locked' : 'Break Pot (Unstake)'}
                                     </button>
                                 </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">To Address</label>
-                                        <input
-                                            placeholder="Enter recipient address"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
-                                            value={recipient}
-                                            onChange={(e) => setRecipient(e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Amount (INJ)</label>
-                                        <input
-                                            type="number"
-                                            placeholder="0.00"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Description</label>
-                                        <input
-                                            placeholder="e.g. Taking out some for coffee"
-                                            className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500/50"
-                                            value={note}
-                                            onChange={(e) => setNote(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <button
-                                        onClick={handleWithdraw}
-                                        disabled={!recipient || !amount}
-                                        className="w-full py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                            </Tooltip.Trigger>
+                            {isLocked && (
+                                <Tooltip.Portal>
+                                    <Tooltip.Content
+                                        className="bg-black text-white text-xs font-bold px-3 py-2 rounded-lg border border-white/10 shadow-xl z-50 pointer-events-none"
+                                        sideOffset={10}
+                                        side="bottom"
                                     >
-                                        <PaperPlaneTiltIcon size={18} weight="bold" />
-                                        Send Transaction
+                                        Unlocks on {unlockDate.toLocaleDateString()}
+                                        <Tooltip.Arrow className="fill-white/10 border-white/10" width={11} height={5} />
+                                    </Tooltip.Content>
+                                </Tooltip.Portal>
+                            )}
+                        </Tooltip.Root>
+                    </Tooltip.Provider>
+                </div>
+
+                {/* Unstake Modal */}
+                <AnimatePresence>
+                    {showUnstakeModal && (
+                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                                onClick={() => setShowUnstakeModal(false)}
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-sm w-full relative z-10 shadow-2xl"
+                            >
+                                <div className="w-16 h-16 bg-orange-500/20 rounded-2xl text-orange-500 flex items-center justify-center mx-auto mb-6">
+                                    <LockKeyOpenIcon size={32} weight="duotone" />
+                                </div>
+                                <h4 className="text-xl font-black text-center text-white mb-2">Break Yield Pot?</h4>
+
+                                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-6 flex flex-col items-center">
+                                    <InfoIcon size={24} className="text-red-400 mb-2" weight="duotone" />
+                                    <p className="text-xs text-red-200/80 text-center leading-relaxed font-medium">
+                                        Breaking this pot will initiate the blockchain unbonding process (<strong className="text-red-400">≈21 days</strong>) and stop generating yield instantly.
+                                        Funds will be available in your main wallet when unbonding completes.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={() => {
+                                            onBreakPot();
+                                            setShowUnstakeModal(false);
+                                        }}
+                                        className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl transition-all active:scale-[0.98]"
+                                    >
+                                        Initiate Unbonding
+                                    </button>
+                                    <button
+                                        onClick={() => setShowUnstakeModal(false)}
+                                        className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
+                                    >
+                                        Cancel
                                     </button>
                                 </div>
                             </motion.div>
