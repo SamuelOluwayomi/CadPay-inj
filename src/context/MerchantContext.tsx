@@ -40,57 +40,109 @@ interface MerchantContextType {
 const MerchantContext = createContext<MerchantContextType | undefined>(undefined);
 
 import { useUser } from '@/context/UserContext';
+import { supabase } from '@/lib/supabase';
 
 export function MerchantProvider({ children }: { children: React.ReactNode }) {
-    // 1. New On-Chain Hook using Context
-    const { profile, loading: profileLoading, createProfile } = useUser();
+    const { profile, loading: profileLoading } = useUser();
 
-    const [merchants, setMerchants] = useState<Merchant[]>([]);
+    const [merchantProfile, setMerchantProfile] = useState<Merchant | null>(null);
     const [services, setServices] = useState<MerchantService[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    // Derived Merchant State from On-Chain Profile or Demo Mode
+    // 1. Fetch Merchant Profile from Supabase
+    useEffect(() => {
+        const fetchMerchantProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setMerchantProfile(null);
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const { data: merchantData, error } = await supabase
+                    .from('merchants')
+                    .select('*')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (merchantData) {
+                    setMerchantProfile({
+                        id: merchantData.id,
+                        name: merchantData.business_name,
+                        email: merchantData.email,
+                        walletPublicKey: merchantData.wallet_address,
+                        walletSecretKey: merchantData.encrypted_private_key, 
+                        joinedAt: new Date(merchantData.created_at)
+                    });
+                } else if (user.app_metadata?.provider === 'google' || user.user_metadata?.full_name) {
+                    // AUTO-PROVISION for OAuth users if profile is missing
+                    console.log("🛠️ Auto-provisioning merchant profile for OAuth user...");
+                    const businessName = user.user_metadata?.business_name || user.user_metadata?.full_name || "New Merchant";
+                    
+                    const response = await fetch('/api/merchant/wallet/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            businessName: businessName,
+                            email: user.email,
+                            authMethod: 'google'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        setMerchantProfile({
+                            id: user.id,
+                            name: businessName,
+                            email: user.email!,
+                            walletPublicKey: result.address,
+                            walletSecretKey: '',
+                            joinedAt: new Date()
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching merchant profile:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMerchantProfile();
+    }, [profile?.id, refreshTrigger]);
+
+    // Derived Merchant State
     const merchant = React.useMemo(() => {
-        // Check for demo mode first (client-side only)
+        if (merchantProfile) return merchantProfile;
+
+        // Fallback to demo mode
         if (typeof window !== 'undefined') {
             const isDemoMode = localStorage.getItem('demo_mode') === 'true';
             if (isDemoMode) {
                 const demoMerchant = localStorage.getItem('demo_merchant');
-                if (demoMerchant) {
-                    return JSON.parse(demoMerchant);
-                }
+                if (demoMerchant) return JSON.parse(demoMerchant);
             }
         }
+        return null;
+    }, [merchantProfile, refreshTrigger]);
 
-        // Otherwise use on-chain profile
-        if (!profile) return null;
-        return {
-            id: profile.authority,
-            name: profile.username || 'Merchant',
-            email: 'onchain@cadpay.xyz',
-            walletPublicKey: profile.authority,
-            walletSecretKey: '',
-            joinedAt: new Date(),
-            password: ''
-        };
-    }, [profile, refreshTrigger]);
-
-    // Seed Services if none exist for this merchant
+    // Seed Services
     useEffect(() => {
-        if (!merchant) return;
-
         const loadServices = () => {
+            if (!merchant) {
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const storedServices = localStorage.getItem('cadpay_services');
                 let currentServices = storedServices ? JSON.parse(storedServices) : [];
-
-                // If it's the specific "Admin 01" demo account (identified by ID or Key), seed default services
-                // For hackathon: checks if it matches our hardcoded admin key
                 const ADMIN_KEY = "inj1n38re8nhlhns6ka3kqryr2e2tlqau3fwmsp6te";
 
                 if (merchant.walletPublicKey === ADMIN_KEY) {
-                    // Check if services already seeded
                     const adminServices = currentServices.filter((s: MerchantService) => s.merchantId === merchant.id);
                     if (adminServices.length === 0) {
                         const seedServices = SERVICES.map(s => ({
@@ -109,39 +161,64 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                 setServices(currentServices);
             } catch (e) {
                 console.error("Failed to load services", e);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         loadServices();
     }, [merchant?.id]);
 
-
-    // Combined Loading State
-    const combinedLoading = profileLoading || isLoading;
-
-    // --- Legacy Functions Adapter (Keep types compatible) ---
     const createMerchant = async (name: string, email: string, password?: string) => {
+        setIsLoading(true);
         try {
-            await createProfile(name, "merchant-emoji", "other", "0000");
+            // 1. Create Supabase Auth Account
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password: password || 'merchant-secret-123',
+                options: {
+                    data: { business_name: name, role: 'merchant' }
+                }
+            });
+
+            if (authError || !authData.user) throw authError || new Error("Auth failed");
+
+            // 2. Call API to generate Wallet and create Merchant Profile
+            const response = await fetch('/api/merchant/wallet/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: authData.user.id,
+                    businessName: name,
+                    email: email,
+                    authMethod: 'password'
+                })
+            });
+
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error);
+
+            // 3. Update local state
+            setRefreshTrigger(prev => prev + 1);
+            
             return {
-                id: "pending",
+                id: authData.user.id,
                 name,
                 email,
-                walletPublicKey: "",
-                walletSecretKey: "",
+                walletPublicKey: result.address,
+                walletSecretKey: '',
                 joinedAt: new Date()
             };
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            console.error('Merchant Registration Error:', e);
             throw e;
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const loginMerchant = async (email: string, password?: string) => {
-        // Check for demo admin account
         if (email === 'demo@cadpay.xyz' && password === 'demo123') {
-            // Create a demo merchant profile locally
             const demoMerchant = {
                 id: 'demo-admin',
                 name: 'Admin 01',
@@ -151,22 +228,16 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                 joinedAt: new Date(),
                 password: 'demo123'
             };
-
-            // Store in localStorage to persist demo login
             localStorage.setItem('demo_merchant', JSON.stringify(demoMerchant));
             localStorage.setItem('demo_mode', 'true');
-
-            // Trigger re-render to pick up demo merchant
             setRefreshTrigger(prev => prev + 1);
-
             return true;
         }
-
-        // For real merchant accounts, check if profile exists
-        return !!merchant;
+        return false;
     };
 
-    const logoutMerchant = () => {
+    const logoutMerchant = async () => {
+        await supabase.auth.signOut();
         localStorage.removeItem('demo_mode');
         localStorage.removeItem('demo_merchant');
         localStorage.removeItem('active_wallet_address');
@@ -196,14 +267,14 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
     return (
         <MerchantContext.Provider value={{
             merchant,
-            merchants: [], // Deprecated
+            merchants: [],
             services,
             createMerchant,
             loginMerchant,
             logoutMerchant,
             createNewService,
             getMerchantServices,
-            isLoading: combinedLoading
+            isLoading: profileLoading || isLoading
         }}>
             {children}
         </MerchantContext.Provider>
