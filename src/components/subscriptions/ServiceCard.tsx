@@ -16,9 +16,11 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
+                const response = await fetch('/api/price/inj');
                 const data = await response.json();
-                setInjPrice(data['injective-protocol'].usd);
+                if (data?.['injective-protocol']?.usd) {
+                    setInjPrice(data['injective-protocol'].usd);
+                }
             } catch (error) {
                 console.error('Failed to fetch INJ price:', error);
             }

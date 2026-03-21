@@ -112,7 +112,7 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
         };
 
         fetchMerchantProfile();
-    }, [profile?.id, refreshTrigger]);
+    }, [profile?.authority, refreshTrigger]);
 
     // Derived Merchant State
     const merchant = React.useMemo(() => {

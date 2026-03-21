@@ -79,7 +79,7 @@ export default function Dashboard() {
     } = useInjective();
 
     const { showToast } = useToast();
-    const { pots } = useSavings();
+    const { pots, isLoading: savingsLoading, createPot, breakPot } = useSavings();
     const router = useRouter();
 
     const [custodialBalance, setCustodialBalance] = useState<number>(0);
@@ -184,14 +184,14 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchPrice = async () => {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=injective-protocol&vs_currencies=usd');
+                const res = await fetch('/api/price/inj');
                 if (res.ok) {
                     const data = await res.json();
                     if (data?.['injective-protocol']?.usd) {
                         setInjPrice(data['injective-protocol'].usd);
                     }
                 } else {
-                    console.warn(`Coingecko API failed with status: ${res.status}`);
+                    console.warn(`Price API failed with status: ${res.status}`);
                 }
             } catch (error) {
                 console.error('Failed to fetch INJ price:', error);
@@ -383,6 +383,34 @@ export default function Dashboard() {
         }
     };
 
+    if (profileLoading || !sessionInitialized) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_70%)]" />
+                <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="relative z-10 flex flex-col items-center"
+                >
+                    <div className="w-20 h-20 bg-zinc-900 rounded-3xl border border-white/10 flex items-center justify-center mb-6 shadow-2xl overflow-hidden">
+                        <img src="/icon.ico" alt="CadPay" className="w-12 h-12 object-contain" />
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-0 border-2 border-transparent border-t-orange-500 rounded-3xl"
+                        />
+                    </div>
+                    <h2 className="text-xl font-bold tracking-tight text-white mb-2">CadPay</h2>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce [animation-delay:0.2s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#000000] text-white font-sans relative overflow-hidden">
             {/* Blue Glow Background */}
@@ -565,7 +593,14 @@ export default function Dashboard() {
                     {activeSection === 'payment-link' && <PaymentLinkSection />}
                     {activeSection === 'receipts' && <ReceiptsSection address={address || ""} />}
                     {activeSection === 'dev-keys' && <DevKeysSection />}
-                    {activeSection === 'savings' && <SavingsSection session={session} injPrice={injPrice} />}
+                    {activeSection === 'savings' && <SavingsSection
+                        session={session}
+                        injPrice={injPrice}
+                        pots={pots}
+                        createPot={createPot}
+                        breakPot={breakPot}
+                        isLoading={savingsLoading}
+                    />}
                 </div>
             </div>
 
@@ -738,7 +773,11 @@ function OverviewSection({
     }, [address, fetchTransactions]);
 
     const handleFundDemo = async () => {
-        if (!address) return;
+        const targetAddress = address || profile?.authority;
+        if (!targetAddress) {
+            showToast("No wallet address available for funding", "error");
+            return;
+        }
         setIsFunding(true);
         setTxSpeed({ start: Date.now(), end: null, status: 'running' });
 
@@ -768,14 +807,14 @@ function OverviewSection({
                     status: 'completed',
                     tx_signature: txHash,
                     sender_address: 'inj1qx4zetjcg6kjk45wkw8kys9pv67qht7lx78va5', // Private Faucet
-                    receiver_address: address
+                    receiver_address: targetAddress
                 });
 
                 showToast(`Funding Successful! +${fundingAmount} INJ`, "success");
 
                 // Refresh UI silently (don't show "Successfully sent" toast on top of "Funding Successful")
                 if (onTransactionSuccess) {
-                    await onTransactionSuccess(address, fundingAmount, false, true);
+                    await onTransactionSuccess(targetAddress, fundingAmount, false, true);
                 }
             } else {
                 setTxSpeed({ start: null, end: null, status: 'idle' });
@@ -829,7 +868,7 @@ function OverviewSection({
                         <div className="flex flex-col sm:flex-row gap-3 md:min-w-[320px] w-full md:w-auto">
                             <button
                                 onClick={handleFundDemo}
-                                disabled={loading || isFunding}
+                                disabled={loading || isFunding || (!address && !profile?.authority)}
                                 className="flex-1 px-6 py-4 bg-zinc-800/40 hover:bg-zinc-800/80 border border-white/5 text-white rounded-2xl font-bold text-sm transition-all flex justify-center items-center gap-2 backdrop-blur-md disabled:opacity-50 active:scale-[0.98]"
                             >
                                 {isFunding ? (
@@ -867,11 +906,11 @@ function OverviewSection({
 
                     <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm text-zinc-400 font-medium font-mono truncate max-w-[150px]">{address}</p>
+                            <p className="text-sm text-zinc-400 font-medium font-mono truncate max-w-[150px]">{address || profile?.authority || "Not Connected"}</p>
                             <button
                                 onClick={() => {
-                                    navigator.clipboard.writeText(address);
-                                    // Removed toast to reduce excess notifications
+                                    const addr = address || profile?.authority;
+                                    if (addr) navigator.clipboard.writeText(addr);
                                 }}
                                 className="text-zinc-500 hover:text-white transition-colors"
                             >
@@ -997,7 +1036,12 @@ function OverviewSection({
                                     >
                                         <div className="text-left">
                                             <p className="text-sm font-bold text-white">{pot.name}</p>
-                                            <p className="text-xs text-zinc-500 mt-0.5">{(pot.amount ?? 0).toFixed(2)} INJ staked</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <p className="text-xs text-zinc-500">{(pot.amount ?? 0).toFixed(2)} INJ</p>
+                                                <div className="px-1.5 py-0.5 bg-orange-500/10 rounded flex items-center">
+                                                    <span className="text-[8px] font-black text-orange-400">+15% APR</span>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
                                             <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20">
@@ -1850,17 +1894,42 @@ function DevKeysSection() {
 }
 
 // Yield Section
-function SavingsSection({ session, injPrice }: { session: any, injPrice: number | null }) {
-    const { pots, isLoading, createPot, breakPot } = useSavings();
-    const { balance } = useInjective();
+function SavingsSection({
+    session, injPrice, pots, createPot, breakPot, isLoading
+}: {
+    session: any,
+    injPrice: number | null,
+    pots: any[],
+    createPot: any,
+    breakPot: any,
+    isLoading: boolean
+}) {
+    const { address, balance } = useInjective();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const { showToast } = useToast();
+    const { createReceipt } = useReceipts(address);
 
     const handleCreatePot = async (name: string, amount: number, lockupMonths: number, txHash?: string) => {
         setIsCreating(true);
         try {
-            await createPot(name, amount, lockupMonths, txHash);
+            const finalTxHash = await createPot(name, amount, lockupMonths, txHash);
+            
+            // Create a receipt for this staking event
+            if (address || (session?.user?.id)) {
+                await createReceipt({
+                    wallet_address: address || "",
+                    service_name: 'Yield-Bearing Pot',
+                    plan_name: `${name} (${lockupMonths}M)`,
+                    amount_inj: amount,
+                    amount_usd: amount * (injPrice || 0),
+                    status: 'completed',
+                    tx_signature: finalTxHash || txHash || `staking_${Date.now()}`,
+                    sender_address: address || "",
+                    receiver_address: 'Injective Staking Program'
+                });
+            }
+
             showToast("Yield Pot Created and Staked Successfully! 📈", "success");
             setShowCreateModal(false);
         } catch (e: any) {
