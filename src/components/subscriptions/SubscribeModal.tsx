@@ -64,6 +64,12 @@ export default function SubscribeModal({
         }
     }, [isOpen, service]);
 
+    useEffect(() => {
+        if (step === 'verify' && profile?.auth_method) {
+            setVerificationMethod(profile.auth_method);
+        }
+    }, [step, profile?.auth_method]);
+
     if (!service || !isOpen) return null;
 
     const priceINJ = selectedPlan ? convertUSDtoINJ(selectedPlan.priceUSD, injPrice || 25.00) : 0;
@@ -88,12 +94,6 @@ export default function SubscribeModal({
         setError('');
         setStep('verify');
     };
-
-    useEffect(() => {
-        if (step === 'verify' && profile?.auth_method) {
-            setVerificationMethod(profile.auth_method);
-        }
-    }, [step, profile?.auth_method]);
 
     const handleVerification = async () => {
         if (!verificationMethod) {
