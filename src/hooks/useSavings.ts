@@ -48,14 +48,14 @@ export const useSavings = () => {
         fetchPots();
     }, [fetchPots]);
 
-    const createPot = useCallback(async (name: string, amount: number, lockupMonths: number) => {
+    const createPot = useCallback(async (name: string, amount: number, lockupMonths: number, localTxHash?: string) => {
         if (!userId) throw new Error("User not authenticated.");
 
         try {
             const res = await fetch('/api/wallet/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, potName: name, amount, lockupMonths })
+                body: JSON.stringify({ userId, potName: name, amount, lockupMonths, txHash: localTxHash })
             });
 
             const data = await res.json();
@@ -71,14 +71,14 @@ export const useSavings = () => {
         }
     }, [userId, fetchPots]);
 
-    const breakPot = useCallback(async (potId: string) => {
+    const breakPot = useCallback(async (potId: string, localTxHash?: string) => {
         if (!userId) throw new Error("User not authenticated.");
 
         try {
             const res = await fetch('/api/wallet/unstake', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, potId })
+                body: JSON.stringify({ userId, potId, txHash: localTxHash })
             });
 
             const data = await res.json();

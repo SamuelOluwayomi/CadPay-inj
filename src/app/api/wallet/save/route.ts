@@ -7,26 +7,30 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
     try {
-        const { userId, potName, amount, lockupMonths } = await request.json();
+        const { userId, potName, amount, lockupMonths, txHash: clientTxHash } = await request.json();
 
-        // 1. Fetch encrypted key
+        let finalTxHash = clientTxHash;
         const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('encrypted_private_key')
-            .eq('id', userId)
-            .single();
 
-        if (!data?.encrypted_private_key) throw new Error("Wallet not found or non-custodial wallet trying to use server route.");
+        if (!finalTxHash) {
+            // 1. Fetch encrypted key
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('encrypted_private_key')
+                .eq('id', userId)
+                .single();
 
-        // 2. Decrypt the key
-        const rawHexKey = decrypt(data.encrypted_private_key);
+            if (!data?.encrypted_private_key) throw new Error("Wallet not found or non-custodial wallet trying to use server route.");
 
-        // 3. Stake the INJ on the blockchain!
-        const txHash = await stakeInj({
-            mnemonicOrKey: rawHexKey,
-            amount: Number(amount)
-        });
+            // 2. Decrypt the key
+            const rawHexKey = decrypt(data.encrypted_private_key);
+
+            // 3. Stake the INJ on the blockchain!
+            finalTxHash = await stakeInj({
+                mnemonicOrKey: rawHexKey,
+                amount: Number(amount)
+            });
+        }
 
         // 1. Calculate the exact unlock date
         const unlockDate = new Date();
@@ -37,12 +41,12 @@ export async function POST(request: Request) {
             user_id: userId,
             name: potName,
             amount: Number(amount),
-            tx_hash: txHash,
+            tx_hash: finalTxHash,
             status: 'locked',
             unlock_date: unlockDate.toISOString()
         });
 
-        return NextResponse.json({ success: true, txHash });
+        return NextResponse.json({ success: true, txHash: finalTxHash });
 
     } catch (error: any) {
         console.error("❌ Staking Error:", error);

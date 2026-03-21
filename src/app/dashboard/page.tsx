@@ -1842,10 +1842,10 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
     const [isCreating, setIsCreating] = useState(false);
     const { showToast } = useToast();
 
-    const handleCreatePot = async (name: string, amount: number, lockupMonths: number) => {
+    const handleCreatePot = async (name: string, amount: number, lockupMonths: number, txHash?: string) => {
         setIsCreating(true);
         try {
-            await createPot(name, amount, lockupMonths);
+            await createPot(name, amount, lockupMonths, txHash);
             showToast("Yield Pot Created and Staked Successfully! 📈", "success");
             setShowCreateModal(false);
         } catch (e: any) {
@@ -1865,7 +1865,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all hover:scale-105 shadow-lg shadow-green-500/20"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all hover:scale-105 shadow-lg shadow-orange-500/20"
                 >
                     <PlusIcon weight="bold" /> Stake New Pot
                 </button>
@@ -1873,7 +1873,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
 
             {pots.length === 0 ? (
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
-                    <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
+                    <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center text-orange-500 mx-auto mb-6">
                         <ChartLineUpIcon size={40} weight="duotone" />
                     </div>
                     <h2 className="text-xl font-bold mb-2">No active yield pots</h2>
@@ -1882,7 +1882,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                     </p>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="px-8 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg shadow-green-500/20"
+                        className="px-8 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
                     >
                         Create Yield Pot
                     </button>
@@ -1893,7 +1893,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                         <SavingsPotView
                             key={pot.id}
                             pot={pot}
-                            onBreakPot={() => breakPot(pot.id)}
+                            onBreakPot={breakPot}
                         />
                     ))}
                 </div>
@@ -1901,7 +1901,6 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
 
             <CreateSavingsModal
                 isOpen={showCreateModal}
-                isLoading={isCreating}
                 onClose={() => setShowCreateModal(false)}
                 onCreate={handleCreatePot}
             />
