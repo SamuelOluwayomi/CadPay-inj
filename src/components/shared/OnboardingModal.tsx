@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XIcon, UserIcon, LockKeyIcon, GenderMaleIcon, GenderFemaleIcon, CheckIcon, WalletIcon } from '@phosphor-icons/react';
 
@@ -34,9 +34,12 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, n
     const [avatarUrl, setAvatarUrl] = useState(initialProfile?.avatar_url || '');
     const [useImageAvatar, setUseImageAvatar] = useState(!!initialProfile?.avatar_url);
 
+    // Track if we have already synced the initial profile during this "open" session
+    const hasSyncedRef = useRef(false);
+
     // Sync state when initialProfile changes or modal opens
     useEffect(() => {
-        if (isOpen && initialProfile) {
+        if (isOpen && initialProfile && !hasSyncedRef.current) {
             // Update fields but don't force step change
             if (initialProfile.username) {
                 setUsername(initialProfile.username);
@@ -48,6 +51,12 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, n
                 setAvatarUrl(initialProfile.avatar_url);
                 setUseImageAvatar(true);
             }
+            
+            // Mark as synced for this session
+            hasSyncedRef.current = true;
+        } else if (!isOpen) {
+            // Reset sync flag when modal closes
+            hasSyncedRef.current = false;
         }
     }, [isOpen, initialProfile]);
 
