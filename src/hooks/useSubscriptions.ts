@@ -100,7 +100,14 @@ export function useSubscriptions() {
     const addSubscription = useCallback(async (subscription: Omit<ActiveSubscription, 'id' | 'startDate' | 'nextBilling'>) => {
         // This is now handled by the MerchantContext subscribeToService call 
         // to ensure database consistency across tables, but we keep it for local state update
-        return null;
+        const newSub = {
+            ...subscription,
+            id: Math.random().toString(36).substring(2, 10),
+            startDate: new Date().toISOString(),
+            nextBilling: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        } as ActiveSubscription;
+        setSubscriptions(prev => [newSub, ...prev]);
+        return newSub;
     }, []);
 
     const removeSubscription = useCallback(async (id: string) => {

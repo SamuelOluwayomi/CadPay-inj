@@ -1481,25 +1481,26 @@ function SubscriptionsSection({
                         />
                     </div>
 
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        {/* Main Service Grid */}
-                        <div className="flex-1">
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {filteredServices.map(service => (
-                                    <ServiceCard
-                                        key={service.id}
-                                        service={service}
-                                        onClick={() => handleServiceClick(service)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {(() => {
+                            const items: React.ReactNode[] = filteredServices.map(service => (
+                                <ServiceCard
+                                    key={service.id}
+                                    service={service}
+                                    onClick={() => handleServiceClick(service)}
+                                />
+                            ));
 
-                        {/* Sidebar Widgets */}
-                        <div className="w-full lg:w-[320px] xl:w-[380px] space-y-6">
-                            {spendingWidget}
-                            {overviewWidget}
-                        </div>
+                            // Insert Spending Widget at index 3 (4th position)
+                            if (items.length >= 3) items.splice(3, 0, spendingWidget);
+                            else items.push(spendingWidget);
+
+                            // Insert Overview Widget at index 7 (8th position)
+                            if (items.length >= 7) items.splice(7, 0, overviewWidget);
+                            else items.push(overviewWidget);
+
+                            return items;
+                        })()}
                     </div>
                 </div>
             )}
