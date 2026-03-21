@@ -61,6 +61,22 @@ export async function POST(req: Request) {
 
         if (dbError) throw dbError;
 
+        // 5. Create Receipt for the withdrawal
+        const { data: p } = await supabaseAdmin.from('profiles').select('wallet_address').eq('id', userId).single();
+        if (p?.wallet_address) {
+            await supabaseAdmin.from('receipts').insert({
+                wallet_address: p.wallet_address.toLowerCase(),
+                service_name: 'Yield Withdrawal',
+                plan_name: pot.name,
+                amount_inj: Number(pot.amount),
+                amount_usd: Number(pot.amount) * 20, // Rough estimate
+                status: 'completed',
+                tx_signature: finalTxHash,
+                sender_address: 'Injective Staking',
+                receiver_address: p.wallet_address
+            });
+        }
+
         return NextResponse.json({ success: true, txHash: finalTxHash });
     } catch (e: any) {
         console.error("Unstaking error:", e);

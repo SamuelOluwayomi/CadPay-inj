@@ -46,6 +46,22 @@ export async function POST(request: Request) {
             unlock_date: unlockDate.toISOString()
         });
 
+        // 5. Create Receipt for the user's history
+        const { data: p } = await supabase.from('profiles').select('wallet_address').eq('id', userId).single();
+        if (p?.wallet_address) {
+            await supabase.from('receipts').insert({
+                wallet_address: p.wallet_address.toLowerCase(),
+                service_name: 'Yield Staking',
+                plan_name: potName,
+                amount_inj: Number(amount),
+                amount_usd: Number(amount) * 20, // Rough estimate
+                status: 'completed',
+                tx_signature: finalTxHash,
+                sender_address: p.wallet_address,
+                receiver_address: 'Injective Staking'
+            });
+        }
+
         return NextResponse.json({ success: true, txHash: finalTxHash });
 
     } catch (error: any) {

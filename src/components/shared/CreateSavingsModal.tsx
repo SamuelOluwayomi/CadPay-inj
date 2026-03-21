@@ -127,15 +127,21 @@ export default function CreateSavingsModal({ isOpen, onClose, onCreate, balance 
                                 </div>
 
                         <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1">Amount to Stake (INJ)</label>
+                                    <div className="flex flex-col gap-1 mb-2 pl-1">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Amount to Stake (INJ)</label>
+                                            <div className="flex items-center gap-1.5 font-bold">
+                                                <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Est. Yield:</span>
+                                                <span className="text-xs text-orange-400">~15.4% APR</span>
+                                            </div>
+                                        </div>
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs text-zinc-500 font-medium">Available:</span>
+                                            <span className="text-[10px] text-zinc-500 font-medium">Available:</span>
                                             <button
                                                 onClick={() => setAmount(balance.toFixed(4))}
-                                                className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors px-2 py-0.5 bg-orange-500/10 rounded-md"
+                                                className="text-[10px] font-bold text-orange-500/80 hover:text-orange-400 transition-colors"
                                             >
-                                                {balance.toFixed(4)} INJ
+                                                {balance.toFixed(4)} INJ (Max)
                                             </button>
                                         </div>
                                     </div>

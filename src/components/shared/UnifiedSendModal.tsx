@@ -224,7 +224,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                 // Custodial transfers are now handled by the backend atomically.
                 await createReceipt({
                     wallet_address: userAddress!,
-                    service_name: mode === 'savings' ? 'Savings Deposit' : 'External Transfer',
+                    service_name: mode === 'savings' ? 'Yield Pot Deposit' : 'External Transfer',
                     plan_name: mode === 'savings' ? (selectedPot?.name || 'Pot') : 'Direct Transfer',
                     amount_inj: numAmount,
                     amount_usd: numAmount * 25,
@@ -317,7 +317,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                     : 'text-zinc-500 hover:text-zinc-300'
                                                     }`}
                                             >
-                                                <PiggyBankIcon weight="bold" /> Savings Pot
+                                                <PiggyBankIcon weight="bold" /> Yield Pot
                                             </button>
                                         )}
                                     </div>
@@ -337,7 +337,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                             </div>
                                         ) : (
                                             <div>
-                                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Select Savings Pot</label>
+                                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Select Yield Pot</label>
                                                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                                     {pots.map((pot) => (
                                                         <button
@@ -354,7 +354,7 @@ export default function UnifiedSendModal({ isOpen, onClose, onSend, pots, balanc
                                                                 </div>
                                                                 <div className="text-left">
                                                                     <p className="text-sm font-bold text-white">{pot.name}</p>
-                                                                    <p className="text-[10px] text-zinc-500">{pot.balance.toFixed(2)} INJ</p>
+                                                                    <p className="text-[10px] text-zinc-500">{(pot.amount ?? 0).toFixed(2)} INJ staked</p>
                                                                 </div>
                                                             </div>
                                                             {selectedPot?.name === pot.name && <CheckCircleIcon size={20} className="text-orange-500" weight="fill" />}

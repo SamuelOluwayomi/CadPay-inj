@@ -987,20 +987,34 @@ function OverviewSection({
                     </h3>
                     <div className="space-y-3">
                         {pots.length > 0 ? (
-                            pots.map((pot: any) => (
-                                <button
-                                    key={pot.id}
-                                    className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"
-                                >
-                                    <span className="text-sm font-medium text-white">{pot.name}</span>
-                                    <PlusIcon size={16} className="text-orange-400" />
-                                </button>
-                            ))
+                            pots.map((pot: any) => {
+                                const isLocked = pot.unlock_date && new Date() < new Date(pot.unlock_date) && pot.status === 'locked';
+                                const daysLeft = isLocked ? Math.ceil((new Date(pot.unlock_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+                                return (
+                                    <div
+                                        key={pot.id}
+                                        className="w-full flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5"
+                                    >
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-white">{pot.name}</p>
+                                            <p className="text-xs text-zinc-500 mt-0.5">{(pot.amount ?? 0).toFixed(2)} INJ staked</p>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20">
+                                                <span className="text-[10px] font-black text-orange-400">+15% APR</span>
+                                            </div>
+                                            {isLocked && (
+                                                <span className="text-[10px] text-amber-500 font-bold">{daysLeft}d left</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
                         ) : (
                             <div className="text-center py-8">
-                                <p className="text-sm text-zinc-500">No savings pots created</p>
+                                <p className="text-sm text-zinc-500">No yield pots created</p>
                                 <button className="mt-3 text-xs font-bold text-orange-500 hover:text-orange-400">
-                                    + Create Pot
+                                    + Create Yield Pot
                                 </button>
                             </div>
                         )}
@@ -1786,7 +1800,7 @@ function ReceiptsSection({ address }: { address: string }) {
 
                             <div className="mb-4">
                                 <p className="text-2xl font-black text-white">
-                                    {(receipt as any).amount_inj?.toFixed(2) || (receipt as any).amount_kas?.toFixed(2)} INJ
+                                    {((receipt as any).amount_inj || (receipt as any).amount_kas || 0).toFixed(2)} INJ
                                 </p>
                                 <p className="text-sm text-zinc-400">
                                     ≈ ${receipt.amount_usd.toFixed(2)} USD
@@ -1872,7 +1886,13 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                 </button>
             </div>
 
-            {pots.length === 0 ? (
+            {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((n) => (
+                        <div key={n} className="h-48 bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-3xl animate-pulse" />
+                    ))}
+                </div>
+            ) : pots.length === 0 ? (
                 <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center">
                     <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center text-orange-500 mx-auto mb-6">
                         <ChartLineUpIcon size={40} weight="duotone" />
