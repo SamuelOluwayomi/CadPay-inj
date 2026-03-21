@@ -30,3 +30,29 @@ export const supabase = new Proxy({} as SupabaseClient, {
         return (getSupabaseClient() as any)[prop];
     },
 });
+
+let _merchantSupabase: SupabaseClient | null = null;
+function getMerchantSupabaseClient(): SupabaseClient {
+    if (!_merchantSupabase) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+        _merchantSupabase = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                storageKey: 'cadpay-merchant-auth-token',
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+            }
+        });
+    }
+    return _merchantSupabase;
+}
+
+export const merchantSupabase = new Proxy({} as SupabaseClient, {
+    get(_target, prop) {
+        return (getMerchantSupabaseClient() as any)[prop];
+    },
+});

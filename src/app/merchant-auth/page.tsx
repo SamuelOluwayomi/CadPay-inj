@@ -9,6 +9,9 @@ import {
 } from '@phosphor-icons/react';
 import { useMerchant } from '@/context/MerchantContext';
 import { useAuth } from '@/hooks/useAuth';
+import { merchantSupabase } from '@/lib/supabase';
+import { useBiometricWallet } from '@/hooks/useBiometricWallet';
+import { getAddressFromMnemonic } from '@/lib/injective-wallet';
 import Image from 'next/image';
 
 export default function MerchantAuthPage() {
@@ -28,6 +31,7 @@ export default function MerchantAuthPage() {
     const router = useRouter();
     const { createMerchant, loginMerchant } = useMerchant();
     const { signInWithGoogle, signInWithBiometric, signInWithPassword } = useAuth();
+    const { unlockWallet, createWallet } = useBiometricWallet();
 
     // Pre-fill demo credentials on mount
     useEffect(() => {
@@ -71,7 +75,25 @@ export default function MerchantAuthPage() {
     const handleGoogleLogin = async () => {
         setLoading(true);
         try {
-            await signInWithGoogle();
+            const getURL = () => {
+                let url = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+                url = url.includes('http') ? url : `https://${url}`;
+                url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
+                return url;
+            };
+
+            const { data, error: authError } = await merchantSupabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${getURL()}merchant`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                },
+            });
+
+            if (authError) throw authError;
         } catch (err: any) {
             setError(err.message || 'Google login failed');
             setLoading(false);
@@ -85,11 +107,70 @@ export default function MerchantAuthPage() {
         }
         setLoading(true);
         try {
-            const result = await signInWithBiometric(email);
-            if (result.success) router.push('/merchant');
-            else throw new Error(result.error);
+            const unlockResult = await unlockWallet(email);
+            if (!unlockResult.success || !unlockResult.mnemonic) throw new Error(unlockResult.error || "Biometric unlock failed");
+            
+            const walletAddress = getAddressFromMnemonic(unlockResult.mnemonic);
+            const authPassword = walletAddress.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+
+            const { error: authError } = await merchantSupabase.auth.signInWithPassword({
+                email,
+                password: authPassword
+            });
+            if (authError) throw authError;
+            
+            router.push('/merchant');
         } catch (err: any) {
-            setError(err.message || 'Biometric login failed');
+            setError(err.message || "Sign in failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleMerchantBiometricRegister = async () => {
+        if (!name || !email) {
+            setError("Business Name and Email are required");
+            return;
+        }
+        setLoading(true);
+        try {
+            // Generate a random mnemonic temporarily to serve securely as the passkey entropy
+            const randomBytes = new Uint8Array(32);
+            crypto.getRandomValues(randomBytes);
+            const dummyMnemonic = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // This will prompt for WebAuthn passkey creation
+            const createResult = await createWallet(email, dummyMnemonic);
+            if (!createResult.success) throw new Error(createResult.error || "Biometric registration failed");
+
+            // Complete merchant creation (this triggers the backend wallet generation)
+            const walletAddress = getAddressFromMnemonic(dummyMnemonic);
+            const authPassword = walletAddress.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+            
+            const { error: signUpError } = await merchantSupabase.auth.signUp({
+                email,
+                password: authPassword
+            });
+            
+            if (signUpError) throw signUpError;
+            
+            // Call the merchant-specific backend creation endpoint to get the real wallet
+            const response = await fetch('/api/merchant/wallet/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: (await merchantSupabase.auth.getUser()).data.user?.id,
+                    businessName: name,
+                    email,
+                    authMethod: 'biometric'
+                })
+            });
+            
+            if (!response.ok) throw new Error("Failed to provision merchant wallet");
+            
+            router.push('/merchant');
+        } catch (err: any) {
+            setError(err.message || 'Biometric registration failed');
         } finally {
             setLoading(false);
         }
@@ -150,12 +231,12 @@ export default function MerchantAuthPage() {
                         </button>
                     </div>
 
-                    {mainTab === 'merchant' && (
-                        <div className="space-y-4 mb-6">
+                    {mainTab === 'merchant' ? (
+                        <div className="space-y-4">
                             <button 
                                 onClick={handleGoogleLogin}
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3.5 rounded-xl hover:bg-zinc-200 transition-all active:scale-[0.98] disabled:opacity-50"
                             >
                                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -168,97 +249,99 @@ export default function MerchantAuthPage() {
                             
                             <div className="relative py-2">
                                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest"><span className="bg-zinc-900 px-2 text-zinc-500">Or Business Profile</span></div>
+                                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest"><span className="bg-zinc-900 px-2 text-zinc-500">Or use Biometrics</span></div>
                             </div>
-                        </div>
-                    )}
+                            
+                            {merchantSubTab === 'register' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Business Name</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text" value={name} onChange={(e) => setName(e.target.value)}
+                                            placeholder="Acme Corp"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
+                                        />
+                                        <StorefrontIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                    </div>
+                                </div>
+                            )}
 
-                    {/* SUB-TABS for Merchant */}
-                    {mainTab === 'merchant' && (
-                        <div className="flex bg-black/40 p-1 rounded-xl mb-6">
-                            <button
-                                onClick={() => setMerchantSubTab('signin')}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${merchantSubTab === 'signin' ? 'bg-zinc-800 text-white px-4' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                Sign In
-                            </button>
-                            <button
-                                onClick={() => setMerchantSubTab('register')}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${merchantSubTab === 'register' ? 'bg-zinc-800 text-white px-4' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                New Business
-                            </button>
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {mainTab === 'merchant' && merchantSubTab === 'register' && (
                             <div>
-                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Business Name</label>
+                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Email Address</label>
                                 <div className="relative">
                                     <input
-                                        type="text" value={name} onChange={(e) => setName(e.target.value)}
-                                        placeholder="Acme Corp" required
+                                        type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="founder@startup.com"
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
                                     />
-                                    <StorefrontIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                    <UserCircleIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                                 </div>
                             </div>
-                        )}
 
-                        <div>
-                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Email Address</label>
-                            <div className="relative">
-                                <input
-                                    type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                                    placeholder={mainTab === 'admin' ? "demo@cadpay.xyz" : "founder@startup.com"} required
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
-                                />
-                                <UserCircleIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                            </div>
-                        </div>
-
-                        {merchantSubTab === 'signin' && (
-                            <div className="flex justify-end pt-1">
-                                <button 
-                                    type="button" onClick={handleBiometricLogin}
-                                    className="text-[10px] font-bold text-orange-500 hover:underline flex items-center gap-1"
-                                >
-                                    <FingerprintIcon size={14} /> Use Biometrics
-                                </button>
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">{merchantSubTab === 'register' ? 'Create Password' : 'Password'}</label>
-                            <div className="relative">
-                                <input
-                                    type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••" required
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
-                                />
-                                <LockKeyIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                            </div>
-                        </div>
-
-                        {error && (
-                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium text-center">
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit" disabled={loading}
-                            className="w-full bg-orange-600 text-white font-bold py-3.5 rounded-xl hover:bg-orange-500 transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-orange-600/20 active:scale-[0.98] disabled:opacity-50"
-                        >
-                            {loading ? <SpinnerIcon size={20} className="animate-spin" /> : (
-                                <>
-                                    {mainTab === 'admin' ? "Login to Demo" : merchantSubTab === 'register' ? "Get Business Wallet" : "Access Dashboard"}
-                                    <ArrowRightIcon size={18} weight="bold" />
-                                </>
+                            {error && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium text-center">
+                                    {error}
+                                </div>
                             )}
-                        </button>
-                    </form>
+
+                            <button
+                                onClick={merchantSubTab === 'register' ? handleMerchantBiometricRegister : handleBiometricLogin}
+                                disabled={loading || !email || (merchantSubTab === 'register' && !name)}
+                                className="w-full bg-orange-600 text-white font-bold py-3.5 rounded-xl hover:bg-orange-500 transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-orange-600/20 active:scale-[0.98] disabled:opacity-50"
+                            >
+                                {loading ? <SpinnerIcon size={20} className="animate-spin" /> : (
+                                    <>
+                                        <FingerprintIcon size={20} weight="bold" />
+                                        {merchantSubTab === 'register' ? "Create with Biometrics" : "Sign in with Biometrics"}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                                <div className="relative">
+                                    <input
+                                        type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="demo@cadpay.xyz" required
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
+                                    />
+                                    <UserCircleIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Password</label>
+                                <div className="relative">
+                                    <input
+                                        type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••" required
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white focus:border-orange-500/50 focus:outline-none transition-colors"
+                                    />
+                                    <LockKeyIcon size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium text-center">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit" disabled={loading}
+                                className="w-full bg-orange-600 text-white font-bold py-3.5 rounded-xl hover:bg-orange-500 transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-orange-600/20 active:scale-[0.98] disabled:opacity-50"
+                            >
+                                {loading ? <SpinnerIcon size={20} className="animate-spin" /> : (
+                                    <>
+                                        Login to Demo
+                                        <ArrowRightIcon size={18} weight="bold" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    )}
                 </div>
 
                 {mainTab === 'merchant' && merchantSubTab === 'register' && (

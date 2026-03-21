@@ -20,15 +20,20 @@ interface MonthlyData {
     [month: string]: number;
 }
 
-export function useSubscriptions() {
+export function useSubscriptions(userId?: string | null) {
     const [subscriptions, setSubscriptions] = useState<ActiveSubscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<MonthlyData>({});
 
     const fetchSubscriptions = useCallback(async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            let activeUserId = userId;
+            if (!activeUserId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                activeUserId = user?.id;
+            }
+
+            if (!activeUserId) {
                 setSubscriptions([]);
                 setLoading(false);
                 return;
@@ -37,7 +42,7 @@ export function useSubscriptions() {
             const { data, error } = await supabase
                 .from('user_subscriptions')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', activeUserId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -75,9 +80,9 @@ export function useSubscriptions() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [userId]);
 
-    // Load from Supabase on mount
+    // Load from Supabase on mount or userId change
     useEffect(() => {
         fetchSubscriptions();
     }, [fetchSubscriptions]);

@@ -13,7 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { merchantSupabase as supabase } from '@/lib/supabase';
 
 import { useMerchant } from '@/context/MerchantContext';
 import { useInjectiveData } from '@/hooks/useInjectiveData';

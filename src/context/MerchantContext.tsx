@@ -63,7 +63,7 @@ interface MerchantContextType {
 const MerchantContext = createContext<MerchantContextType | undefined>(undefined);
 
 import { useUser } from '@/context/UserContext';
-import { supabase } from '@/lib/supabase';
+import { merchantSupabase as supabase } from '@/lib/supabase';
 
 export function MerchantProvider({ children }: { children: React.ReactNode }) {
     const { profile, loading: profileLoading } = useUser();
@@ -101,6 +101,33 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                         walletSecretKey: merchantData.encrypted_private_key, 
                         joinedAt: new Date(merchantData.created_at)
                     });
+                } else if (user) {
+                    // Auto-generate merchant profile (they logged in via Google Auth)
+                    const tempName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'My Business';
+                    const response = await fetch('/api/merchant/wallet/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            businessName: tempName,
+                            email: user.email,
+                            authMethod: 'google'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        setMerchantProfile({
+                            id: user.id,
+                            name: tempName,
+                            email: user.email || '',
+                            walletPublicKey: result.address,
+                            walletSecretKey: '',
+                            joinedAt: new Date()
+                        });
+                    } else {
+                        setMerchantProfile(null);
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching merchant profile:', err);

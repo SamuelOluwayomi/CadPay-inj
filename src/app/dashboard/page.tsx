@@ -1208,17 +1208,18 @@ function SubscriptionsSection({
     const { profile, session } = useUser();
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
-
     const {
         subscriptions,
-        addSubscription,
-        removeSubscription,
+        loading: subsLoading,
         toggleAutoRenew,
         cancelSubscription,
+        addSubscription,
+        removeSubscription,
+        checkDuplicateEmail,
         getMonthlyTotal,
         getHistoricalData,
         loading: loadingSub
-    } = useSubscriptions();
+    } = useSubscriptions(session?.user?.id || effectiveAddress);
     const { publicServices: dynamicServices, subscribeToService, merchant: currentMerchant } = useMerchant();
 
     // Merge Static + Dynamic Services (Filter out duplicates)
