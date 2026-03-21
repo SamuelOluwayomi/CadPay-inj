@@ -141,6 +141,15 @@ export default function SavingsPotView({ pot, onBreakPot }: SavingsPotViewProps)
                         <p className="text-sm text-zinc-400 mt-1 font-medium flex items-center gap-1.5">
                             {isLocked ? `Locked in Yield Protocol until ${unlockDate.toLocaleDateString()}` : 'Generating protocol yield.'}
                         </p>
+                        {isStaked && (
+                            <div className="mt-3 flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                                    <ChartLineUpIcon size={14} className="text-orange-400" weight="bold" />
+                                    <span className="text-xs font-black text-orange-400">+15–18% APR</span>
+                                </div>
+                                <span className="text-xs text-zinc-600 font-medium">Injective staking yield</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

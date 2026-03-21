@@ -108,20 +108,20 @@ export default function SecuritySettings() {
                     <h2 className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-linear-to-r from-white to-zinc-500 tracking-tight mb-2">Security Hub</h2>
                     <p className="text-sm text-zinc-400">Manage your authentication, devices, and wallet security.</p>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs font-bold text-green-400 uppercase tracking-widest">System Secure</span>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                    <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">System Secure</span>
                 </div>
             </div>
 
             {/* Authentication Method */}
             <div className="relative overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-3xl p-1 group">
                 {/* Glow Effect */}
-                <div className={`absolute -inset-20 opacity-0 group-hover:opacity-20 transition-opacity duration-1000 blur-3xl rounded-[100%] pointer-events-none ${isBiometric ? 'bg-green-500' : 'bg-orange-500'}`} />
+                <div className={`absolute -inset-20 opacity-0 group-hover:opacity-20 transition-opacity duration-1000 blur-3xl rounded-[100%] pointer-events-none bg-orange-500`} />
 
                 <div className="relative bg-black/40 backdrop-blur-md rounded-[22px] p-6 lg:p-8 flex flex-col md:flex-row gap-8 items-start md:items-center justify-between border border-white/5">
                     <div className="flex gap-5 items-start md:items-center">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${isBiometric ? 'bg-linear-to-br from-green-500/20 to-green-600/10 text-green-400 border border-green-500/30' : 'bg-linear-to-br from-orange-500/20 to-orange-600/10 text-orange-400 border border-orange-500/30'}`}>
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner bg-linear-to-br from-orange-500/20 to-orange-600/10 text-orange-400 border border-orange-500/30">
                             {isBiometric ? <FingerprintIcon size={28} weight="duotone" /> : <LockKeyIcon size={28} weight="duotone" />}
                         </div>
                         <div>
@@ -175,7 +175,7 @@ export default function SecuritySettings() {
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <p className="text-sm font-bold text-white">{device.name}</p>
                                                 {device.current && (
-                                                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-[9px] font-bold uppercase tracking-widest rounded-full border border-green-500/20">
+                                                    <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 text-[9px] font-bold uppercase tracking-widest rounded-full border border-orange-500/20">
                                                         Current
                                                     </span>
                                                 )}
@@ -253,12 +253,12 @@ export default function SecuritySettings() {
                                 </button>
                             </>
                         ) : (
-                            <div className="p-5 bg-green-500/5 border border-green-500/20 rounded-2xl relative z-10 hover:bg-green-500/10 transition-colors">
+                            <div className="p-5 bg-orange-500/5 border border-orange-500/20 rounded-2xl relative z-10 hover:bg-orange-500/10 transition-colors">
                                 <div className="flex gap-4">
-                                    <ShieldCheckIcon size={24} className="text-green-500 shrink-0 mt-0.5" weight="duotone" />
+                                    <ShieldCheckIcon size={24} className="text-orange-500 shrink-0 mt-0.5" weight="duotone" />
                                     <div>
-                                        <p className="text-sm font-bold text-green-400 mb-2">Backup Not Required</p>
-                                        <p className="text-xs text-green-200/60 leading-relaxed">
+                                        <p className="text-sm font-bold text-orange-400 mb-2">Backup Not Required</p>
+                                        <p className="text-xs text-zinc-400 leading-relaxed">
                                             Your wallet is a completely non-custodial smart contract secured natively by your device's passkey. There is no seed phrase or raw private key to expose or lose.
                                         </p>
                                     </div>
@@ -279,7 +279,7 @@ export default function SecuritySettings() {
                         <div className="relative pl-4 space-y-6 before:absolute before:inset-y-2 before:left-[11px] before:w-px before:bg-linear-to-b before:from-white/10 before:via-white/10 before:to-transparent">
                             {DUMMY_ACTIVITIES.map((activity) => (
                                 <div key={activity.id} className="relative pl-6">
-                                    <div className={`absolute left-[-15px] top-1.5 w-2 h-2 rounded-full ring-4 ring-[#121214] ${activity.type === 'login' ? 'bg-green-500' : activity.type === 'security' ? 'bg-orange-500' : 'bg-blue-500'}`} />
+                                    <div className={`absolute left-[-15px] top-1.5 w-2 h-2 rounded-full ring-4 ring-[#121214] ${activity.type === 'login' ? 'bg-orange-500' : activity.type === 'security' ? 'bg-amber-500' : 'bg-orange-300'}`} />
                                     <p className="text-sm font-bold text-white mb-1">{activity.action}</p>
                                     <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 font-medium">
                                         <span>{activity.device}</span>

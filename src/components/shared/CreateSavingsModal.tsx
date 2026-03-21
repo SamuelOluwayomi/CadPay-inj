@@ -11,9 +11,10 @@ interface CreateSavingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (name: string, amount: number, lockupMonths: number, txHash?: string) => Promise<void>;
+    balance?: number;
 }
 
-export default function CreateSavingsModal({ isOpen, onClose, onCreate }: CreateSavingsModalProps) {
+export default function CreateSavingsModal({ isOpen, onClose, onCreate, balance = 0 }: CreateSavingsModalProps) {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [duration, setDuration] = useState(3);
@@ -125,8 +126,19 @@ export default function CreateSavingsModal({ isOpen, onClose, onCreate }: Create
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1 mb-2 block">Amount to Stake (INJ)</label>
+                        <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1">Amount to Stake (INJ)</label>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs text-zinc-500 font-medium">Available:</span>
+                                            <button
+                                                onClick={() => setAmount(balance.toFixed(4))}
+                                                className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors px-2 py-0.5 bg-orange-500/10 rounded-md"
+                                            >
+                                                {balance.toFixed(4)} INJ
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
                                             <CoinsIcon size={18} className="text-orange-500" weight="duotone" />

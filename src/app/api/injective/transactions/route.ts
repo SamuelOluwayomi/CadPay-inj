@@ -29,13 +29,32 @@ export async function GET(request: Request) {
 
         // The response structure is { txs: [], pagination: {} }
         const transactions = (txs.txs || []).map((tx: any) => {
-            // Attempt to parse amount from messages (MsgSend)
             let amount = 0;
+            let txType = 'transfer';
             try {
                 const message = tx.messages?.[0];
-                if (message && (message.type === 'cosmos-sdk/MsgSend' || message.type?.includes('MsgSend'))) {
+                const msgType: string = message?.type || '';
+
+                if (msgType.includes('MsgSend')) {
+                    // Standard transfer: amount is an array
                     const amountStr = message.value?.amount?.[0]?.amount || "0";
-                    amount = Number(amountStr) / 1e18; // Convert from uinj to INJ
+                    amount = Number(amountStr) / 1e18;
+                    txType = 'transfer';
+                } else if (msgType.includes('MsgDelegate')) {
+                    // Staking: amount is a plain object { denom, amount }
+                    const amountStr = message.value?.amount?.amount || "0";
+                    amount = Number(amountStr) / 1e18;
+                    txType = 'stake';
+                } else if (msgType.includes('MsgUndelegate')) {
+                    // Unstaking: same structure as delegate
+                    const amountStr = message.value?.amount?.amount || "0";
+                    amount = Number(amountStr) / 1e18;
+                    txType = 'unstake';
+                } else if (msgType.includes('MsgExecuteContract') || msgType.includes('MsgInstantiateContract')) {
+                    // Contract interactions — amount may be in funds
+                    const funds = message.value?.funds?.[0];
+                    amount = funds ? Number(funds.amount) / 1e18 : 0;
+                    txType = 'contract';
                 }
             } catch (e) {
                 console.warn("Failed to parse amount for tx:", tx.hash);
@@ -46,6 +65,7 @@ export async function GET(request: Request) {
                 hash: tx.hash,
                 timestamp: tx.blockTimestamp ? new Date(tx.blockTimestamp).getTime() : Date.now(),
                 amount: amount,
+                txType: txType,
                 err: tx.code !== 0,
                 slot: tx.blockNumber || 0,
                 viewUrl: `https://testnet.explorer.injective.network/transaction/${tx.hash}`

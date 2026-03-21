@@ -479,7 +479,7 @@ export default function Dashboard() {
                                     />
                                     <NavItem
                                         icon={<PiggyBankIcon size={20} />}
-                                        label="Savings Wallet"
+                                        label="Staking Wallet"
                                         active={activeSection === 'savings'}
                                         onClick={() => { setActiveSection('savings'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                                     />
@@ -1838,6 +1838,7 @@ function DevKeysSection() {
 // Yield Section
 function SavingsSection({ session, injPrice }: { session: any, injPrice: number | null }) {
     const { pots, isLoading, createPot, breakPot } = useSavings();
+    const { balance } = useInjective();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const { showToast } = useToast();
@@ -1903,6 +1904,7 @@ function SavingsSection({ session, injPrice }: { session: any, injPrice: number 
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onCreate={handleCreatePot}
+                balance={balance}
             />
         </div>
     );
