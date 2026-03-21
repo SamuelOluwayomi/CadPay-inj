@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { crypto } from 'crypto';
+
 
 function generateApiKey() {
     return `cp_${require('crypto').randomBytes(24).toString('hex')}`;
