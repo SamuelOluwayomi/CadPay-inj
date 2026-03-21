@@ -78,30 +78,28 @@ export function MerchantProvider({ children }: { children: React.ReactNode }) {
                     });
                 } else if (user.app_metadata?.provider === 'google' || user.user_metadata?.full_name) {
                     // AUTO-PROVISION for OAuth users if profile is missing
-                    console.log("🛠️ Auto-provisioning merchant profile for OAuth user...");
-                    const businessName = user.user_metadata?.business_name || user.user_metadata?.full_name || "New Merchant";
-                    
-                    const response = await fetch('/api/merchant/wallet/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: user.id,
-                            businessName: businessName,
-                            email: user.email,
-                            authMethod: 'google'
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        setMerchantProfile({
-                            id: user.id,
-                            name: businessName,
-                            email: user.email!,
-                            walletPublicKey: result.address,
-                            walletSecretKey: '',
-                            joinedAt: new Date()
+                    // STRATEGY: Check if UserContext already provided a wallet address
+                    if (profile?.authority) {
+                        console.log("📂 Reusing existing profile wallet for merchant profile...");
+                        const response = await fetch('/api/merchant/wallet/create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: user.id,
+                                businessName: user.user_metadata?.business_name || user.user_metadata?.full_name || "New Merchant",
+                                email: user.email,
+                                authMethod: 'google',
+                                // NEW: Pass the existing address to avoid generating a duplicate
+                                existingAddress: profile.authority 
+                            })
                         });
+                        
+                        if (response.ok) {
+                            setRefreshTrigger(prev => prev + 1);
+                        }
+                    } else {
+                        // Fallback: If profile is not yet fully initialized, wait or provision cautiously
+                        console.log("⏳ Waiting for profile authority before merchant auto-provisioning...");
                     }
                 }
             } catch (err) {

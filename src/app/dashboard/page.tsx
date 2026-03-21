@@ -313,35 +313,45 @@ export default function Dashboard() {
         try {
             // 1. Ensure Wallet Exists (Custodial Only)
             const isBiometricUser = profile?.auth_method === 'biometric';
+            let finalWalletAddress = address || profile?.authority;
 
-            if (!address && !isBiometricUser) {
-                if (!profile?.authority) {
-                    const res = await fetch('/api/wallet/create', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session?.access_token}`
-                        }
-                    });
-                    const walletData = await res.json();
-
-                    if (!res.ok || !walletData.success) {
-                        throw new Error(walletData.error || "Failed to generate wallet");
+            if (!finalWalletAddress && !isBiometricUser) {
+                console.log('🏗️ Profile has no wallet. Generating custodial Injective wallet...');
+                const res = await fetch('/api/wallet/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session?.access_token}`
                     }
+                });
+                const walletData = await res.json();
+
+                if (!res.ok || !walletData.success) {
+                    throw new Error(walletData.error || "Failed to generate wallet");
+                }
+                
+                finalWalletAddress = walletData.address;
+                // Pre-emptively sync localStorage so other hooks see it
+                if (finalWalletAddress) {
+                    localStorage.setItem('active_wallet_address', finalWalletAddress);
                 }
             }
 
-            // 2. Save Profile Details (Upsert will merge with wallet data)
+            // 2. Save Profile Details
+            // Note: createProfile now handles DB-side merging with the wallet address
             const result = await createProfile(data.username, data.avatar, data.gender, data.pin || "", data.email, data.avatar_url);
 
             if (result) {
-                setShowOnboarding(false);
                 showToast("Profile created successfully!", "success");
+                setShowOnboarding(false);
 
-                // Force reload after short delay to ensure DB sync
-                setTimeout(() => window.location.reload(), 1500);
+                // Wait for state to trickle down before refreshing or redirecting
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             }
         } catch (e: any) {
+            console.error('Onboarding failed:', e);
             showToast(e.message || "Failed to create profile. Try again.", "error");
         } finally {
             setIsOnboardingSubmitting(false);

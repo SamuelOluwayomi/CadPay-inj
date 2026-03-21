@@ -111,12 +111,25 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                     auth_method: data.auth_method
                 });
 
-                if (data.wallet_address && address !== data.wallet_address) {
-                    console.log('🔄 [UserContext] Identity mismatch: Syncing localStorage wallet');
-                    localStorage.setItem('active_wallet_address', data.wallet_address);
+                // Sync localStorage with DB truth
+                if (data.wallet_address) {
+                    if (address !== data.wallet_address) {
+                        console.log('🔄 [UserContext] Syncing localStorage with DB wallet address');
+                        localStorage.setItem('active_wallet_address', data.wallet_address);
+                    }
+                } else if (address) {
+                    // DB has NO wallet, but localStorage DOES. 
+                    // This is likely stale data from a previous user/session.
+                    console.warn('⚠️ [UserContext] Stale wallet address found in localStorage. Clearing.');
+                    localStorage.removeItem('active_wallet_address');
                 }
             } else {
                 setProfile(null);
+                // If we have a session but no profile record yet, we should still clear stale wallets
+                if (session?.user && address) {
+                     console.warn('⚠️ [UserContext] New session with no profile. Clearing stale wallet.');
+                     localStorage.removeItem('active_wallet_address');
+                }
             }
         } catch (err: any) {
             console.error('🔍 [UserContext] Failed to fetch profile:', err);
@@ -138,6 +151,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             if (userError || !user) throw new Error("You must be logged in to create a profile.");
 
+            // Important: Use a fresh fetch to ensure we have the absolute latest state
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('wallet_address')
+                .eq('id', user.id)
+                .single();
+
             const updateData: any = {
                 username,
                 emoji,
@@ -148,7 +168,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 updated_at: new Date().toISOString()
             };
 
-            if (address && !profile?.authority) {
+            // Only add wallet_address if the DB doesn't have one yet AND we have a valid one
+            if (address && (!existingProfile?.wallet_address && !profile?.authority)) {
                 updateData.wallet_address = address;
             }
 
@@ -159,7 +180,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 .select()
                 .single();
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                // Handle the specific unique constraint error for better UX
+                if (updateError.code === '23505') {
+                    throw new Error("This wallet address is already associated with another account.");
+                }
+                throw updateError;
+            }
 
             if (data) {
                 setProfile({

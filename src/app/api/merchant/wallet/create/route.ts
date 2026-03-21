@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
     try {
-        const { userId, businessName, email, authMethod } = await request.json();
+        const { userId, businessName, email, authMethod, existingAddress } = await request.json();
 
         if (!userId || !businessName || !email) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -19,13 +19,20 @@ export async function POST(request: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // 2. Generate New Injective Wallet
-        const { mnemonic, address } = generateInjectiveWallet();
-        
-        console.log(`🆕 Created Custodial Merchant Wallet: ${address} for ${businessName}`);
+        // 2. Determine Wallet Address
+        let address = existingAddress;
+        let encryptedKey = '';
 
-        // Encrypt credentials
-        const encryptedKey = encrypt(mnemonic);
+        if (!address) {
+            // Generate New Injective Wallet if none provided
+            const { mnemonic, address: newAddress } = generateInjectiveWallet();
+            address = newAddress;
+            console.log(`🆕 Created NEW Custodial Merchant Wallet: ${address} for ${businessName}`);
+            // Encrypt credentials
+            encryptedKey = encrypt(mnemonic);
+        } else {
+            console.log(`📂 Reusing EXISTING Wallet: ${address} for Merchant ${businessName}`);
+        }
 
         // 3. Save to merchants table
         const { error: dbError } = await supabase
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
                 business_name: businessName,
                 email: email,
                 wallet_address: address,
-                encrypted_private_key: encryptedKey,
+                encrypted_private_key: encryptedKey || undefined, // Don't over-write if we don't have it
                 auth_method: authMethod || 'password',
                 updated_at: new Date().toISOString()
             });
