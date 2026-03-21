@@ -282,8 +282,10 @@ export default function Dashboard() {
             const needsPin = profile?.auth_method !== 'biometric';
 
             // Trigger Onboarding if:
-            // 1. Profile exists but is incomplete (No Username OR (Needs PIN and has no PIN)) 
-            if (profile && (!profile.username || (needsPin && !profile.pin))) {
+            // 1. Profile exists but is incomplete (No Username OR (Needs PIN and has no PIN) OR missing details) 
+            const isIncomplete = !profile.username || (needsPin && !profile.pin) || !profile.gender || !profile.emoji;
+
+            if (profile && isIncomplete) {
                 setShowOnboarding(true);
             } else if (!profile && (address || session)) {
                 setShowOnboarding(true);

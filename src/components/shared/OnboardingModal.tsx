@@ -236,14 +236,12 @@ export default function OnboardingModal({ isOpen, isSubmitting, walletAddress, n
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            {(!isPreFilled || needsPin) && (
-                                <button
-                                    onClick={() => setStep(needsPin ? 3 : 1)}
-                                    className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
-                                >
-                                    Back
-                                </button>
-                            )}
+                            <button
+                                onClick={() => setStep(needsPin && step > 3 ? 3 : 1)}
+                                className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all active:scale-[0.98]"
+                            >
+                                Back
+                            </button>
                             <button
                                 onClick={() => gender && setStep(5)}
                                 disabled={!gender}

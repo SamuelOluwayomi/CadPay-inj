@@ -5,8 +5,8 @@ import { Session } from '@supabase/supabase-js';
 
 export interface UserProfile {
     username: string;
-    emoji: string;
-    gender: string;
+    emoji: string | null;
+    gender: string | null;
     pin: string;
     email?: string;
     authority: string; // Wallet address
@@ -89,8 +89,8 @@ export function useUserProfile() {
             if (data) {
                 setProfile({
                     username: data.username,
-                    emoji: data.emoji || '👤',
-                    gender: data.gender || 'other',
+                    emoji: data.emoji,
+                    gender: data.gender,
                     pin: data.pin || '',
                     email: data.email || '',
                     authority: data.wallet_address || '',
