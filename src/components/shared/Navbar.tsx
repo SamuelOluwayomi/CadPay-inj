@@ -8,7 +8,7 @@ import {
     House,
     Users,
     BookOpen,
-    Phone,
+    Storefront,
     SignIn
 } from '@phosphor-icons/react';
 import { useState } from 'react';
@@ -45,9 +45,9 @@ export default function NavBar() {
                             <BookOpen size={16} />
                             Resources
                         </NavLink>
-                        <NavLink href="/contact">
-                            <Phone size={16} />
-                            Contact Us
+                        <NavLink href="/merchant">
+                            <Storefront size={16} />
+                            Merchant Portal
                         </NavLink>
                     </div>
 
@@ -86,7 +86,7 @@ export default function NavBar() {
                             <MobileLink href="/" onClick={() => setIsOpen(false)} icon={<House size={20} />}>Home</MobileLink>
                             <MobileLink href="/about" onClick={() => setIsOpen(false)} icon={<Users size={20} />}>About Us</MobileLink>
                             <MobileLink href="/resources" onClick={() => setIsOpen(false)} icon={<BookOpen size={20} />}>Resources</MobileLink>
-                            <MobileLink href="/contact" onClick={() => setIsOpen(false)} icon={<Phone size={20} />}>Contact Us</MobileLink>
+                            <MobileLink href="/merchant" onClick={() => setIsOpen(false)} icon={<Storefront size={20} />}>Merchant Portal</MobileLink>
                             <hr className="border-white/10 my-2" />
                             <MobileLink href="/signin" onClick={() => setIsOpen(false)} icon={<SignIn size={20} />}>Log In</MobileLink>
                             <Link
