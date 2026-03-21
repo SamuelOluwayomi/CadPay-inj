@@ -231,6 +231,23 @@ export default function MerchantAuthPage() {
                         </button>
                     </div>
 
+                    {mainTab === 'merchant' && (
+                        <div className="flex bg-black/40 p-1 rounded-xl mb-6">
+                            <button
+                                onClick={() => setMerchantSubTab('signin')}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${merchantSubTab === 'signin' ? 'bg-zinc-800 text-white px-4' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                onClick={() => setMerchantSubTab('register')}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${merchantSubTab === 'register' ? 'bg-zinc-800 text-white px-4' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                New Business
+                            </button>
+                        </div>
+                    )}
+
                     {mainTab === 'merchant' ? (
                         <div className="space-y-4">
                             <button 

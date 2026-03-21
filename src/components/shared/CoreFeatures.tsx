@@ -95,7 +95,7 @@ export default function CoreFeatures() {
 
     return (
         <>
-            <div className="w-full bg-[#fcfbf7] pt-40 pb-32 relative z-10 -mt-1">
+            <div id="resources" className="w-full bg-[#fcfbf7] pt-40 pb-32 relative z-10 -mt-1">
                 {/* Vertical Dash Pattern Background for Entire Section */}
                 <DashPattern />
 

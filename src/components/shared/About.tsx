@@ -11,6 +11,7 @@ export default function About() {
     const isInView = useInView(containerRef, { once: true, amount: 0.2 });
     return (
         <section
+            id="about"
             ref={containerRef}
             className="relative bg-[#1c1209] flex flex-col items-center -mt-13 md:-mt-24 z-20 w-full overflow-hidden"
         >

@@ -37,11 +37,11 @@ export default function NavBar() {
                             <House size={16} weight="fill" />
                             Home
                         </NavLink>
-                        <NavLink href="/about">
+                        <NavLink href="/#about">
                             <Users size={16} />
                             About Us
                         </NavLink>
-                        <NavLink href="/resources">
+                        <NavLink href="/#resources">
                             <BookOpen size={16} />
                             Resources
                         </NavLink>
@@ -84,8 +84,8 @@ export default function NavBar() {
                     >
                         <div className="flex flex-col gap-4 text-lg font-medium">
                             <MobileLink href="/" onClick={() => setIsOpen(false)} icon={<House size={20} />}>Home</MobileLink>
-                            <MobileLink href="/about" onClick={() => setIsOpen(false)} icon={<Users size={20} />}>About Us</MobileLink>
-                            <MobileLink href="/resources" onClick={() => setIsOpen(false)} icon={<BookOpen size={20} />}>Resources</MobileLink>
+                            <MobileLink href="/#about" onClick={() => setIsOpen(false)} icon={<Users size={20} />}>About Us</MobileLink>
+                            <MobileLink href="/#resources" onClick={() => setIsOpen(false)} icon={<BookOpen size={20} />}>Resources</MobileLink>
                             <MobileLink href="/merchant" onClick={() => setIsOpen(false)} icon={<Storefront size={20} />}>Merchant Portal</MobileLink>
                             <hr className="border-white/10 my-2" />
                             <MobileLink href="/signin" onClick={() => setIsOpen(false)} icon={<SignIn size={20} />}>Log In</MobileLink>
