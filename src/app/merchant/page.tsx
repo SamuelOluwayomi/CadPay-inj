@@ -6,12 +6,14 @@ import {
     WalletIcon, TrendUpIcon, UsersIcon, LightningIcon, CopyIcon, CheckIcon, StorefrontIcon,
     ReceiptIcon, ChartPieIcon, KeyIcon, ShieldCheckIcon, CaretRightIcon, ArrowLeftIcon,
     EyeIcon, EyeSlashIcon, PlusIcon, XIcon, ListIcon, ArrowsClockwise as ArrowsClockwiseIcon,
-    Warning as WarningIcon
+    Warning as WarningIcon, UserCircle as UserCircleIcon, CurrencyDollar as CurrencyDollarIcon, 
+    ChartLineUp as ChartLineUpIcon, ArrowRight as ArrowRightIcon, Image as ImageIcon, UploadSimple as UploadIcon
 } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ParticlesBackground from '@/components/shared/ParticlesBackground';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 import { useMerchant } from '@/context/MerchantContext';
 import { useInjectiveData } from '@/hooks/useInjectiveData';
@@ -64,6 +66,11 @@ export default function MerchantDashboard() {
     const totalTransactions = transactions?.length || 0;
     const avgTicket = activeSubscribers > 0 ? (monthlyRevenue / activeSubscribers) : 0;
 
+    // Calculate Churn Rate
+    const totalSubs = subscriptions.length;
+    const inactiveSubs = subscriptions.filter(s => s.status === 'canceled' || s.status === 'expired').length;
+    const churnRate = totalSubs > 0 ? (inactiveSubs / totalSubs) * 100 : 0;
+
     // Calculate Gas Saved (Simulated based on Volume for "The Flex")
     // Assuming 0.0001 INJ per tx vs standard network
     const gasSaved = totalTransactions * 0.0001;
@@ -77,11 +84,119 @@ export default function MerchantDashboard() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const [newServicePrice, setNewServicePrice] = useState(19.99);
-    const [newServiceColor, setNewServiceColor] = useState('#EF4444');
 
     // Navigation state
     const [activeSection, setActiveSection] = useState<'dashboard' | 'analytics' | 'customers' | 'invoices' | 'developer'>('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [apiKey, setApiKey] = useState<string | null>(null);
+    const [isLoadingKey, setIsLoadingKey] = useState(false);
+
+    // Image Upload State
+    const [serviceImageFile, setServiceImageFile] = useState<File | null>(null);
+    const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setServiceImageFile(e.target.files[0]);
+            // Create a preview URL
+            setServiceImageUrl(URL.createObjectURL(e.target.files[0]));
+        }
+    };
+
+    const uploadImageToSupabase = async (file: File) => {
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${merchant?.id}/${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('service-images')
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('service-images')
+                .getPublicUrl(filePath);
+
+            return publicUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    };
+
+    const fetchApiKey = useCallback(async () => {
+        if (!merchant?.id) return;
+        setIsLoadingKey(true);
+        try {
+            const res = await fetch(`/api/merchant/keys?merchantId=${merchant.id}`);
+            const data = await res.json();
+            setApiKey(data.apiKey);
+        } catch (e) {
+            console.error("Failed to fetch API key", e);
+        } finally {
+            setIsLoadingKey(false);
+        }
+    }, [merchant?.id]);
+
+    const rotateApiKey = async () => {
+        if (!merchant?.id) return;
+        if (!confirm("Are you sure? This will break existing integrations using the old key.")) return;
+        
+        setIsLoadingKey(true);
+        try {
+            const res = await fetch('/api/merchant/keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ merchantId: merchant.id })
+            });
+            const data = await res.json();
+            setApiKey(data.apiKey);
+            showToast("API Key rotated successfully", "success");
+        } catch (e) {
+            showToast("Failed to rotate API Key", "error");
+        } finally {
+            setIsLoadingKey(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeSection === 'developer') {
+            fetchApiKey();
+        }
+    }, [activeSection, fetchApiKey]);
+
+    const downloadSubscribersCSV = () => {
+        if (subscriptions.length === 0) {
+            showToast("No subscribers to export", "info");
+            return;
+        }
+
+        const headers = ["ID", "Service", "Plan", "Price USD", "Status", "Start Date", "Next Billing", "User Address"];
+        const rows = subscriptions.map(sub => [
+            sub.id,
+            sub.serviceName,
+            sub.planName,
+            sub.priceUsd,
+            sub.status,
+            new Date(sub.createdAt).toLocaleDateString(),
+            new Date(sub.nextBillingDate).toLocaleDateString(),
+            (sub as any).email || 'N/A'
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `subscribers_export_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Export successful", "success");
+    };
 
     // Protect Route - redirect to signin if not logged in (only after loading completes)
     useEffect(() => {
@@ -123,6 +238,11 @@ export default function MerchantDashboard() {
         setIsCreating(true);
         
         try {
+            let finalImageUrl = serviceImageUrl;
+            if (serviceImageFile) {
+                finalImageUrl = await uploadImageToSupabase(serviceImageFile);
+            }
+
             const success = await createNewService({
                 name: newServiceName,
                 category: newServiceCategory,
@@ -133,7 +253,8 @@ export default function MerchantDashboard() {
                 priceEnterprise: newServicePrices.enterprise,
                 featuresBasic: newServiceFeatures.basic,
                 featuresPro: newServiceFeatures.pro,
-                featuresEnterprise: newServiceFeatures.enterprise
+                featuresEnterprise: newServiceFeatures.enterprise,
+                imageUrl: finalImageUrl || ''
             });
 
             if (success) {
@@ -142,10 +263,13 @@ export default function MerchantDashboard() {
                 // Reset form
                 setNewServiceName('');
                 setNewServiceDescription('');
+                setServiceImageFile(null);
+                setServiceImageUrl(null);
             } else {
                 showToast("Failed to create service", "error");
             }
         } catch (err) {
+            console.error("Creation failed", err);
             showToast("An error occurred", "error");
         } finally {
             setIsCreating(false);
@@ -326,8 +450,14 @@ export default function MerchantDashboard() {
                     <>
                         <header className="flex items-center justify-between mb-8">
                             <div>
-                                <h1 className="text-3xl font-bold text-white">Dashboard Overview</h1>
-                                <p className="text-zinc-400">Welcome back, here's what's happening with {merchant.name} today.</p>
+                                <h1 className="text-3xl font-bold text-white">
+                                    {activeSection === 'developer' ? 'Developer Platform' : 'Dashboard Overview'}
+                                </h1>
+                                <p className="text-zinc-400">
+                                    {activeSection === 'developer' 
+                                        ? 'Build and integrate custom subscription logic with CadPay APIs.' 
+                                        : `Welcome back, here's what's happening with ${merchant.name} today.`}
+                                </p>
                             </div>
                         </header>
 
@@ -367,6 +497,17 @@ export default function MerchantDashboard() {
                                     subtext="You saved users this much!"
                                     loading={isDataLoading}
                                 />
+                                {activeSection === 'analytics' && (
+                                    <MetricCard
+                                        title="User Churn Rate"
+                                        value={`${churnRate.toFixed(1)}%`}
+                                        trend={churnRate > 10 ? "At Risk" : "Healthy"}
+                                        icon={<WarningIcon size={24} className={churnRate > 10 ? "text-red-400" : "text-green-400"} />}
+                                        color={churnRate > 10 ? "red" : "green"}
+                                        subtext="Inactive vs Total Subscribers"
+                                        loading={isDataLoading}
+                                    />
+                                )}
                             </div>
                         )}
 
@@ -631,44 +772,79 @@ export default function MerchantDashboard() {
 
                                 {/* Developer Keys */}
                                 {activeSection === 'developer' && (
-                                    <div className="md:col-span-2 bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-sm relative overflow-hidden">
-                                        <div className="flex items-center gap-3 mb-6 relative z-10">
-                                            <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
-                                                <KeyIcon size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-white">Developer API Keys</h3>
-                                                <p className="text-xs text-zinc-400">Manage your integration secrets</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4 relative z-10">
-                                            <div>
-                                                <label className="block text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2">Publishable Key</label>
-                                                <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3">
-                                                    <code className="text-sm font-mono text-zinc-300">{merchant.walletPublicKey}</code>
-                                                    <CopyIcon size={16} className="text-zinc-500 cursor-pointer hover:text-white" />
+                                    <div className="md:col-span-2 space-y-8">
+                                        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden">
+                                            <div className="flex items-center gap-3 mb-6 relative z-10">
+                                                <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+                                                    <KeyIcon size={20} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-white text-xl">API Keys</h3>
+                                                    <p className="text-sm text-zinc-500">Authenticate external requests to the CadPay API.</p>
                                                 </div>
                                             </div>
 
-                                            <div>
-                                                <label className="block text-xs uppercase font-bold text-zinc-500 tracking-wider mb-2">Secret Key</label>
-                                                <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3">
-                                                    <code className="text-sm font-mono text-zinc-300">
-                                                        {showKey ? merchant.walletSecretKey : 'sk_live_•••••••••••••••••••••'}
-                                                    </code>
-                                                    <button onClick={() => setShowKey(!showKey)} className="text-zinc-500 cursor-pointer hover:text-white">
-                                                        {showKey ? <EyeSlashIcon size={16} /> : <EyeIcon size={16} />}
-                                                    </button>
+                                            <div className="space-y-6 relative z-10">
+                                                <div className="p-5 bg-black/40 border border-white/5 rounded-2xl">
+                                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Secret key (Production)</label>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex-1 font-mono text-sm bg-black/50 p-4 rounded-xl border border-white/5 text-zinc-300">
+                                                            {isLoadingKey ? '••••••••••••••••••••••••' : (apiKey || 'No key generated')}
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => copyToClipboard(apiKey || '', 'api-key')}
+                                                            className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"
+                                                        >
+                                                            {copiedId === 'api-key' ? <CheckIcon className="text-green-500" /> : <CopyIcon size={20} />}
+                                                        </button>
+                                                        <button 
+                                                            onClick={rotateApiKey}
+                                                            disabled={isLoadingKey}
+                                                            className="px-6 py-4 bg-white text-black text-xs font-black rounded-xl hover:bg-zinc-200 transition-all uppercase tracking-widest shadow-xl shadow-white/5 disabled:opacity-50"
+                                                        >
+                                                            {isLoadingKey ? 'Rotating...' : 'Rotate Key'}
+                                                        </button>
+                                                    </div>
+                                                    <p className="mt-3 text-[10px] text-zinc-500 italic">Be careful. Rotating your key will immediately invalidate the current one.</p>
                                                 </div>
-                                                <p className="text-xs text-orange-500/80 mt-2 flex items-center gap-1.5">
-                                                    <ShieldCheckIcon size={14} /> Never share your secret key client-side.
-                                                </p>
+
+                                                <div className="p-6 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
+                                                    <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                                        <ShieldCheckIcon size={18} className="text-orange-500" />
+                                                        Integration Guide
+                                                    </h4>
+                                                    <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+                                                        To verify if a wallet address has an active subscription to your service, call our verification endpoint from your backend:
+                                                    </p>
+                                                    <div className="bg-black/80 p-5 rounded-xl border border-white/5 font-mono text-[11px] text-orange-400 overflow-x-auto shadow-inner">
+                                                        <p className="text-zinc-500 mb-2">// Server-side check</p>
+                                                        GET https://cadpay.xyz/api/v1/verify?apiKey=<span className="text-white">YOUR_KEY</span>&address=<span className="text-white">USER_WALLET</span>&serviceId=<span className="text-white">SERVICE_ID</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Background Effect */}
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+                                                <h3 className="font-bold text-white mb-2">Webhooks</h3>
+                                                <p className="text-xs text-zinc-500 mb-6 font-medium">Receive real-time notifications for payment events via HTTP POST.</p>
+                                                <div className="px-4 py-8 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-center">
+                                                    <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest mb-1 italic">Status: Alpha</p>
+                                                    <p className="text-xs text-zinc-700 font-bold">Registration opening soon</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+                                                <h3 className="font-bold text-white mb-2">Restricted Domains</h3>
+                                                <p className="text-xs text-zinc-500 mb-6 font-medium">Whitelist authorized sources for client-side queries.</p>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                                                        <span className="text-xs font-mono text-zinc-400">{typeof window !== 'undefined' ? window.location.origin : 'localhost:3000'}</span>
+                                                        <span className="text-[8px] font-black uppercase bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded">Default</span>
+                                                    </div>
+                                                    <button disabled className="w-full mt-2 py-3 bg-white/5 text-zinc-600 rounded-xl font-bold text-xs cursor-not-allowed uppercase tracking-widest border border-white/5">Update Whitelist</button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -713,12 +889,34 @@ export default function MerchantDashboard() {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Service Identity</label>
-                                            <input
-                                                type="text" value={newServiceName} onChange={e => setNewServiceName(e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
-                                                placeholder="e.g. Injective VPN"
-                                                required
-                                            />
+                                            <div className="flex gap-4 items-start mb-4">
+                                                <div 
+                                                    className="w-20 h-20 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center relative overflow-hidden group/img cursor-pointer transition-all hover:border-orange-500/50"
+                                                    onClick={() => document.getElementById('service-image-upload')?.click()}
+                                                >
+                                                    {serviceImageUrl ? (
+                                                        <img src={serviceImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <ImageIcon size={24} className="text-zinc-600 group-hover/img:text-orange-500 transition-colors" />
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                                        <UploadIcon size={16} className="text-white" />
+                                                    </div>
+                                                </div>
+                                                <input 
+                                                    id="service-image-upload" type="file" accept="image/*" 
+                                                    className="hidden" onChange={handleImageChange} 
+                                                />
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="text" value={newServiceName} onChange={e => setNewServiceName(e.target.value)}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
+                                                        placeholder="e.g. Injective VPN"
+                                                        required
+                                                    />
+                                                    <p className="text-[10px] text-zinc-500 mt-2 italic px-1">Upload a 1:1 brand logo for best results.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-zinc-500 uppercase mb-2 tracking-widest">Category</label>
@@ -861,6 +1059,24 @@ export default function MerchantDashboard() {
     );
 }
 
+function StatCard({ label, value, change, icon }: any) {
+    return (
+        <div className="bg-black/20 border border-white/5 p-4 rounded-2xl hover:bg-black/30 transition-all group">
+            <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 group-hover:text-orange-500 transition-colors">
+                    {icon}
+                </div>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${change.includes('+') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {change}
+                </span>
+            </div>
+            <div>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{label}</p>
+                <p className="text-lg font-black text-white">{value}</p>
+            </div>
+        </div>
+    );
+}
 
 function NavItem({ icon, label, active, onClick }: any) {
     return (

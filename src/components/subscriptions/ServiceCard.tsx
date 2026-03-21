@@ -52,30 +52,37 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
                     }}
                 />
 
-                {/* Service icon */}
+                {/* Service icon/image */}
                 <div
-                    className="relative z-10 text-4xl mb-3 p-3 rounded-full flex items-center justify-center"
+                    className="relative z-10 w-16 h-16 mb-3 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10 shadow-inner"
                     style={{ backgroundColor: `${service.color}20`, color: service.color }}
                 >
-                    <service.icon size={32} />
+                    {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                    ) : service.icon ? (
+                        <service.icon size={32} />
+                    ) : (
+                        <span className="text-xl font-black">{service.name.charAt(0)}</span>
+                    )}
                 </div>
 
                 {/* Service info */}
-                <div className="relative z-10">
-                    <h3 className="text-lg font-bold text-white mb-1 leading-tight">{service.name}</h3>
-                    <p className="text-xs text-zinc-400 line-clamp-2 max-w-[140px] mx-auto mb-2 opacity-80 group-hover:opacity-100 transition-opacity">{service.description}</p>
+                <div className="relative z-10 w-full">
+                    <h3 className="text-xl font-bold text-white mb-1.5 leading-tight">{service.name}</h3>
+                    <p className="text-[11px] text-zinc-400 line-clamp-2 max-w-[160px] mx-auto mb-4 opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed font-medium">{service.description}</p>
 
                     <div
-                        className="inline-block px-3 py-1 rounded-full text-xs font-bold"
+                        className="inline-block px-4 py-1.5 rounded-xl text-xs font-black tracking-wider uppercase mb-1 shadow-lg"
                         style={{
                             backgroundColor: `${service.color}20`,
-                            color: service.color
+                            color: service.color,
+                            border: `1px solid ${service.color}30`
                         }}
                     >
                         {minPriceUSD === 0 ? 'Free' : `${minPriceINJ.toFixed(0)} INJ`}
                     </div>
                     {minPriceUSD > 0 && (
-                        <p className="text-[10px] text-zinc-500 mt-1">≈ ${minPriceUSD} USD</p>
+                        <p className="text-[10px] text-zinc-500 font-bold tracking-tight">≈ ${minPriceUSD} USD</p>
                     )}
                 </div>
             </motion.div>

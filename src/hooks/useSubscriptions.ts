@@ -11,6 +11,8 @@ export interface ActiveSubscription {
     startDate: string;
     nextBilling: string;
     color: string;
+    status: 'active' | 'expired' | 'canceled' | 'past_due';
+    autoRenew: boolean;
     transactionSignature?: string;
 }
 
@@ -51,10 +53,22 @@ export function useSubscriptions() {
                     startDate: sub.created_at,
                     nextBilling: sub.next_billing_date || new Date().toISOString(),
                     color: sub.color || '#FF6B35',
+                    status: sub.status || 'active',
+                    autoRenew: sub.auto_renew ?? true,
                     transactionSignature: sub.tx_signature
                 })) as ActiveSubscription[];
 
-                setSubscriptions(mappedSubs);
+                // Phase 2: Mock Auto-expiration check
+                const now = new Date();
+                const processedSubs = mappedSubs.map(sub => {
+                    const billingDate = new Date(sub.nextBilling);
+                    if (sub.status === 'active' && billingDate < now) {
+                        return { ...sub, status: 'expired' as const };
+                    }
+                    return sub;
+                });
+
+                setSubscriptions(processedSubs);
             }
         } catch (error) {
             console.error('❌ Failed to fetch subscriptions:', error);
@@ -151,6 +165,30 @@ export function useSubscriptions() {
         getMonthlyTotal,
         getHistoricalData,
         checkDuplicateEmail,
+        toggleAutoRenew: async (id: string, enabled: boolean) => {
+            try {
+                const { error } = await supabase
+                    .from('user_subscriptions')
+                    .update({ auto_renew: enabled })
+                    .eq('id', id);
+                if (error) throw error;
+                setSubscriptions(prev => prev.map(sub => sub.id === id ? { ...sub, autoRenew: enabled } : sub));
+            } catch (err) {
+                console.error('Failed to toggle auto-renew:', err);
+            }
+        },
+        cancelSubscription: async (id: string) => {
+            try {
+                const { error } = await supabase
+                    .from('user_subscriptions')
+                    .update({ status: 'canceled', auto_renew: false })
+                    .eq('id', id);
+                if (error) throw error;
+                setSubscriptions(prev => prev.map(sub => sub.id === id ? { ...sub, status: 'canceled', autoRenew: false } : sub));
+            } catch (err) {
+                console.error('Failed to cancel subscription:', err);
+            }
+        },
         refreshSubscriptions: fetchSubscriptions
     };
 }

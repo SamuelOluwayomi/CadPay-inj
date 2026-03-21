@@ -4,7 +4,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircleIcon, WarningIcon, XIcon, InfoIcon } from '@phosphor-icons/react';
 
-type ToastType = 'success' | 'error' | 'warning' | 'pending';
+type ToastType = 'success' | 'error' | 'warning' | 'pending' | 'info';
 
 interface Toast {
     id: string;
@@ -80,6 +80,12 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
             bg: 'bg-[#f59e0b]/10',
             border: 'border-[#f59e0b]/30',
             text: 'text-[#f59e0b]',
+        },
+        info: {
+            icon: <InfoIcon size={20} weight="fill" />,
+            bg: 'bg-blue-500/10',
+            border: 'border-blue-500/30',
+            text: 'text-blue-400',
         },
     };
 

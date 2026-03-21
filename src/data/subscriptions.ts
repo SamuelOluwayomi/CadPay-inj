@@ -23,7 +23,8 @@ export interface Service {
     name: string;
     category: 'streaming' | 'music' | 'social' | 'creative' | 'developer' | 'ai' | 'other';
     color: string;
-    icon: IconType;
+    icon?: IconType;
+    imageUrl?: string;
     description: string;
     plans: SubscriptionPlan[];
 }

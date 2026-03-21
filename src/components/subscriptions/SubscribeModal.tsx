@@ -205,10 +205,16 @@ export default function SubscribeModal({
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
                                 <div
-                                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+                                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl overflow-hidden border border-white/10 shadow-inner"
                                     style={{ backgroundColor: service.color + '20', color: service.color }}
                                 >
-                                    {service.icon && <service.icon />}
+                                    {service.imageUrl ? (
+                                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                                    ) : service.icon ? (
+                                        <service.icon />
+                                    ) : (
+                                        <span className="text-xl font-black">{service.name.charAt(0)}</span>
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-white">{service.name}</h2>

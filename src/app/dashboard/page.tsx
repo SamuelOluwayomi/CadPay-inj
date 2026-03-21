@@ -1205,7 +1205,7 @@ function SubscriptionsSection({
     const { showToast } = useToast();
 
     const { address } = useInjective();
-    const { profile } = useUser();
+    const { profile, session } = useUser();
     // Use effective address for custodial users
     const effectiveAddress = address || profile?.authority;
 
@@ -1213,11 +1213,13 @@ function SubscriptionsSection({
         subscriptions,
         addSubscription,
         removeSubscription,
+        toggleAutoRenew,
+        cancelSubscription,
         getMonthlyTotal,
         getHistoricalData,
         loading: loadingSub
     } = useSubscriptions();
-    const { publicServices: dynamicServices, merchants, subscribeToService, merchant: currentMerchant } = useMerchant();
+    const { publicServices: dynamicServices, subscribeToService, merchant: currentMerchant } = useMerchant();
 
     // Merge Static + Dynamic Services (Filter out duplicates)
     const staticServiceNames = SERVICES.map(s => s.name.toLowerCase());
@@ -1226,13 +1228,16 @@ function SubscriptionsSection({
         ...dynamicServices
             .filter(ds => !staticServiceNames.includes(ds.name.toLowerCase())) // Remove duplicates
             .map(ds => ({
-                merchantId: ds.merchantId,
+                id: ds.id,
+                merchantId: ds.id, // Usually the merchant's ID is the service creator
                 merchantWallet: ds.merchantWallet,
                 name: ds.name,
                 description: ds.description || 'Custom Service',
-                priceUSD: ds.priceBasic, // Use basic as default for card
+                priceUSD: ds.priceBasic,
                 color: ds.color,
                 category: ds.category as any,
+                icon: StorefrontIcon,
+                imageUrl: ds.imageUrl,
                 features: ds.featuresBasic,
                 plans: [
                     { name: 'Basic', priceUSD: ds.priceBasic, features: ds.featuresBasic },
@@ -1251,6 +1256,64 @@ function SubscriptionsSection({
         { name: 'Jun', amount: 85 },
     ];
 
+    const spendingWidget = (
+        <div key="spending-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl group">
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h3 className="font-bold text-white">Spending Activity</h3>
+                    <p className="text-xs text-zinc-400">Past 6 Months</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-2xl font-black text-white">$365</p>
+                    <p className="text-[10px] text-green-400 font-bold uppercase">+12% vs last mo</p>
+                </div>
+            </div>
+
+            <div className="h-[150px] w-full mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={spendingData}>
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#71717a', fontSize: 10 }}
+                        />
+                        <RechartsTooltip
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
+                            labelStyle={{ color: '#a1a1aa' }}
+                        />
+                        <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                            {spendingData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+
+    const overviewWidget = (
+        <div key="overview-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl h-full flex flex-col justify-center">
+            <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                <WalletIcon size={20} className="text-orange-500" />
+                Monthly Overview
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                    <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Budget</p>
+                    <p className="text-xl font-bold text-white">$500</p>
+                </div>
+                <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
+                    <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Savings</p>
+                    <p className="text-xl font-bold text-orange-400">$125</p>
+                </div>
+            </div>
+        </div>
+    );
+
 
 
     const handleServiceClick = (service: Service) => {
@@ -1268,13 +1331,13 @@ function SubscriptionsSection({
 
             // Record in Database
             await subscribeToService({
-                userId: profile?.id,
-                merchantId: (actualService as any)?.merchantId || 'admin', // Route hardcoded to admin
+                userId: session?.user?.id || 'anonymous',
+                merchantId: (actualService as any)?.merchantId || 'admin',
                 serviceId,
                 serviceName: actualService ? actualService.name : serviceId,
                 planName: plan.name,
                 priceUsd: plan.priceUSD,
-                priceInj: price, // Snapshotted INJ price from modal context
+                priceInj: price,
             });
 
             // Update local state (for instant feedback)
@@ -1285,6 +1348,8 @@ function SubscriptionsSection({
                 priceUSD: plan.priceUSD,
                 email,
                 color: actualService ? actualService.color : '#FF6B35',
+                status: 'active',
+                autoRenew: true,
                 transactionSignature: txId
             });
 
@@ -1416,84 +1481,25 @@ function SubscriptionsSection({
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {(() => {
-                            const items: React.ReactNode[] = filteredServices.map(service => (
-                                <ServiceCard
-                                    key={service.id}
-                                    service={service}
-                                    onClick={() => handleServiceClick(service)}
-                                />
-                            ));
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Main Service Grid */}
+                        <div className="flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {filteredServices.map(service => (
+                                    <ServiceCard
+                                        key={service.id}
+                                        service={service}
+                                        onClick={() => handleServiceClick(service)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
 
-                            const spendingWidget = (
-                                <div key="spending-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl group h-full">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div>
-                                            <h3 className="font-bold text-white">Spending Activity</h3>
-                                            <p className="text-xs text-zinc-400">Past 6 Months</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-2xl font-black text-white">$365</p>
-                                            <p className="text-[10px] text-green-400 font-bold uppercase">+12% vs last mo</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="h-[150px] w-full mt-4">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={spendingData}>
-                                                <XAxis
-                                                    dataKey="name"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: '#71717a', fontSize: 10 }}
-                                                />
-                                                <RechartsTooltip
-                                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
-                                                    labelStyle={{ color: '#a1a1aa' }}
-                                                />
-                                                <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-                                                    {spendingData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={index === 5 ? '#f97316' : '#27272a'} />
-                                                    ))}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            );
-
-                            const overviewWidget = (
-                                <div key="overview-widget" className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl h-full flex flex-col justify-center">
-                                    <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                                        <WalletIcon size={20} className="text-orange-500" />
-                                        Monthly Overview
-                                    </h3>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
-                                            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Budget</p>
-                                            <p className="text-xl font-bold text-white">$500</p>
-                                        </div>
-                                        <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center">
-                                            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">Savings</p>
-                                            <p className="text-xl font-bold text-orange-400">$125</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-
-                            // Insert Spending Widget at index 3 (4th position)
-                            if (items.length >= 3) items.splice(3, 0, spendingWidget);
-                            else items.push(spendingWidget);
-
-                            // Insert Overview Widget at index 7 (8th position)
-                            if (items.length >= 7) items.splice(7, 0, overviewWidget);
-                            else items.push(overviewWidget);
-
-                            return items;
-                        })()}
+                        {/* Sidebar Widgets */}
+                        <div className="w-full lg:w-[320px] xl:w-[380px] space-y-6">
+                            {spendingWidget}
+                            {overviewWidget}
+                        </div>
                     </div>
                 </div>
             )}
@@ -1541,7 +1547,8 @@ function SubscriptionsSection({
                                         <ActiveSubscriptionCard
                                             key={sub.id}
                                             subscription={sub}
-                                            onUnsubscribe={removeSubscription}
+                                            onUnsubscribe={cancelSubscription}
+                                            onToggleAutoRenew={toggleAutoRenew}
                                         />
                                     ))}
                                 </AnimatePresence>
