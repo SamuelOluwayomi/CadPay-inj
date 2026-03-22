@@ -19,7 +19,7 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className={`${isOpen ? 'fixed inset-0' : 'relative'} w-full z-60 py-4 transition-all duration-300`}>
+            <nav className={`${isOpen ? 'fixed top-0' : 'relative'} w-full z-60 py-4 transition-all duration-300`}>
 
                 <div className="relative max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
 
@@ -109,8 +109,8 @@ function NavLink({ href, children, active }: { href: string; children: React.Rea
         <Link
             href={href}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${active
-                    ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-orange-500/10 text-white border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
         >
             {children}
